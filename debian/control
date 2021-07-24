@@ -2,8 +2,8 @@ Source: atftp
 Section: net
 Priority: extra
 Maintainer: Ludovic Drolez <ldrolez@debian.org>
-Build-Depends: libreadline-dev, debhelper (>= 5), po-debconf, libwrap0-dev, libpcre3-dev
-Standards-Version: 3.8.4
+Build-Depends: libreadline-dev, debhelper (>= 8), po-debconf, libwrap0-dev, libpcre3-dev, autoconf, automake
+Standards-Version: 3.9.8
 
 Package: atftp
 Architecture: any
@@ -17,7 +17,7 @@ Description: advanced TFTP client
 
 Package: atftpd
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, update-inetd
+Depends: ${shlibs:Depends}, ${misc:Depends}, update-inetd, lsb-base
 Recommends: inet-superserver
 Conflicts: tftpd
 Suggests: logrotate

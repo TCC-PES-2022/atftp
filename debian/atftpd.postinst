@@ -94,8 +94,9 @@ db_version 2.0
 		chown nobody:nogroup $RET
 		chmod 640 $RET
 	    fi
-	    # modify the logrotate file
-	    cat >/etc/logrotate.d/atftpd <<EOF
+	    # create the logrotate file
+	    if [ ! -f /etc/logrotate.d/atftpd ] ; then
+		cat >/etc/logrotate.d/atftpd <<EOF
 $RET {
     daily
     rotate 5
@@ -104,6 +105,7 @@ $RET {
     missingok
 }
 EOF
+		fi
 	fi
     else
 	LOGFILE=""
@@ -130,15 +132,17 @@ fi
 if [ "$USE_INETD" = "false" ]; then
     if [ ! -f /etc/default/atftpd ]; then
 	echo "USE_INETD=false" > /etc/default/atftpd
+	echo "# OPTIONS below are used only with init script" >> /etc/default/atftpd
 	echo "OPTIONS=\"$DAEMON $TFTPD_PORT $RETRY_TIMEOUT $NOTIMEOUT $NOTSIZE $NOBLKSIZE $NOMCAST \
 $MCASTPORT $MCASTADDR $MCASTTTL $MAXTHREAD $VERBOSITY $LOGFILE $BASEDIR\""|tr -s " " >> /etc/default/atftpd
     fi
     update-inetd --disable tftp
 else
     INETOPTS=`echo "$TFTPD_TIMEOUT $RETRY_TIMEOUT $NOTIMEOUT $NOTSIZE $NOBLKSIZE $NOMCAST $MCASTPORT $MCASTADDR $MCASTTTL $MAXTHREAD $VERBOSITY $LOGFILE $BASEDIR"|tr -s " "`
-    update-inetd --group BOOT --add "tftp		dgram	udp4	wait	nobody /usr/sbin/tcpd /usr/sbin/in.tftpd $INETOPTS"
+    update-inetd --group BOOT --add "tftp		dgram	udp	wait	nobody /usr/sbin/tcpd /usr/sbin/in.tftpd $INETOPTS"
     if [ ! -f /etc/default/atftpd ]; then
 	echo "USE_INETD=true" > /etc/default/atftpd
+	echo "# OPTIONS below are used only with init script" >> /etc/default/atftpd
 	echo "OPTIONS=\"$INETOPTS\""|tr -s " " >> /etc/default/atftpd
     fi
 fi

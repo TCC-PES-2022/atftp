@@ -34,6 +34,8 @@ if [ "$USE_INETD" = "true" ]; then
     exit 0;
 fi
 
+. /lib/lsb/init-functions
+
 # Make sure we have --daemon when not using inetd
 echo "$OPTIONS"|grep -q -- --daemon || OPTIONS="--daemon $OPTIONS"
 
@@ -55,9 +57,12 @@ case "$1" in
 	start-stop-daemon --start --oknodo --quiet --exec $DAEMON -- $OPTIONS
 	echo "$NAME."
 	;;
+  status)
+	status_of_proc "$DAEMON" "$NAME" && exit 0 || exit $?
+	;;
   *)
 	N=/etc/init.d/$NAME
-        echo "Usage: $N {start|stop|restart|reload|force-reload}" >&2
+        echo "Usage: $N {start|stop|restart|reload|force-reload|status}" >&2
 	exit 1
 	;;
 esac

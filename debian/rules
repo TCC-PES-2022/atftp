@@ -12,23 +12,24 @@ export DH_VERBOSE=1
 # This has to be exported to make some magic below work.
 export DH_OPTIONS
 
+dpkg_buildflags = DEB_BUILD_MAINT_OPTIONS="hardening=+all" DEB_CFLAGS_MAINT_APPEND="-Wall -pedantic -std=gnu89" DEB_LDFLAGS_MAINT_APPEND="-Wl,--as-needed" dpkg-buildflags
+
 configure: configure-stamp
 
 configure-stamp:
 	dh_testdir
 	# Add here commands to configure the package.
-	./configure --prefix=/usr --mandir=/usr/share/man
+	./autogen.sh
+	#./configure --prefix=/usr --mandir=/usr/share/man
+	dh_auto_configure -- $(shell $(dpkg_buildflags) --export=configure)
 
 	touch configure-stamp
 
 build: configure-stamp build-stamp
 build-stamp:
 	dh_testdir
-
 	# Add here commands to compile the package.
 	$(MAKE)
-	# For the woody backport
-	#$(MAKE) LDFLAGS="--static" LIBREADLINE="-lreadline -lncurses -lpthread" LIBWRAP="-lwrap -lnsl"
 	touch build-stamp
 
 clean: clean-patched
@@ -41,15 +42,14 @@ clean-patched:
 	# Add here commands to clean up after the build process.
 	[ ! -f Makefile ] || $(MAKE) clean
 	[ ! -f Makefile ] || $(MAKE) distclean
-
-
+	rm -f compile config.guess config.sub depcomp install-sh missing test-driver
 	dh_clean
 
 install: DH_OPTIONS=
 install: build
 	dh_testdir
 	dh_testroot
-	dh_clean -k
+	dh_prep
 	dh_installdirs
 
 	# Add here commands to install the package into debian/tmp.

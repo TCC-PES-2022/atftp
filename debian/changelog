@@ -1,3 +1,76 @@
+atftp (0.7.git20120829-3.2) unstable; urgency=medium
+
+  * Non-maintainer upload.
+  * Fix for DoS issue CVE-2020-6097 (Closes: #970066)
+
+ -- Salvatore Bonaccorso <carnil@debian.org>  Sun, 27 Dec 2020 21:28:40 +0100
+
+atftp (0.7.git20120829-3.1) unstable; urgency=high
+
+  * Non-maintainer upload.
+  * Fix concurrency issue denial of service (CVE-2019-11366) (Closes: #927553)
+  * Fix error handler stack overflow (CVE-2019-11365) (Closes: #927553)
+
+ -- Salvatore Bonaccorso <carnil@debian.org>  Mon, 29 Apr 2019 19:37:52 +0200
+
+atftp (0.7.git20120829-3) unstable; urgency=medium
+
+  * Ack previous NMU
+  * Reload debconf options from /etc/default/atftpd or /etc/inetd.conf
+    Patch by Petter Reinholdtsen. Closes: #412185
+  * Added watch file. Closes: #831849
+
+ -- Ludovic Drolez <ldrolez@debian.org>  Mon, 05 Sep 2016 19:00:41 +0200
+
+atftp (0.7.git20120829-2.1) unstable; urgency=medium
+
+  * Non-maintainer upload.
+  * Fix "ftbfs with GCC-5": apply patch from Martin Michlmayr to debian/rules:
+    use GNU89 inline style, and adjust buildflags handling.
+    (Closes: #777783)
+
+ -- gregor herrmann <gregoa@debian.org>  Sat, 18 Jul 2015 17:09:34 +0200
+
+atftp (0.7.git20120829-2) unstable; urgency=low
+
+  * atftpd.postinst uses invalid protocol bug fixed. Closes: #688693
+  * Fixes for compiler warnings. Closes: #774913, #688471
+  * Added large file support. Closes: #774912
+
+ -- Ludovic Drolez <ldrolez@debian.org>  Sat, 20 Jun 2015 19:21:52 +0200
+
+atftp (0.7.git20120829-1) unstable; urgency=low
+
+  * New upstream release from GIT repo.
+  * Updated the copyright file
+  * Updated pt_BR debconf template. Closes: #661358
+  * init.d status support. Closes: #645812
+  * hardened the build. Removed CFLAGS from configure.ac
+
+ -- Ludovic Drolez <ldrolez@debian.org>  Wed, 29 Aug 2012 19:14:38 +0200
+
+atftp (0.7.dfsg-11) unstable; urgency=low
+
+  * Fixed a potential DoS bug (introduced by the IPv6 patch)
+  * Bug fixed: aftpd does not reply properly when there's more than 1 interface
+    Closes: #613582, #258998
+  * Updated SK and FI debconf translations. Closes: #621007, #620175
+  * Bug fixed: Forgets port if Both --port and --bind-address are used. 
+    Closes: #622840
+
+ -- Ludovic Drolez <ldrolez@debian.org>  Wed, 14 Sep 2011 17:36:24 +0200
+
+atftp (0.7.dfsg-10) unstable; urgency=low
+
+  * Ack previous NMUs
+  * Updated Vietnamese and Danish debconf translation.
+    Closes: #601574, #608446
+  * Documentation fix. Closes: #540323
+  * Fixed the error return value on put operation. Closes: #575831
+  * Fixed the disk full error. Closes: #606969
+
+ -- Ludovic Drolez <ldrolez@debian.org>  Mon, 28 Mar 2011 12:53:10 +0200
+
 atftp (0.7.dfsg-9.3) unstable; urgency=low
 
   * Non-maintainer upload.

@@ -13,6 +13,7 @@ you want 'dpkg-reconfigure atftpd' to create /etc/default/atftpd or
 Remember that you must give the directory appropriate permissions in order 
 to be able to read/write files according to your needs (owner=nobody).
 
-The /srv/tftp directory is not created by the package. You need to
-create it and give appropriate permissions by hand.
 
+
+Command used to tar the GIT source:
+git archive master |tar --delete debian/ | gzip > ../atftp-0.7.git`date '+%Y%m%d'`.tar.gz

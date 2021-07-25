@@ -61,7 +61,7 @@ atftp (0.7.dfsg-11) unstable; urgency=low
   * Bug fixed: aftpd does not reply properly when there's more than 1 interface
     Closes: #613582, #258998
   * Updated SK and FI debconf translations. Closes: #621007, #620175
-  * Bug fixed: Forgets port if Both --port and --bind-address are used. 
+  * Bug fixed: Forgets port if Both --port and --bind-address are used.
     Closes: #622840
 
  -- Ludovic Drolez <ldrolez@debian.org>  Wed, 14 Sep 2011 17:36:24 +0200
@@ -80,7 +80,7 @@ atftp (0.7.dfsg-10) unstable; urgency=low
 atftp (0.7.dfsg-9.3) unstable; urgency=low
 
   * Non-maintainer upload.
-  * Apply patch listen on requested port when in daemon mode.  
+  * Apply patch listen on requested port when in daemon mode.
     Thanks to Len Sorensen.  (Closes: #609813)
 
  -- tony mancill <tmancill@debian.org>  Wed, 12 Jan 2011 20:58:05 -0800
@@ -119,7 +119,7 @@ atftp (0.7.dfsg-8) unstable; urgency=low
   * Updated cs.po. Closes: #534959
   * Updated config.sub .guess. Closes: #536295
   * Fixed a typo in the help screen. Closes: #537405
-  * Make sure we have the --daemon option before starting atftpd. 
+  * Make sure we have the --daemon option before starting atftpd.
     Closes: #535604
 
  -- Ludovic Drolez <ldrolez@debian.org>  Tue, 21 Aug 2009 17:03:24 +0200
@@ -158,7 +158,7 @@ atftp (0.7.dfsg-4) unstable; urgency=medium
   * Choosed /var/lib/tftpboot as default tftp directory, and removed
     the provides field. Closes: #455263, #411322
   * Moved the watch file. Closes: #449674
-  * Fixed incorrect options handling thanks to Hollis Blanchard. 
+  * Fixed incorrect options handling thanks to Hollis Blanchard.
     Closes: #332621
   * Updated pt.po. Closes: #443653
 
@@ -209,7 +209,7 @@ atftp (0.7.dfsg-1) unstable; urgency=medium
     Closes: #388295
   * Bump Standards-Version to 3.7.2.
   * Add debconf-updatepo to the rules.
-  * Russian translation of debconf messages thanks to Yuri Kozlov. 
+  * Russian translation of debconf messages thanks to Yuri Kozlov.
     Closes: #368498
 
  -- Ludovic Drolez <ldrolez@debian.org>  Mon,  2 Oct 2006 00:31:23 +0200
@@ -279,7 +279,7 @@ atftp (0.7-5) unstable; urgency=high
   * Ugency=high because of a RC bug fixed.
   * Removed a bashism in the postinst. Closes: #289633
   * Czech po-debconf translation added by Miroslav Kure. Closes: #288014
-  * Danish po-debconf translation added by Morten Brix Pedersen. 
+  * Danish po-debconf translation added by Morten Brix Pedersen.
     Closes: #288133
   * Copyright fixed. Closes: #290062
 
@@ -311,7 +311,7 @@ atftp (0.7-2) unstable; urgency=medium
     Urgency set to medium because of this bug.
   * Typos in description corrected. Closes: #272565
   * Dutch debconf translation added. Closes: #245913
-  * Debconf: removed the initial question and changed priority 
+  * Debconf: removed the initial question and changed priority
     levels. Closes: #266329
 
  -- Ludovic Drolez <ldrolez@debian.org>  Sun, 26 Sep 2004 14:25:40 +0200
@@ -342,7 +342,7 @@ atftp (0.6.1) unstable; urgency=low
   * Fixed French translations for real this time (Closes: #136339).
 
  -- Remi Lefebvre <remi@debian.org>  Sun, 13 Apr 2002 14:09:23 -0500
- 
+
 atftp (0.6) unstable; urgency=low
 
   * Update of German translations (Thanks to Christian Neumair)

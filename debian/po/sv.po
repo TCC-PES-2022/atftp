@@ -38,8 +38,8 @@ msgid ""
 "usage server."
 msgstr ""
 "atftpd kan startas av inetd superserver eller som en daemon och hantera "
-"inkommande anslutningar på egen hand. Den senare rekommenderas för de system "
-"som kräver hög prestanda."
+"inkommande anslutningar pÃ¥ egen hand. Den senare rekommenderas fÃ¶r de system "
+"som krÃ¤ver hÃ¶g prestanda."
 
 #. Type: string
 #. Description
@@ -51,38 +51,38 @@ msgstr "Tid till avslut:"
 #. Description
 #: ../atftpd.templates:2001
 msgid "How many seconds the main thread waits before exiting."
-msgstr "Hur många sekunder huvudtråden väntar innan den avslutas."
+msgstr "Hur mÃ¥nga sekunder huvudtrÃ¥den vÃ¤ntar innan den avslutas."
 
 #. Type: string
 #. Description
 #: ../atftpd.templates:3001
 msgid "Retry timeout:"
-msgstr "Tid mellan försök:"
+msgstr "Tid mellan fÃ¶rsÃ¶k:"
 
 #. Type: string
 #. Description
 #: ../atftpd.templates:3001
 msgid "How many seconds to wait for a reply before retransmitting a packet."
 msgstr ""
-"Hur många sekunder vi väntar på ett svar innan vi skickar paketet igen."
+"Hur mÃ¥nga sekunder vi vÃ¤ntar pÃ¥ ett svar innan vi skickar paketet igen."
 
 #. Type: string
 #. Description
 #: ../atftpd.templates:4001
 msgid "Maximum number of threads:"
-msgstr "Maximalt antal trådar:"
+msgstr "Maximalt antal trÃ¥dar:"
 
 #. Type: string
 #. Description
 #: ../atftpd.templates:4001
 msgid "Maximum number of concurrent threads that can be running."
-msgstr "Maximalt antal trådar som kan köras parallellt."
+msgstr "Maximalt antal trÃ¥dar som kan kÃ¶ras parallellt."
 
 #. Type: select
 #. Description
 #: ../atftpd.templates:5001
 msgid "Verbosity level:"
-msgstr "Förklaringsnivå:"
+msgstr "FÃ¶rklaringsnivÃ¥:"
 
 #. Type: select
 #. Description
@@ -91,50 +91,50 @@ msgid ""
 "Level of logging. 7 logs everything including debug logs. 1 will log only "
 "the system critical logs. 5 (LOG_NOTICE) is the default value."
 msgstr ""
-"Hur informativ loggarna är. 7 loggar allt. 1 loggar bara systemkritiska "
-"meddelanden. 5 (LOG_NOTICE) är standardvärdet."
+"Hur informativ loggarna Ã¤r. 7 loggar allt. 1 loggar bara systemkritiska "
+"meddelanden. 5 (LOG_NOTICE) Ã¤r standardvÃ¤rdet."
 
 #. Type: boolean
 #. Description
 #: ../atftpd.templates:6001
 msgid "Enable 'timeout' support?"
-msgstr "Aktivera 'timeout' stöd?"
+msgstr "Aktivera 'timeout' stÃ¶d?"
 
 #. Type: boolean
 #. Description
 #: ../atftpd.templates:7001
 msgid "Enable 'tsize' support?"
-msgstr "Aktivera 'tsize' stöd?"
+msgstr "Aktivera 'tsize' stÃ¶d?"
 
 #. Type: boolean
 #. Description
 #: ../atftpd.templates:8001
 msgid "Enable 'block size' support?"
-msgstr "Aktivera 'block size' stöd?"
+msgstr "Aktivera 'block size' stÃ¶d?"
 
 #. Type: boolean
 #. Description
 #: ../atftpd.templates:9001
 msgid "Enable multicast support?"
-msgstr "Aktivera multicast stöd?"
+msgstr "Aktivera multicast stÃ¶d?"
 
 #. Type: string
 #. Description
 #: ../atftpd.templates:10001
 msgid "TTL for multicast packets:"
-msgstr "TTL för multicast-paket"
+msgstr "TTL fÃ¶r multicast-paket"
 
 #. Type: string
 #. Description
 #: ../atftpd.templates:11001
 msgid "Port to listen for tftp request:"
-msgstr "Port för att lyssna på tftp anslutningar:"
+msgstr "Port fÃ¶r att lyssna pÃ¥ tftp anslutningar:"
 
 #. Type: string
 #. Description
 #: ../atftpd.templates:12001
 msgid "Port range for multicast file transfer:"
-msgstr "Portrymd för multicast-överföringar:"
+msgstr "Portrymd fÃ¶r multicast-Ã¶verfÃ¶ringar:"
 
 #. Type: string
 #. Description
@@ -143,15 +143,15 @@ msgid ""
 "Multicast transfer will use any available port in a given set. For example, "
 "\"2000-2003, 3000\" allow atftpd to use port 2000 to 2003 and 3000."
 msgstr ""
-"Multicast-överföring kommer att använda de tillgängliga portar som angivets. "
-"Till exempel, \"2000-2003, 3000\" kommer atftpd att använda portarna 2000 "
+"Multicast-Ã¶verfÃ¶ring kommer att anvÃ¤nda de tillgÃ¤ngliga portar som angivets. "
+"Till exempel, \"2000-2003, 3000\" kommer atftpd att anvÃ¤nda portarna 2000 "
 "till 2003 och 3000."
 
 #. Type: string
 #. Description
 #: ../atftpd.templates:13001
 msgid "Address range for multicast transfer:"
-msgstr "Adressrymd för multicast-överföring:"
+msgstr "Adressrymd fÃ¶r multicast-Ã¶verfÃ¶ring:"
 
 #. Type: string
 #. Description
@@ -160,14 +160,14 @@ msgid ""
 "Multicast transfer will use any available addresses from a given set of "
 "addresses. Syntax is \"a.b.c.d-d,a.b.c.d,...\""
 msgstr ""
-"Multicast-överföring kommer att använda adresser ur adressrymden som "
-"specificeras enligt följande, \"a.b.c.d-d,a.b.c.d,...\""
+"Multicast-Ã¶verfÃ¶ring kommer att anvÃ¤nda adresser ur adressrymden som "
+"specificeras enligt fÃ¶ljande, \"a.b.c.d-d,a.b.c.d,...\""
 
 #. Type: boolean
 #. Description
 #: ../atftpd.templates:14001
 msgid "Log to file instead of syslog?"
-msgstr "Logga till fil istället för syslog?"
+msgstr "Logga till fil istÃ¤llet fÃ¶r syslog?"
 
 #. Type: boolean
 #. Description
@@ -176,8 +176,8 @@ msgid ""
 "If your server does intensive tftp file serving, it is a good idea to  "
 "accept here. That will avoid cluttering your syslog with tftpd logs."
 msgstr ""
-"Om din server utför många tftpöverföringar rekomenderas att du väljer detta "
-"alternativ för att undvika att fylla syslog med tftpd-information."
+"Om din server utfÃ¶r mÃ¥nga tftpÃ¶verfÃ¶ringar rekomenderas att du vÃ¤ljer detta "
+"alternativ fÃ¶r att undvika att fylla syslog med tftpd-information."
 
 #. Type: string
 #. Description
@@ -193,7 +193,7 @@ msgid ""
 "the user 'nobody' and group 'nogroup'."
 msgstr ""
 "Filen som atftpd skriver sin logg till. Filen kommer att vara skribar av "
-"användaren 'nobody' och gruppen 'nogroup'."
+"anvÃ¤ndaren 'nobody' och gruppen 'nogroup'."
 
 #. Type: string
 #. Description
@@ -208,5 +208,5 @@ msgid ""
 "The directory tree from where atftpd can serve files. That directory must be "
 "world readable."
 msgstr ""
-"Katalogträdet med filer som atftpd erbjuder. Katalogen måste vara läsbar av "
+"KatalogtrÃ¤det med filer som atftpd erbjuder. Katalogen mÃ¥ste vara lÃ¤sbar av "
 "alla."

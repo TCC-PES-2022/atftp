@@ -28,7 +28,7 @@ msgstr ""
 #. Description
 #: ../atftpd.templates:1001
 msgid "Should the server be started by inetd?"
-msgstr "Faut-il démarrer le serveur via inetd ?"
+msgstr "Faut-il dÃ©marrer le serveur via inetdÂ ?"
 
 #. Type: boolean
 #. Description
@@ -38,15 +38,15 @@ msgid ""
 "incoming connections by itself. The latter is only recommend for very high "
 "usage server."
 msgstr ""
-"Atftpd peut être démarré par le super-serveur inetd ou en serveur "
-"indépendant pour qu'il gère lui-même les connexions entrantes. Ce dernier "
-"mode n'est recommandé que pour les serveurs fortement sollicités."
+"Atftpd peut Ãªtre dÃ©marrÃ© par le super-serveur inetd ou en serveur "
+"indÃ©pendant pour qu'il gÃ¨re lui-mÃªme les connexions entrantes. Ce dernier "
+"mode n'est recommandÃ© que pour les serveurs fortement sollicitÃ©s."
 
 #. Type: string
 #. Description
 #: ../atftpd.templates:2001
 msgid "Server timeout:"
-msgstr "Délai d'attente (« timeout ») du serveur :"
+msgstr "DÃ©lai d'attente (Â«Â timeoutÂ Â») du serveurÂ :"
 
 #. Type: string
 #. Description
@@ -54,39 +54,39 @@ msgstr "Délai d'attente (« timeout ») du serveur :"
 msgid "How many seconds the main thread waits before exiting."
 msgstr ""
 "Veuillez indiquer le nombre de secondes pendant lesquelles la connexion "
-"principale doit être maintenue avant d'être interrompue."
+"principale doit Ãªtre maintenue avant d'Ãªtre interrompue."
 
 #. Type: string
 #. Description
 #: ../atftpd.templates:3001
 msgid "Retry timeout:"
-msgstr "Délai de relance (« retry timeout ») :"
+msgstr "DÃ©lai de relance (Â«Â retry timeoutÂ Â»)Â :"
 
 #. Type: string
 #. Description
 #: ../atftpd.templates:3001
 msgid "How many seconds to wait for a reply before retransmitting a packet."
 msgstr ""
-"Veuillez indiquer le délai d'attente d'une réponse, en secondes, avant la "
+"Veuillez indiquer le dÃ©lai d'attente d'une rÃ©ponse, en secondes, avant la "
 "retransmission d'un paquet."
 
 #. Type: string
 #. Description
 #: ../atftpd.templates:4001
 msgid "Maximum number of threads:"
-msgstr "Nombre maximal de connexions :"
+msgstr "Nombre maximal de connexionsÂ :"
 
 #. Type: string
 #. Description
 #: ../atftpd.templates:4001
 msgid "Maximum number of concurrent threads that can be running."
-msgstr "Veuillez indiquer le nombre maximal de connexions simultanées."
+msgstr "Veuillez indiquer le nombre maximal de connexions simultanÃ©es."
 
 #. Type: select
 #. Description
 #: ../atftpd.templates:5001
 msgid "Verbosity level:"
-msgstr "Niveau de détail souhaité :"
+msgstr "Niveau de dÃ©tail souhaitÃ©Â :"
 
 #. Type: select
 #. Description
@@ -95,52 +95,52 @@ msgid ""
 "Level of logging. 7 logs everything including debug logs. 1 will log only "
 "the system critical logs. 5 (LOG_NOTICE) is the default value."
 msgstr ""
-"Veuillez choisir le niveau de détail pour les informations enregistrées dans "
-"les journaux. « 7 » enregistre des informations de débogage. « 1 » "
-"n'enregistre que les informations critiques. La valeur par défaut est "
-"« 5 » (LOG_NOTICE)."
+"Veuillez choisir le niveau de dÃ©tail pour les informations enregistrÃ©es dans "
+"les journaux. Â«Â 7Â Â» enregistre des informations de dÃ©bogage. Â«Â 1Â Â» "
+"n'enregistre que les informations critiques. La valeur par dÃ©faut est "
+"Â«Â 5Â Â» (LOG_NOTICE)."
 
 #. Type: boolean
 #. Description
 #: ../atftpd.templates:6001
 msgid "Enable 'timeout' support?"
-msgstr "Faut-il activer la gestion de l'option TFTP « timeout » ?"
+msgstr "Faut-il activer la gestion de l'option TFTP Â«Â timeoutÂ Â»Â ?"
 
 #. Type: boolean
 #. Description
 #: ../atftpd.templates:7001
 msgid "Enable 'tsize' support?"
-msgstr "Faut-il activer la gestion de l'option TFTP « tsize » ?"
+msgstr "Faut-il activer la gestion de l'option TFTP Â«Â tsizeÂ Â»Â ?"
 
 #. Type: boolean
 #. Description
 #: ../atftpd.templates:8001
 msgid "Enable 'block size' support?"
-msgstr "Faut-il activer la gestion de l'option TFTP « block size » ?"
+msgstr "Faut-il activer la gestion de l'option TFTP Â«Â block sizeÂ Â»Â ?"
 
 #. Type: boolean
 #. Description
 #: ../atftpd.templates:9001
 msgid "Enable multicast support?"
-msgstr "Faut-il activer la gestion de la multidiffusion (« multicast ») ?"
+msgstr "Faut-il activer la gestion de la multidiffusion (Â«Â multicastÂ Â»)Â ?"
 
 #. Type: string
 #. Description
 #: ../atftpd.templates:10001
 msgid "TTL for multicast packets:"
-msgstr "TTL pour les paquets multicast :"
+msgstr "TTL pour les paquets multicastÂ :"
 
 #. Type: string
 #. Description
 #: ../atftpd.templates:11001
 msgid "Port to listen for tftp request:"
-msgstr "Port d'écoute pour les requêtes tftp :"
+msgstr "Port d'Ã©coute pour les requÃªtes tftpÂ :"
 
 #. Type: string
 #. Description
 #: ../atftpd.templates:12001
 msgid "Port range for multicast file transfer:"
-msgstr "Intervalle de ports pour le transfert de fichiers en multidiffusion :"
+msgstr "Intervalle de ports pour le transfert de fichiers en multidiffusionÂ :"
 
 #. Type: string
 #. Description
@@ -149,15 +149,15 @@ msgid ""
 "Multicast transfer will use any available port in a given set. For example, "
 "\"2000-2003, 3000\" allow atftpd to use port 2000 to 2003 and 3000."
 msgstr ""
-"Le transfert de fichiers en multidiffusion (« multicast ») utilisera tout "
-"port disponible d'un ensemble donné. Par exemple, « 2000-2003, 3000 » permet "
-"à atftpd d'utiliser les ports 2000 à 2003 et 3000."
+"Le transfert de fichiers en multidiffusion (Â«Â multicastÂ Â») utilisera tout "
+"port disponible d'un ensemble donnÃ©. Par exemple, Â«Â 2000-2003, 3000Â Â» permet "
+"Ã  atftpd d'utiliser les ports 2000 Ã  2003 et 3000."
 
 #. Type: string
 #. Description
 #: ../atftpd.templates:13001
 msgid "Address range for multicast transfer:"
-msgstr "Intervalle d'adresses pour le transfert en multidiffusion :"
+msgstr "Intervalle d'adresses pour le transfert en multidiffusionÂ :"
 
 #. Type: string
 #. Description
@@ -167,14 +167,14 @@ msgid ""
 "addresses. Syntax is \"a.b.c.d-d,a.b.c.d,...\""
 msgstr ""
 "Le transfert en multidiffusion va utiliser n'importe quelle adresse "
-"disponible d'un ensemble donné. La syntaxe est « a.b.c.d-d,a.b.c.d,... »."
+"disponible d'un ensemble donnÃ©. La syntaxe est Â«Â a.b.c.d-d,a.b.c.d,...Â Â»."
 
 #. Type: boolean
 #. Description
 #: ../atftpd.templates:14001
 msgid "Log to file instead of syslog?"
 msgstr ""
-"Faut-il enregistrer les messages dans un fichier à la place de syslog ?"
+"Faut-il enregistrer les messages dans un fichier Ã  la place de syslogÂ ?"
 
 #. Type: boolean
 #. Description
@@ -183,15 +183,15 @@ msgid ""
 "If your server does intensive tftp file serving, it is a good idea to  "
 "accept here. That will avoid cluttering your syslog with tftpd logs."
 msgstr ""
-"Si votre serveur est utilisé intensivement comme serveur tftp, il est "
-"conseillé de choisir cette option. Ceci évitera d'encombrer le journal "
+"Si votre serveur est utilisÃ© intensivement comme serveur tftp, il est "
+"conseillÃ© de choisir cette option. Ceci Ã©vitera d'encombrer le journal "
 "syslog avec les journaux tftpd."
 
 #. Type: string
 #. Description
 #: ../atftpd.templates:15001
 msgid "Log file:"
-msgstr "Fichier journal :"
+msgstr "Fichier journalÂ :"
 
 #. Type: string
 #. Description
@@ -201,14 +201,14 @@ msgid ""
 "the user 'nobody' and group 'nogroup'."
 msgstr ""
 "Veuillez indiquer le fichier dans lequel les informations seront "
-"enregistrées. Ce fichier sera modifiable par l'utilisateur « nobody » et le "
-"groupe « nogroup »."
+"enregistrÃ©es. Ce fichier sera modifiable par l'utilisateur Â«Â nobodyÂ Â» et le "
+"groupe Â«Â nogroupÂ Â»."
 
 #. Type: string
 #. Description
 #: ../atftpd.templates:16001
 msgid "Base directory:"
-msgstr "Répertoire racine :"
+msgstr "RÃ©pertoire racineÂ :"
 
 #. Type: string
 #. Description
@@ -217,5 +217,5 @@ msgid ""
 "The directory tree from where atftpd can serve files. That directory must be "
 "world readable."
 msgstr ""
-"Veuillez indiquer le répertoire à partir duquel atftpd sert les fichiers. Ce "
-"répertoire doit pouvoir être lu par tous."
+"Veuillez indiquer le rÃ©pertoire Ã  partir duquel atftpd sert les fichiers. Ce "
+"rÃ©pertoire doit pouvoir Ãªtre lu par tous."

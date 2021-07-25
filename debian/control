@@ -2,6 +2,7 @@ Source: atftp
 Section: net
 Priority: optional
 Maintainer: Ludovic Drolez <ldrolez@debian.org>
+Uploaders: Andreas B. Mundt <andi@debian.org>
 Homepage: https://sourceforge.net/projects/atftp
 Rules-Requires-Root: no
 Build-Depends: debhelper-compat (= 13),

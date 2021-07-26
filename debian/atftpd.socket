@@ -1,0 +1,8 @@
+[Unit]
+Description=Advanced TFTP Server activation socket
+
+[Socket]
+ListenDatagram=69
+
+[Install]
+WantedBy=sockets.target

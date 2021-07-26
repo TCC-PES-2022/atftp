@@ -1,0 +1,13 @@
+[Unit]
+Description=Advanced TFTP Server
+Requires=atftpd.socket
+Documentation=man:in.tftpd
+
+[Service]
+EnvironmentFile=/etc/default/atftpd
+ExecStart=/usr/sbin/in.tftpd $OPTIONS
+StandardInput=socket
+DynamicUser=yes
+
+[Install]
+Also=atftpd.socket

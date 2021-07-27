@@ -3,14 +3,16 @@
 # TODO:
 #  - error checking on values provided by debconf frontend
 
-BASEDIR=/srv/tftp
+BASEDIR="/srv/tftp"
+CONFIGFILE="/etc/default/atftpd"
+SYSDSOCK="/usr/lib/systemd/system/atftpd.socket"
 
 . /usr/share/debconf/confmodule
-db_version 2.0
 
 db_get atftpd/port
 if [ "$RET" ]; then
-    TFTPD_PORT="--port $RET"
+    PORT="$RET"
+    TFTPD_PORT="--port $PORT"
 fi
 
 db_get atftpd/tftpd-timeout
@@ -76,9 +78,21 @@ if [ "$RET" ]; then
     fi
 fi
 
-if [ ! -f /etc/default/atftpd ]; then
-	echo "OPTIONS=\"$DAEMON $TFTPD_PORT $RETRY_TIMEOUT $NOTIMEOUT $NOTSIZE $NOBLKSIZE $NOMCAST \
-$MCASTPORT $MCASTADDR $MCASTTTL $MAXTHREAD $VERBOSITY $LOGFILE $BASEDIR\""|tr -s " " >> /etc/default/atftpd
+
+OPTIONS="$(echo $TFTPD_PORT $TFTPD_TIMEOUT $RETRY_TIMEOUT $NOTIMEOUT $NOTSIZE $NOBLKSIZE \
+	$NOMCAST $MCASTPORT $MCASTADDR $MCASTTTL $MAXTHREAD $VERBOSITY $BASEDIR | tr -s ' ')"
+
+if [ ! -f "$CONFIGFILE" ]; then
+	cat <<EOF > "$CONFIGFILE"
+## Options for atftpd:
+
+OPTIONS=\"$OPTIONS\"
+EOF
+else
+	grep -Eq '^ *OPTIONS=' $CONFIGFILE || echo "OPTIONS=" >> $CONFIGFILE
+	sed -ie "s|^ *OPTIONS=.*|OPTIONS=\"$OPTIONS\"|" $CONFIGFILE
 fi
+
+[ -f "$SYSDSOCK" ] && sed -ie "s|^ *ListenDatagram=.*$|ListenDatagram=$PORT|" "$SYSDSOCK"
 
 #DEBHELPER#

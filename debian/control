@@ -27,11 +27,9 @@ Description: advanced TFTP client
 
 Package: atftpd
 Architecture: any
-Depends: lsb-base, update-inetd, ${misc:Depends}, ${shlibs:Depends}
+Depends: ${misc:Depends}, ${shlibs:Depends}
 Pre-Depends: ${misc:Pre-Depends}
-Recommends: inet-superserver
 Conflicts: tftpd
-Suggests: logrotate
 Description: advanced TFTP server
  Multi-threaded TFTP server implementing all options (option extension and
  multicast) as specified in RFC1350, RFC2090, RFC2347, RFC2348 and RFC2349.

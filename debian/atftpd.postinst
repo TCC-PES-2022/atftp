@@ -93,6 +93,6 @@ else
 	sed -ie "s|^ *OPTIONS=.*|OPTIONS=\"$OPTIONS\"|" $CONFIGFILE
 fi
 
-[ -f "$SYSDSOCK" ] && sed -ie "s|^ *ListenDatagram=.*$|ListenDatagram=$PORT|" "$SYSDSOCK"
+[ -f "$SYSDSOCK" ] && sed -ie "s|^ *ListenDatagram=0\.0\.0\.0.*$|ListenDatagram=0.0.0.0:$PORT|" "$SYSDSOCK"
 
 #DEBHELPER#

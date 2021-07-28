@@ -1,8 +1,19 @@
-atftp (0.7.4-1) UNRELEASED; urgency=medium
+atftp (0.7.git20210202-1) UNRELEASED; urgency=medium
 
-  * New upstream release and packaging.
+  * New upstream release (0.7.4) and packaging.
+  * Wrap-and-sort, switch to quilt, update versions.
+  * Update watch file.
+  * Convert some files to UTF-8 encoding.
+  * Add myself to Uploaders field.
+  * Add canonical packaging repo URLs.
+  * Add autopkgtest: Run upstream test suite.
+  * Add dependency needed for the package tests.
+  * Fix some lintian warnings.
+  * Provide draft systemd service files.
+  * Remove helper packages only needed when using a an inet-superserver.
+  * Remove the automagic inet-superserver configuration.
 
- -- Andreas B. Mundt <andi@debian.org>  Sat, 24 Jul 2021 22:35:38 +0200
+ -- Andreas B. Mundt <andi@debian.org>  Wed, 28 Jul 2021 18:38:48 +0200
 
 atftp (0.7.git20120829-3.2) unstable; urgency=medium
 

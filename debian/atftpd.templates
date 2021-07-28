@@ -68,6 +68,20 @@ _Description: Address range for multicast transfer:
  Multicast transfer will use any available addresses from a given set of
  addresses. Syntax is "a.b.c.d-d,a.b.c.d,..."
 
+Template: atftpd/logtofile
+Type: boolean
+Default: false
+_Description: Log to file instead of syslog?
+ If your server does intensive tftp file serving, it is a good idea to
+ accept here. That will avoid cluttering your syslog with tftpd logs.
+
+Template: atftpd/logfile
+Type: string
+Default: /var/log/atftpd.log
+_Description: Log file:
+ A file where atftpd will write its logs. This file will be made writable for
+ the user 'nobody' and group 'nogroup'.
+
 Template: atftpd/basedir
 Type: string
 Default: /srv/tftp

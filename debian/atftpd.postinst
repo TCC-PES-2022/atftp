@@ -69,18 +69,48 @@ if [ "$RET" ]; then
     VERBOSITY="--verbose=$RET"
 fi
 
+db_get atftpd/logtofile
+if [ "$RET" = "true" ]; then
+    db_get atftpd/logfile
+    if [ "$RET" ]; then
+        LOGFILE="--logfile $RET"
+        # if the file doesn't exist, create it
+        if [ ! -f $RET ]; then
+            touch $RET
+            chown nobody:nogroup $RET
+            chmod 640 $RET
+        fi
+        # create the logrotate file
+        if [ ! -f /etc/logrotate.d/atftpd ] ; then
+            cat >/etc/logrotate.d/atftpd <<EOF
+$RET {
+    daily
+    rotate 5
+    compress
+    copytruncate
+    missingok
+}
+EOF
+        fi
+    fi
+else
+    LOGFILE=""
+    # remove the logrotate file
+    rm -f /etc/logrotate.d/atftpd
+fi
+
 db_get atftpd/basedir
 if [ "$RET" ]; then
     BASEDIR="$RET"
     if [ ! -d $BASEDIR ]; then
         mkdir $BASEDIR
-        chown nobody:nobody $BASEDIR
+        chown nobody:nogroup $BASEDIR
     fi
 fi
 
 
 OPTIONS="$(echo $TFTPD_PORT $TFTPD_TIMEOUT $RETRY_TIMEOUT $NOTIMEOUT $NOTSIZE $NOBLKSIZE \
-	$NOMCAST $MCASTPORT $MCASTADDR $MCASTTTL $MAXTHREAD $VERBOSITY $BASEDIR | tr -s ' ')"
+	$NOMCAST $MCASTPORT $MCASTADDR $MCASTTTL $MAXTHREAD $VERBOSITY $LOGFILE $BASEDIR | tr -s ' ')"
 
 if [ ! -f "$CONFIGFILE" ]; then
 	cat <<EOF > "$CONFIGFILE"

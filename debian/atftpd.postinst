@@ -81,7 +81,8 @@ if [ "$RET" = "true" ]; then
             chmod 640 $RET
         fi
         # create the logrotate file
-        if [ ! -f /etc/logrotate.d/atftpd ] ; then
+        if [ ! -f /etc/logrotate.d/atftpd ] || \
+		! grep -q "^$RET " /etc/logrotate.d/atftpd 2>&1 > /dev/null ; then
             cat >/etc/logrotate.d/atftpd <<EOF
 $RET {
     daily

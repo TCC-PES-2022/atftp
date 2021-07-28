@@ -16,7 +16,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: atftp 0.7.dfsg-1\n"
 "Report-Msgid-Bugs-To: atftp@packages.debian.org\n"
-"POT-Creation-Date: 2021-07-27 21:58+0200\n"
+"POT-Creation-Date: 2021-07-28 21:48+0200\n"
 "PO-Revision-Date: 2006-12-12 01:47+0900\n"
 "Last-Translator: Atsushi Shimono <shimono@mozilla.gr.jp>\n"
 "Language-Team: Japanese <debian-japanese@lists.debian.org>\n"
@@ -146,15 +146,47 @@ msgstr ""
 "マルチキャスト転送は送信先のアドレスに設定されたアドレスを利用します。設定可"
 "能なシンタックスは、\"a.b.c.d-d,a.b.c.d,...\"です。"
 
-#. Type: string
+#. Type: boolean
 #. Description
 #: ../atftpd.templates:13001
+msgid "Log to file instead of syslog?"
+msgstr "ログを syslog でなくファイルに書き出しますか？"
+
+#. Type: boolean
+#. Description
+#: ../atftpd.templates:13001
+msgid ""
+"If your server does intensive tftp file serving, it is a good idea to accept "
+"here. That will avoid cluttering your syslog with tftpd logs."
+msgstr ""
+"サーバが大量の tftp 転送を行う場合、これを有効にするのはよいアイデアです。"
+"tftpd のログによって syslog が乱雑になることがなくなります。"
+
+#. Type: string
+#. Description
+#: ../atftpd.templates:14001
+msgid "Log file:"
+msgstr "ログファイル名 :"
+
+#. Type: string
+#. Description
+#: ../atftpd.templates:14001
+msgid ""
+"A file where atftpd will write its logs. This file will be made writable for "
+"the user 'nobody' and group 'nogroup'."
+msgstr ""
+"aftpd がログを書き出すファイルです。このファイルは、'nobody' ユーザと "
+"'nobody' グループに対して書き込み可能な状態で作成されます。"
+
+#. Type: string
+#. Description
+#: ../atftpd.templates:15001
 msgid "Base directory:"
 msgstr "ベースディレクトリ:"
 
 #. Type: string
 #. Description
-#: ../atftpd.templates:13001
+#: ../atftpd.templates:15001
 msgid ""
 "The directory tree from where atftpd can serve files. That directory must be "
 "world readable."
@@ -172,23 +204,3 @@ msgstr ""
 #~ msgstr ""
 #~ "atftpd は、inetd から起動するか、もしくはデーモンとして動作し接続を自分で"
 #~ "処理することもできます。後者は、高負荷のサーバで推奨されます。"
-
-#~ msgid "Log to file instead of syslog?"
-#~ msgstr "ログを syslog でなくファイルに書き出しますか？"
-
-#~ msgid ""
-#~ "If your server does intensive tftp file serving, it is a good idea to  "
-#~ "accept here. That will avoid cluttering your syslog with tftpd logs."
-#~ msgstr ""
-#~ "サーバが大量の tftp 転送を行う場合、これを有効にするのはよいアイデアです。"
-#~ "tftpd のログによって syslog が乱雑になることがなくなります。"
-
-#~ msgid "Log file:"
-#~ msgstr "ログファイル名 :"
-
-#~ msgid ""
-#~ "A file where atftpd will write its logs. This file will be made writable "
-#~ "for the user 'nobody' and group 'nogroup'."
-#~ msgstr ""
-#~ "aftpd がログを書き出すファイルです。このファイルは、'nobody' ユーザと "
-#~ "'nobody' グループに対して書き込み可能な状態で作成されます。"

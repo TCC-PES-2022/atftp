@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: atftp 0.7.dfsg-9.2\n"
 "Report-Msgid-Bugs-To: atftp@packages.debian.org\n"
-"POT-Creation-Date: 2021-07-27 21:58+0200\n"
+"POT-Creation-Date: 2021-07-28 21:48+0200\n"
 "PO-Revision-Date: 2010-10-27 22:46+1030\n"
 "Last-Translator: Clytie Siddall <clytie@riverland.net.au>\n"
 "Language-Team: Vietnamese <vi-VN@googlegroups.com>\n"
@@ -138,15 +138,47 @@ msgstr ""
 "Chức năng truyền một-nhiều sẽ sử dụng bất cứ địa chỉ sẵn sàng nào trong một "
 "tập hợp đưa ra. Cú pháp là « a.b.c.d-d,a.b.c.d,... »."
 
-#. Type: string
+#. Type: boolean
 #. Description
 #: ../atftpd.templates:13001
+msgid "Log to file instead of syslog?"
+msgstr "Ghi lưu vào tập tin thay cho syslog ?"
+
+#. Type: boolean
+#. Description
+#: ../atftpd.templates:13001
+msgid ""
+"If your server does intensive tftp file serving, it is a good idea to accept "
+"here. That will avoid cluttering your syslog with tftpd logs."
+msgstr ""
+"Nếu máy này có phục vụ rất nhiều tập tin tftp thì khuyên bạn bật tuỳ chọn "
+"này. Nó tránh có sổ theo dõi hệ thống (syslog) đầy bản ghi lưu tftpd."
+
+#. Type: string
+#. Description
+#: ../atftpd.templates:14001
+msgid "Log file:"
+msgstr "Tập tin theo dõi:"
+
+#. Type: string
+#. Description
+#: ../atftpd.templates:14001
+msgid ""
+"A file where atftpd will write its logs. This file will be made writable for "
+"the user 'nobody' and group 'nogroup'."
+msgstr ""
+"Đây là một tập tin vào đó atftpd sẽ ghi lưu thông tin. Tập tin này cấp quyền "
+"ghi cho người dùng « nobody » (không ai) và nhóm « nogroup » (không nhóm)."
+
+#. Type: string
+#. Description
+#: ../atftpd.templates:15001
 msgid "Base directory:"
 msgstr "Thư mục cơ bản:"
 
 #. Type: string
 #. Description
-#: ../atftpd.templates:13001
+#: ../atftpd.templates:15001
 msgid ""
 "The directory tree from where atftpd can serve files. That directory must be "
 "world readable."
@@ -165,24 +197,3 @@ msgstr ""
 #~ "atftpd có thể được khởi chạy bởi siêu trình phục vụ inetd, hoặc chạy làm "
 #~ "trình nền và tự quản lý các kết nối gửi đến. Sự chọn sau chỉ khuyến khích "
 #~ "cho máy phục vụ rất bận."
-
-#~ msgid "Log to file instead of syslog?"
-#~ msgstr "Ghi lưu vào tập tin thay cho syslog ?"
-
-#~ msgid ""
-#~ "If your server does intensive tftp file serving, it is a good idea to  "
-#~ "accept here. That will avoid cluttering your syslog with tftpd logs."
-#~ msgstr ""
-#~ "Nếu máy này có phục vụ rất nhiều tập tin tftp thì khuyên bạn bật tuỳ chọn "
-#~ "này. Nó tránh có sổ theo dõi hệ thống (syslog) đầy bản ghi lưu tftpd."
-
-#~ msgid "Log file:"
-#~ msgstr "Tập tin theo dõi:"
-
-#~ msgid ""
-#~ "A file where atftpd will write its logs. This file will be made writable "
-#~ "for the user 'nobody' and group 'nogroup'."
-#~ msgstr ""
-#~ "Đây là một tập tin vào đó atftpd sẽ ghi lưu thông tin. Tập tin này cấp "
-#~ "quyền ghi cho người dùng « nobody » (không ai) và nhóm « nogroup » (không "
-#~ "nhóm)."

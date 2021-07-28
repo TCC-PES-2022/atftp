@@ -19,7 +19,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: atftp_0.7.dfsg-1\n"
 "Report-Msgid-Bugs-To: atftp@packages.debian.org\n"
-"POT-Creation-Date: 2021-07-27 21:58+0200\n"
+"POT-Creation-Date: 2021-07-28 21:48+0200\n"
 "PO-Revision-Date: 2006-10-05 19:50+0100\n"
 "Last-Translator: Kurt De Bree <kdebree@telenet.be>\n"
 "Language-Team: Debian l10n Dutch <debian-l10n-dutch@lists.debian.org>\n"
@@ -151,15 +151,48 @@ msgstr ""
 "Multicast-overdracht zal elk beschikbaar adres van een gegeven verzameling "
 "adressen gebruiken. De syntax is \"a.b.c.d-d,a.b.c.d,...\""
 
-#. Type: string
+#. Type: boolean
 #. Description
 #: ../atftpd.templates:13001
+msgid "Log to file instead of syslog?"
+msgstr "In bestand bewaren in plaats van in syslog?"
+
+#. Type: boolean
+#. Description
+#: ../atftpd.templates:13001
+msgid ""
+"If your server does intensive tftp file serving, it is a good idea to accept "
+"here. That will avoid cluttering your syslog with tftpd logs."
+msgstr ""
+"Als uw server intensieve tftp-bestandsbediening doet, is het een goed idee "
+"om hier te aanvaarden. Dit zal voorkomen dat uw syslog een warboel wordt van "
+"tftpd-berichten."
+
+#. Type: string
+#. Description
+#: ../atftpd.templates:14001
+msgid "Log file:"
+msgstr "Logbestand:"
+
+#. Type: string
+#. Description
+#: ../atftpd.templates:14001
+msgid ""
+"A file where atftpd will write its logs. This file will be made writable for "
+"the user 'nobody' and group 'nogroup'."
+msgstr ""
+"Een bestand waar atftpd de logboeken in schrijft. Dit bestand zal "
+"schrijfbaar gemaakt worden voor gebruiker 'nobody' en groep 'nogroup'."
+
+#. Type: string
+#. Description
+#: ../atftpd.templates:15001
 msgid "Base directory:"
 msgstr "Basismap:"
 
 #. Type: string
 #. Description
-#: ../atftpd.templates:13001
+#: ../atftpd.templates:15001
 msgid ""
 "The directory tree from where atftpd can serve files. That directory must be "
 "world readable."
@@ -178,24 +211,3 @@ msgstr ""
 #~ "atftpd kan worden gestart door de inetd-superserver of als een "
 #~ "achtergronddienst en zelf binnenkomende verbindingen afhandelen. Dit "
 #~ "laatste wordt enkel aanbevolen voor een zeer veel gebruikte server."
-
-#~ msgid "Log to file instead of syslog?"
-#~ msgstr "In bestand bewaren in plaats van in syslog?"
-
-#~ msgid ""
-#~ "If your server does intensive tftp file serving, it is a good idea to  "
-#~ "accept here. That will avoid cluttering your syslog with tftpd logs."
-#~ msgstr ""
-#~ "Als uw server intensieve tftp-bestandsbediening doet, is het een goed "
-#~ "idee om hier te aanvaarden. Dit zal voorkomen dat uw syslog een warboel "
-#~ "wordt van tftpd-berichten."
-
-#~ msgid "Log file:"
-#~ msgstr "Logbestand:"
-
-#~ msgid ""
-#~ "A file where atftpd will write its logs. This file will be made writable "
-#~ "for the user 'nobody' and group 'nogroup'."
-#~ msgstr ""
-#~ "Een bestand waar atftpd de logboeken in schrijft. Dit bestand zal "
-#~ "schrijfbaar gemaakt worden voor gebruiker 'nobody' en groep 'nogroup'."

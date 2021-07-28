@@ -14,7 +14,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: atftp 0.7-9\n"
 "Report-Msgid-Bugs-To: atftp@packages.debian.org\n"
-"POT-Creation-Date: 2021-07-27 21:58+0200\n"
+"POT-Creation-Date: 2021-07-28 21:48+0200\n"
 "PO-Revision-Date: 2008-10-25 01:31+0100\n"
 "Last-Translator: Martin Bagge <brother@bsnet.se>\n"
 "Language-Team: Swedish <sv@li.org>\n"
@@ -145,15 +145,47 @@ msgstr ""
 "Multicast-överföring kommer att använda adresser ur adressrymden som "
 "specificeras enligt följande, \"a.b.c.d-d,a.b.c.d,...\""
 
-#. Type: string
+#. Type: boolean
 #. Description
 #: ../atftpd.templates:13001
+msgid "Log to file instead of syslog?"
+msgstr "Logga till fil istället för syslog?"
+
+#. Type: boolean
+#. Description
+#: ../atftpd.templates:13001
+msgid ""
+"If your server does intensive tftp file serving, it is a good idea to accept "
+"here. That will avoid cluttering your syslog with tftpd logs."
+msgstr ""
+"Om din server utför många tftpöverföringar rekomenderas att du väljer detta "
+"alternativ för att undvika att fylla syslog med tftpd-information."
+
+#. Type: string
+#. Description
+#: ../atftpd.templates:14001
+msgid "Log file:"
+msgstr "Loggfil:"
+
+#. Type: string
+#. Description
+#: ../atftpd.templates:14001
+msgid ""
+"A file where atftpd will write its logs. This file will be made writable for "
+"the user 'nobody' and group 'nogroup'."
+msgstr ""
+"Filen som atftpd skriver sin logg till. Filen kommer att vara skribar av "
+"användaren 'nobody' och gruppen 'nogroup'."
+
+#. Type: string
+#. Description
+#: ../atftpd.templates:15001
 msgid "Base directory:"
 msgstr "Hemkatalog:"
 
 #. Type: string
 #. Description
-#: ../atftpd.templates:13001
+#: ../atftpd.templates:15001
 msgid ""
 "The directory tree from where atftpd can serve files. That directory must be "
 "world readable."
@@ -172,23 +204,3 @@ msgstr ""
 #~ "atftpd kan startas av inetd superserver eller som en daemon och hantera "
 #~ "inkommande anslutningar på egen hand. Den senare rekommenderas för de "
 #~ "system som kräver hög prestanda."
-
-#~ msgid "Log to file instead of syslog?"
-#~ msgstr "Logga till fil istället för syslog?"
-
-#~ msgid ""
-#~ "If your server does intensive tftp file serving, it is a good idea to  "
-#~ "accept here. That will avoid cluttering your syslog with tftpd logs."
-#~ msgstr ""
-#~ "Om din server utför många tftpöverföringar rekomenderas att du väljer "
-#~ "detta alternativ för att undvika att fylla syslog med tftpd-information."
-
-#~ msgid "Log file:"
-#~ msgstr "Loggfil:"
-
-#~ msgid ""
-#~ "A file where atftpd will write its logs. This file will be made writable "
-#~ "for the user 'nobody' and group 'nogroup'."
-#~ msgstr ""
-#~ "Filen som atftpd skriver sin logg till. Filen kommer att vara skribar av "
-#~ "användaren 'nobody' och gruppen 'nogroup'."

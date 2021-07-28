@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: 0.7.dfsg-1\n"
 "Report-Msgid-Bugs-To: atftp@packages.debian.org\n"
-"POT-Creation-Date: 2021-07-27 21:58+0200\n"
+"POT-Creation-Date: 2021-07-28 21:48+0200\n"
 "PO-Revision-Date: 2007-02-04 23:05+0100\n"
 "Last-Translator: Jordà Polo <jorda@ettin.org>\n"
 "Language-Team: Català <debian-l10n-catalan@lists.debian.org>\n"
@@ -142,15 +142,48 @@ msgstr ""
 "Les transferències multicast utilitzaran qualsevol adreça disponible dins un "
 "cert rang. La sintaxi és «a.b.c.d-d,a.b.c.d,...»."
 
-#. Type: string
+#. Type: boolean
 #. Description
 #: ../atftpd.templates:13001
+msgid "Log to file instead of syslog?"
+msgstr "Voleu enregistrar en un fitxer en lloc d'utilitzar syslog?"
+
+#. Type: boolean
+#. Description
+#: ../atftpd.templates:13001
+msgid ""
+"If your server does intensive tftp file serving, it is a good idea to accept "
+"here. That will avoid cluttering your syslog with tftpd logs."
+msgstr ""
+"Si el vostre servidor suporta una intensa càrrega de transmissió de fitxers "
+"per tftp, seria una bona idea acceptar aquesta opció. Això evitarà emplenar "
+"el syslog amb els registres relacionats amb tftpd."
+
+#. Type: string
+#. Description
+#: ../atftpd.templates:14001
+msgid "Log file:"
+msgstr "Fitxer de registre:"
+
+#. Type: string
+#. Description
+#: ../atftpd.templates:14001
+msgid ""
+"A file where atftpd will write its logs. This file will be made writable for "
+"the user 'nobody' and group 'nogroup'."
+msgstr ""
+"El fitxer on atftpd escriurà els seus registres. L'usuari «nobody» i el grup "
+"«nogroup» tindran permisos d'escriptura sobre aquest fitxer."
+
+#. Type: string
+#. Description
+#: ../atftpd.templates:15001
 msgid "Base directory:"
 msgstr "Directori base:"
 
 #. Type: string
 #. Description
-#: ../atftpd.templates:13001
+#: ../atftpd.templates:15001
 msgid ""
 "The directory tree from where atftpd can serve files. That directory must be "
 "world readable."
@@ -169,24 +202,3 @@ msgstr ""
 #~ "És possible iniciar atftpd mitjançant el superservidor inetd o com a "
 #~ "dimoni, deixant que aquest controli les connexions entrants. La darrera "
 #~ "opció només es recomana en servidors amb molta càrrega."
-
-#~ msgid "Log to file instead of syslog?"
-#~ msgstr "Voleu enregistrar en un fitxer en lloc d'utilitzar syslog?"
-
-#~ msgid ""
-#~ "If your server does intensive tftp file serving, it is a good idea to  "
-#~ "accept here. That will avoid cluttering your syslog with tftpd logs."
-#~ msgstr ""
-#~ "Si el vostre servidor suporta una intensa càrrega de transmissió de "
-#~ "fitxers per tftp, seria una bona idea acceptar aquesta opció. Això "
-#~ "evitarà emplenar el syslog amb els registres relacionats amb tftpd."
-
-#~ msgid "Log file:"
-#~ msgstr "Fitxer de registre:"
-
-#~ msgid ""
-#~ "A file where atftpd will write its logs. This file will be made writable "
-#~ "for the user 'nobody' and group 'nogroup'."
-#~ msgstr ""
-#~ "El fitxer on atftpd escriurà els seus registres. L'usuari «nobody» i el "
-#~ "grup «nogroup» tindran permisos d'escriptura sobre aquest fitxer."

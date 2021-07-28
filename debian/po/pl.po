@@ -15,7 +15,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: atftp@packages.debian.org\n"
-"POT-Creation-Date: 2021-07-27 21:58+0200\n"
+"POT-Creation-Date: 2021-07-28 21:48+0200\n"
 "PO-Revision-Date: 2004-12-28 16:34+0100\n"
 "Last-Translator: Bartosz Fenski <fenio@o2.pl>\n"
 "Language-Team: Polish <pddp@debian.linux.org.pl>\n"
@@ -105,7 +105,6 @@ msgstr "W³±czyæ obs³ugê multiemisji?"
 #. Type: string
 #. Description
 #: ../atftpd.templates:9001
-#, fuzzy
 msgid "TTL for multicast packets:"
 msgstr "TTL dla pakietów multiemisji"
 
@@ -148,15 +147,47 @@ msgstr ""
 "Multiemisja plików skorzysta z jakiegokolwiek adresu spo¶ród podanych. "
 "Sk³adnia \"a.b.c.d-d,a.b.c.d,...\""
 
-#. Type: string
+#. Type: boolean
 #. Description
 #: ../atftpd.templates:13001
+msgid "Log to file instead of syslog?"
+msgstr "Rejestrowaæ zdarzenia do pliku zamiast do sysloga?"
+
+#. Type: boolean
+#. Description
+#: ../atftpd.templates:13001
+msgid ""
+"If your server does intensive tftp file serving, it is a good idea to accept "
+"here. That will avoid cluttering your syslog with tftpd logs."
+msgstr ""
+"Je¶li Twój serwer jest mocno obci±¿ony, aktywacja tej mo¿liwo¶ci jest "
+"zalecana. Dziêki temu zdarzenia tftpd nie zapchaj± Twojego sysloga."
+
+#. Type: string
+#. Description
+#: ../atftpd.templates:14001
+msgid "Log file:"
+msgstr "Plik zdarzeñ:"
+
+#. Type: string
+#. Description
+#: ../atftpd.templates:14001
+msgid ""
+"A file where atftpd will write its logs. This file will be made writable for "
+"the user 'nobody' and group 'nogroup'."
+msgstr ""
+"Plik do którego atftpd bêdzie zapisywa³ zdarzenia. Plik bêdzie posiada³ "
+"uprawnienia do zapisu przez u¿ytkownika 'nobody' i grupê 'nogroup'."
+
+#. Type: string
+#. Description
+#: ../atftpd.templates:15001
 msgid "Base directory:"
 msgstr "Podstawowy katalog:"
 
 #. Type: string
 #. Description
-#: ../atftpd.templates:13001
+#: ../atftpd.templates:15001
 msgid ""
 "The directory tree from where atftpd can serve files. That directory must be "
 "world readable."
@@ -175,23 +206,3 @@ msgstr ""
 #~ "atftpd mo¿e byæ uruchamiany przez superserwer inetd lub mo¿e pracowaæ "
 #~ "jako demon i samemu akceptowaæ po³±czenia. Drugie rozwi±zanie jest "
 #~ "zalecane w przypadku intensywnego wykorzystywania."
-
-#~ msgid "Log to file instead of syslog?"
-#~ msgstr "Rejestrowaæ zdarzenia do pliku zamiast do sysloga?"
-
-#~ msgid ""
-#~ "If your server does intensive tftp file serving, it is a good idea to  "
-#~ "accept here. That will avoid cluttering your syslog with tftpd logs."
-#~ msgstr ""
-#~ "Je¶li Twój serwer jest mocno obci±¿ony, aktywacja tej mo¿liwo¶ci jest "
-#~ "zalecana. Dziêki temu zdarzenia tftpd nie zapchaj± Twojego sysloga."
-
-#~ msgid "Log file:"
-#~ msgstr "Plik zdarzeñ:"
-
-#~ msgid ""
-#~ "A file where atftpd will write its logs. This file will be made writable "
-#~ "for the user 'nobody' and group 'nogroup'."
-#~ msgstr ""
-#~ "Plik do którego atftpd bêdzie zapisywa³ zdarzenia. Plik bêdzie posiada³ "
-#~ "uprawnienia do zapisu przez u¿ytkownika 'nobody' i grupê 'nogroup'."

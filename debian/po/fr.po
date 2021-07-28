@@ -15,7 +15,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: atftp 0.7\n"
 "Report-Msgid-Bugs-To: atftp@packages.debian.org\n"
-"POT-Creation-Date: 2021-07-27 21:58+0200\n"
+"POT-Creation-Date: 2021-07-28 21:48+0200\n"
 "PO-Revision-Date: 2004-12-28 16:35+0100\n"
 "Last-Translator: Cyril Brulebois <cyril.brulebois@enst-bretagne.fr>\n"
 "Language-Team: French <debian-l10n-french@lists.debian.org>\n"
@@ -151,15 +151,50 @@ msgstr ""
 "Le transfert en multidiffusion va utiliser n'importe quelle adresse "
 "disponible d'un ensemble donné. La syntaxe est « a.b.c.d-d,a.b.c.d,... »."
 
-#. Type: string
+#. Type: boolean
 #. Description
 #: ../atftpd.templates:13001
+msgid "Log to file instead of syslog?"
+msgstr ""
+"Faut-il enregistrer les messages dans un fichier à la place de syslog ?"
+
+#. Type: boolean
+#. Description
+#: ../atftpd.templates:13001
+msgid ""
+"If your server does intensive tftp file serving, it is a good idea to accept "
+"here. That will avoid cluttering your syslog with tftpd logs."
+msgstr ""
+"Si votre serveur est utilisé intensivement comme serveur tftp, il est "
+"conseillé de choisir cette option. Ceci évitera d'encombrer le journal "
+"syslog avec les journaux tftpd."
+
+#. Type: string
+#. Description
+#: ../atftpd.templates:14001
+msgid "Log file:"
+msgstr "Fichier journal :"
+
+#. Type: string
+#. Description
+#: ../atftpd.templates:14001
+msgid ""
+"A file where atftpd will write its logs. This file will be made writable for "
+"the user 'nobody' and group 'nogroup'."
+msgstr ""
+"Veuillez indiquer le fichier dans lequel les informations seront "
+"enregistrées. Ce fichier sera modifiable par l'utilisateur « nobody » et le "
+"groupe « nogroup »."
+
+#. Type: string
+#. Description
+#: ../atftpd.templates:15001
 msgid "Base directory:"
 msgstr "Répertoire racine :"
 
 #. Type: string
 #. Description
-#: ../atftpd.templates:13001
+#: ../atftpd.templates:15001
 msgid ""
 "The directory tree from where atftpd can serve files. That directory must be "
 "world readable."
@@ -178,26 +213,3 @@ msgstr ""
 #~ "Atftpd peut être démarré par le super-serveur inetd ou en serveur "
 #~ "indépendant pour qu'il gère lui-même les connexions entrantes. Ce dernier "
 #~ "mode n'est recommandé que pour les serveurs fortement sollicités."
-
-#~ msgid "Log to file instead of syslog?"
-#~ msgstr ""
-#~ "Faut-il enregistrer les messages dans un fichier à la place de syslog ?"
-
-#~ msgid ""
-#~ "If your server does intensive tftp file serving, it is a good idea to  "
-#~ "accept here. That will avoid cluttering your syslog with tftpd logs."
-#~ msgstr ""
-#~ "Si votre serveur est utilisé intensivement comme serveur tftp, il est "
-#~ "conseillé de choisir cette option. Ceci évitera d'encombrer le journal "
-#~ "syslog avec les journaux tftpd."
-
-#~ msgid "Log file:"
-#~ msgstr "Fichier journal :"
-
-#~ msgid ""
-#~ "A file where atftpd will write its logs. This file will be made writable "
-#~ "for the user 'nobody' and group 'nogroup'."
-#~ msgstr ""
-#~ "Veuillez indiquer le fichier dans lequel les informations seront "
-#~ "enregistrées. Ce fichier sera modifiable par l'utilisateur « nobody » et "
-#~ "le groupe « nogroup »."

@@ -15,7 +15,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: atftp\n"
 "Report-Msgid-Bugs-To: atftp@packages.debian.org\n"
-"POT-Creation-Date: 2021-07-27 21:58+0200\n"
+"POT-Creation-Date: 2021-07-28 21:48+0200\n"
 "PO-Revision-Date: 2009-06-27 12:30+0200\n"
 "Last-Translator: Miroslav Kure <kurem@debian.cz>\n"
 "Language-Team: Czech <debian-l10n-czech@lists.debian.org>\n"
@@ -144,15 +144,49 @@ msgstr ""
 "Pro hromadný přenos použijí libovolné adresy ze zadané množiny adres. "
 "Syntaxe je následující: „a.b.c.d-d,a.b.c.d,...“"
 
-#. Type: string
+#. Type: boolean
 #. Description
 #: ../atftpd.templates:13001
+msgid "Log to file instead of syslog?"
+msgstr "Nepoužívat pro záznamy syslog, ale samostatný soubor?"
+
+#. Type: boolean
+#. Description
+#: ../atftpd.templates:13001
+msgid ""
+"If your server does intensive tftp file serving, it is a good idea to accept "
+"here. That will avoid cluttering your syslog with tftpd logs."
+msgstr ""
+"Pokud bude váš server nabízet tftp soubory mnoha klientům, je dobré tuto "
+"možnost povolit, protože se pak záznamy tftpd nebudou míchat se záznamy "
+"syslogu."
+
+#. Type: string
+#. Description
+#: ../atftpd.templates:14001
+msgid "Log file:"
+msgstr "Soubor pro záznamy:"
+
+#. Type: string
+#. Description
+#: ../atftpd.templates:14001
+msgid ""
+"A file where atftpd will write its logs. This file will be made writable for "
+"the user 'nobody' and group 'nogroup'."
+msgstr ""
+"Soubor, do kterého bude atftpd zapisovat své záznamy. Práva souboru budou "
+"nastavena tak, aby do něj mohl zapisovat uživatel „nobody“ a skupina "
+"„nogroup“."
+
+#. Type: string
+#. Description
+#: ../atftpd.templates:15001
 msgid "Base directory:"
 msgstr "Základní adresář:"
 
 #. Type: string
 #. Description
-#: ../atftpd.templates:13001
+#: ../atftpd.templates:15001
 msgid ""
 "The directory tree from where atftpd can serve files. That directory must be "
 "world readable."
@@ -171,25 +205,3 @@ msgstr ""
 #~ "atftpd může běžet jako samostatný daemon a sám zpracovávat příchozí "
 #~ "požadavky, nebo může být spouštěn z metaserveru inetd. První možnost je "
 #~ "doporučená pouze pro velmi vytížené servery."
-
-#~ msgid "Log to file instead of syslog?"
-#~ msgstr "Nepoužívat pro záznamy syslog, ale samostatný soubor?"
-
-#~ msgid ""
-#~ "If your server does intensive tftp file serving, it is a good idea to  "
-#~ "accept here. That will avoid cluttering your syslog with tftpd logs."
-#~ msgstr ""
-#~ "Pokud bude váš server nabízet tftp soubory mnoha klientům, je dobré tuto "
-#~ "možnost povolit, protože se pak záznamy tftpd nebudou míchat se záznamy "
-#~ "syslogu."
-
-#~ msgid "Log file:"
-#~ msgstr "Soubor pro záznamy:"
-
-#~ msgid ""
-#~ "A file where atftpd will write its logs. This file will be made writable "
-#~ "for the user 'nobody' and group 'nogroup'."
-#~ msgstr ""
-#~ "Soubor, do kterého bude atftpd zapisovat své záznamy. Práva souboru budou "
-#~ "nastavena tak, aby do něj mohl zapisovat uživatel „nobody“ a skupina "
-#~ "„nogroup“."

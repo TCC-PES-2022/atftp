@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: atftp\n"
 "Report-Msgid-Bugs-To: atftp@packages.debian.org\n"
-"POT-Creation-Date: 2021-07-27 21:58+0200\n"
+"POT-Creation-Date: 2021-07-28 21:48+0200\n"
 "PO-Revision-Date: 2011-05-21 12:23-0300\n"
 "Last-Translator: Adriano Rafael Gomes <adrianorg@gmail.com>\n"
 "Language-Team: Brazilian Portuguese <debian-l10n-portuguese@lists.debian."
@@ -141,15 +141,47 @@ msgstr ""
 "Transferências multicast utilizarão quaisquer endereços disponíveis de um "
 "dado conjunto de endereços. A sintaxe é \"a.b.c.d-d,a.b.c.d, ...\""
 
-#. Type: string
+#. Type: boolean
 #. Description
 #: ../atftpd.templates:13001
+msgid "Log to file instead of syslog?"
+msgstr "Logar em arquivos ao invés de syslog?"
+
+#. Type: boolean
+#. Description
+#: ../atftpd.templates:13001
+msgid ""
+"If your server does intensive tftp file serving, it is a good idea to accept "
+"here. That will avoid cluttering your syslog with tftpd logs."
+msgstr ""
+"Caso seu servidor sirva tftp intensivamente, é uma boa ideia aceitar essa "
+"opção. Isso evitará encher seu syslog com logs do tftpd."
+
+#. Type: string
+#. Description
+#: ../atftpd.templates:14001
+msgid "Log file:"
+msgstr "Arquivo de log:"
+
+#. Type: string
+#. Description
+#: ../atftpd.templates:14001
+msgid ""
+"A file where atftpd will write its logs. This file will be made writable for "
+"the user 'nobody' and group 'nogroup'."
+msgstr ""
+"Um arquivo onde o atftpd gravará seus logs. Esse arquivo terá permissão de "
+"gravação para o usuário 'nobody' e para o grupo 'nogroup'."
+
+#. Type: string
+#. Description
+#: ../atftpd.templates:15001
 msgid "Base directory:"
 msgstr "Diretório base:"
 
 #. Type: string
 #. Description
-#: ../atftpd.templates:13001
+#: ../atftpd.templates:15001
 msgid ""
 "The directory tree from where atftpd can serve files. That directory must be "
 "world readable."
@@ -168,23 +200,3 @@ msgstr ""
 #~ "O atftpd pode ser iniciado pelo super servidor inetd ou como um daemon e "
 #~ "gerenciar conexões de entrada por si próprio. A última opção é "
 #~ "recomendada somente para servidores com uma taxa de utilização bem alta."
-
-#~ msgid "Log to file instead of syslog?"
-#~ msgstr "Logar em arquivos ao invés de syslog?"
-
-#~ msgid ""
-#~ "If your server does intensive tftp file serving, it is a good idea to  "
-#~ "accept here. That will avoid cluttering your syslog with tftpd logs."
-#~ msgstr ""
-#~ "Caso seu servidor sirva tftp intensivamente, é uma boa ideia aceitar essa "
-#~ "opção. Isso evitará encher seu syslog com logs do tftpd."
-
-#~ msgid "Log file:"
-#~ msgstr "Arquivo de log:"
-
-#~ msgid ""
-#~ "A file where atftpd will write its logs. This file will be made writable "
-#~ "for the user 'nobody' and group 'nogroup'."
-#~ msgstr ""
-#~ "Um arquivo onde o atftpd gravará seus logs. Esse arquivo terá permissão "
-#~ "de gravação para o usuário 'nobody' e para o grupo 'nogroup'."

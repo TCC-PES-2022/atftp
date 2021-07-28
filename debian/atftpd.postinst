@@ -1,7 +1,9 @@
-#!/bin/sh -e
+#!/bin/sh
 #
 # TODO:
 #  - error checking on values provided by debconf frontend
+
+set -e
 
 BASEDIR="/srv/tftp"
 CONFIGFILE="/etc/default/atftpd"

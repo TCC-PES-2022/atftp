@@ -8,7 +8,7 @@ atftp (0.7.git20210202-1) experimental; urgency=medium
   * Add autopkgtest: Run upstream test suite.
   * Add dependency needed for the package tests.
   * Provide draft systemd service files and socket activation.
-  * Remove helper packages only needed when using a an inet-superserver
+  * Remove helper packages only needed when using an inet-superserver
     and remove the automagic, error-prone inet-superserver configuration.
   * Add myself to the Uploaders field.
 

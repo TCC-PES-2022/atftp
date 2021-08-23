@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: atftp@packages.debian.org\n"
-"POT-Creation-Date: 2021-07-28 21:48+0200\n"
+"POT-Creation-Date: 2021-08-23 21:53+0200\n"
 "PO-Revision-Date: 2011-04-05 22:11+0300\n"
 "Last-Translator: Esko Arajärvi <edu@iki.fi>\n"
 "Language-Team: debian-10n-finnish@lists.debian.org\n"
@@ -94,30 +94,36 @@ msgstr "Otetaanko lohkokoon (block size) määrittelyn tuki käyttöön?"
 #. Type: boolean
 #. Description
 #: ../atftpd.templates:8001
+msgid "Prevent Sorcerer's Apprentice Syndrome?"
+msgstr ""
+
+#. Type: boolean
+#. Description
+#: ../atftpd.templates:9001
 msgid "Enable multicast support?"
 msgstr "Otetaanko multicast-lähetysten tuki käyttöön?"
 
 #. Type: string
 #. Description
-#: ../atftpd.templates:9001
+#: ../atftpd.templates:10001
 msgid "TTL for multicast packets:"
 msgstr "Multicast-pakettien TTL:"
 
 #. Type: string
 #. Description
-#: ../atftpd.templates:10001
+#: ../atftpd.templates:11001
 msgid "Port to listen for tftp request:"
 msgstr "Portti, jossa ohjelma kuuntelee tftp-pyyntöjä:"
 
 #. Type: string
 #. Description
-#: ../atftpd.templates:11001
+#: ../atftpd.templates:12001
 msgid "Port range for multicast file transfer:"
 msgstr "Multicast-tiedostosiirron porttiavaruus:"
 
 #. Type: string
 #. Description
-#: ../atftpd.templates:11001
+#: ../atftpd.templates:12001
 msgid ""
 "Multicast transfer will use any available port in a given set. For example, "
 "\"2000-2003, 3000\" allow atftpd to use port 2000 to 2003 and 3000."
@@ -128,13 +134,13 @@ msgstr ""
 
 #. Type: string
 #. Description
-#: ../atftpd.templates:12001
+#: ../atftpd.templates:13001
 msgid "Address range for multicast transfer:"
 msgstr "Multicast-siirtojen osoiteavaruus:"
 
 #. Type: string
 #. Description
-#: ../atftpd.templates:12001
+#: ../atftpd.templates:13001
 msgid ""
 "Multicast transfer will use any available addresses from a given set of "
 "addresses. Syntax is \"a.b.c.d-d,a.b.c.d,...\""
@@ -144,29 +150,21 @@ msgstr ""
 
 #. Type: boolean
 #. Description
-#: ../atftpd.templates:13001
-msgid "Log to file instead of syslog?"
+#: ../atftpd.templates:14001
+#, fuzzy
+#| msgid "Log to file instead of syslog?"
+msgid "Log to file instead of journal/syslog?"
 msgstr "Kirjoitetaanko loki tiedostoon syslogin sijaan?"
-
-#. Type: boolean
-#. Description
-#: ../atftpd.templates:13001
-msgid ""
-"If your server does intensive tftp file serving, it is a good idea to accept "
-"here. That will avoid cluttering your syslog with tftpd logs."
-msgstr ""
-"Jos palvelimelle tulee paljon tftp-tiedostopyyntöjä, on tämän valitseminen "
-"hyvä idea. Tällä vältetään syslogin täyttäminen tftpd:n riveillä."
 
 #. Type: string
 #. Description
-#: ../atftpd.templates:14001
+#: ../atftpd.templates:15001
 msgid "Log file:"
 msgstr "Lokitiedosto:"
 
 #. Type: string
 #. Description
-#: ../atftpd.templates:14001
+#: ../atftpd.templates:15001
 msgid ""
 "A file where atftpd will write its logs. This file will be made writable for "
 "the user 'nobody' and group 'nogroup'."
@@ -176,19 +174,27 @@ msgstr ""
 
 #. Type: string
 #. Description
-#: ../atftpd.templates:15001
+#: ../atftpd.templates:16001
 msgid "Base directory:"
 msgstr "Juurihakemisto:"
 
 #. Type: string
 #. Description
-#: ../atftpd.templates:15001
+#: ../atftpd.templates:16001
 msgid ""
 "The directory tree from where atftpd can serve files. That directory must be "
 "world readable."
 msgstr ""
 "Hakemistopuu, josta atftpd voi jakaa tiedostoja. Hakemiston tulee olla "
 "kaikkien luettavissa."
+
+#~ msgid ""
+#~ "If your server does intensive tftp file serving, it is a good idea to "
+#~ "accept here. That will avoid cluttering your syslog with tftpd logs."
+#~ msgstr ""
+#~ "Jos palvelimelle tulee paljon tftp-tiedostopyyntöjä, on tämän "
+#~ "valitseminen hyvä idea. Tällä vältetään syslogin täyttäminen tftpd:n "
+#~ "riveillä."
 
 #~ msgid "Should the server be started by inetd?"
 #~ msgstr "Käynnistetäänkö palvelin inetdin avulla?"

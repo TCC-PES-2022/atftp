@@ -1,3 +1,10 @@
+atftp (0.7.git20210202-3) UNRELEASED; urgency=medium
+
+  * Update package documentation.
+  * Add Sorcerer's Apprentice Syndrome configuration to debconf.
+
+ -- Andreas B. Mundt <andi@debian.org>  Mon, 23 Aug 2021 21:13:37 +0200
+
 atftp (0.7.git20210202-2) unstable; urgency=medium
 
   * Release to unstable after bullseye is stable now.

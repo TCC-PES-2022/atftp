@@ -39,6 +39,11 @@ Type: boolean
 Default: true
 _Description: Enable 'block size' support?
 
+Template: atftpd/prevent_sas
+Type: boolean
+Default: true
+_Description: Prevent Sorcerer's Apprentice Syndrome?
+
 Template: atftpd/multicast
 Type: boolean
 Default: true
@@ -71,9 +76,7 @@ _Description: Address range for multicast transfer:
 Template: atftpd/logtofile
 Type: boolean
 Default: false
-_Description: Log to file instead of syslog?
- If your server does intensive tftp file serving, it is a good idea to
- accept here. That will avoid cluttering your syslog with tftpd logs.
+_Description: Log to file instead of journal/syslog?
 
 Template: atftpd/logfile
 Type: string

@@ -10,7 +10,7 @@ Build-Depends: debhelper-compat (= 13),
                libwrap0-dev,
                po-debconf,
                procps
-Standards-Version: 4.5.1
+Standards-Version: 4.6.0
 Homepage: https://sourceforge.net/projects/atftp
 Vcs-Browser: https://salsa.debian.org/debian/atftp
 Vcs-Git: https://salsa.debian.org/debian/atftp.git

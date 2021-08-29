@@ -1,9 +1,11 @@
-atftp (0.7.git20210202-3) UNRELEASED; urgency=medium
+atftp (0.7.git20210202-3) unstable; urgency=medium
 
   * Update package documentation.
   * Add Sorcerer's Apprentice Syndrome configuration to debconf.
+  * Bump Standards-Version to 4.6.0 (no changes needed).
+  * Patch many typos.
 
- -- Andreas B. Mundt <andi@debian.org>  Mon, 23 Aug 2021 21:13:37 +0200
+ -- Andreas B. Mundt <andi@debian.org>  Sun, 29 Aug 2021 10:51:13 +0200
 
 atftp (0.7.git20210202-2) unstable; urgency=medium
 
@@ -27,6 +29,13 @@ atftp (0.7.git20210202-1) experimental; urgency=medium
   * Add myself to the Uploaders field.
 
  -- Andreas B. Mundt <andi@debian.org>  Thu, 29 Jul 2021 17:25:35 +0200
+
+atftp (0.7.git20120829-3.3) unstable; urgency=medium
+
+  * Non-maintainer upload.
+  * Add missing dependency tcpd. (Closes: #988456)
+
+ -- Andreas B. Mundt <andi@debian.org>  Sun, 25 Jul 2021 18:26:09 +0200
 
 atftp (0.7.git20120829-3.2) unstable; urgency=medium
 

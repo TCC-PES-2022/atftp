@@ -1,0 +1,575 @@
+--- a/options.c
++++ b/options.c
+@@ -94,7 +94,7 @@
+ /*
+  * Set an option by name in the structure.
+  * name is the name of the option as in tftp_def.c.
+- * name is it's new value, that must comply with the rfc's.
++ * value is it's new value, that must comply with the rfc's.
+  * When setting an option, it is marked as specified.
+  * 
+  */
+@@ -220,6 +220,17 @@
+      return ERR;
+ }
+ 
++int opt_get_windowsize(struct tftp_opt *options)
++{
++     int windowsize;
++     if (options[OPT_WINDOWSIZE].enabled && options[OPT_WINDOWSIZE].specified)
++     {
++          windowsize = atoi(options[OPT_WINDOWSIZE].value);
++          return windowsize;
++     }
++     return ERR;
++}
++
+ int opt_get_multicast(struct tftp_opt *options, char *addr, int *port, int *mc)
+ {
+      char *token = NULL;
+@@ -288,6 +299,11 @@
+      snprintf(options[OPT_BLKSIZE].value, VAL_SIZE, "%d", blksize);
+ }
+ 
++void opt_set_windowsize(int windowsize, struct tftp_opt *options)
++{
++     snprintf(options[OPT_WINDOWSIZE].value, VAL_SIZE, "%d", windowsize);
++}
++
+ void opt_set_multicast(struct tftp_opt *options, char *addr, int port, int mc)
+ {
+      snprintf(options[OPT_MULTICAST].value, VAL_SIZE, "%s,%d,%d", addr, port,
+--- a/options.h
++++ b/options.h
+@@ -35,14 +35,19 @@
+ int opt_get_options(struct tftp_opt *options, char *name, char *value);
+ int opt_disable_options(struct tftp_opt *options, char *name);
+ int opt_support_options(struct tftp_opt *options);
++
+ int opt_get_tsize(struct tftp_opt *options);
+ int opt_get_timeout(struct tftp_opt *options);
+ int opt_get_blksize(struct tftp_opt *options);
++int opt_get_windowsize(struct tftp_opt *options);
+ int opt_get_multicast(struct tftp_opt *options, char *addr, int *port, int *mc);
++
+ void opt_set_tsize(int tsize, struct tftp_opt *options);
+ void opt_set_timeout(int timeout, struct tftp_opt *options);
+ void opt_set_blksize(int blksize, struct tftp_opt *options);
++void opt_set_windowsize(int windowsize, struct tftp_opt *options);
+ void opt_set_multicast(struct tftp_opt *options, char *addr, int port, int mc);
++
+ void opt_request_to_string(struct tftp_opt *options, char *string, int len);
+ void opt_options_to_string(struct tftp_opt *options, char *string, int len);
+ 
+--- a/tftp_def.h
++++ b/tftp_def.h
+@@ -35,14 +35,15 @@
+ #define	MAXBLOCKS     ((1 << (32 - 9)) - 1)  /* Maximum blocks we will xfer */
+ 
+ /* definition to use tftp_options structure */
+-#define OPT_FILENAME  0
+-#define OPT_MODE      1
+-#define OPT_TSIZE     2
+-#define OPT_TIMEOUT   3
+-#define OPT_BLKSIZE   4
+-#define OPT_MULTICAST 5
+-#define OPT_PASSWORD  6
+-#define OPT_NUMBER    7         /* number of OPT_xx options */
++#define OPT_FILENAME   0
++#define OPT_MODE       1
++#define OPT_TSIZE      2
++#define OPT_TIMEOUT    3
++#define OPT_BLKSIZE    4
++#define OPT_MULTICAST  5
++#define OPT_PASSWORD   6
++#define OPT_WINDOWSIZE 7
++#define OPT_NUMBER     8         /* number of OPT_xx options */
+ 
+ #define OPT_SIZE     12
+ #define VAL_SIZE     MAXLEN
+--- a/tftpd.c
++++ b/tftpd.c
+@@ -632,6 +632,7 @@
+           logger(LOG_NOTICE, "Invalid request in 1st packet");
+           abort = 1;
+      }
++     logger(LOG_INFO, "size of RRQ data: %d", data_size);
+ 
+      /* now unlock stdin */
+      pthread_mutex_unlock(&stdin_mutex);
+@@ -904,6 +905,7 @@
+           { "no-timeout", 0, NULL, 'T' },
+           { "no-tsize", 0, NULL, 'S' },
+           { "no-blksize", 0, NULL, 'B' },
++          { "no-windowsize", 0, NULL, 'W' },
+           { "no-multicast", 0, NULL, 'M' },
+           { "logfile", 1, NULL, 'L' },
+           { "pidfile", 1, NULL, 'I'},
+@@ -980,6 +982,9 @@
+           case 'B':
+                tftp_default_options[OPT_BLKSIZE].enabled = 0;
+                break;
++          case 'W':
++               tftp_default_options[OPT_WINDOWSIZE].enabled = 0;
++               break;
+           case 'M':
+                tftp_default_options[OPT_MULTICAST].enabled = 0;
+                break;
+@@ -1141,16 +1146,18 @@
+      else
+           logger(LOG_INFO, "  request per minute limit: ---");
+ #endif
+-     logger(LOG_INFO, "  option timeout:   %s",
++     logger(LOG_INFO, "  option timeout:    %s",
+             tftp_default_options[OPT_TIMEOUT].enabled ? "enabled":"disabled");
+-     logger(LOG_INFO, "  option tzise:     %s",
++     logger(LOG_INFO, "  option tzise:      %s",
+             tftp_default_options[OPT_TSIZE].enabled ? "enabled":"disabled");
+-     logger(LOG_INFO, "  option blksize:   %s",
++     logger(LOG_INFO, "  option blksize:    %s",
+             tftp_default_options[OPT_BLKSIZE].enabled ? "enabled":"disabled");
+-     logger(LOG_INFO, "  option multicast: %s",
++     logger(LOG_INFO, "  option windowsize: %s",
++            tftp_default_options[OPT_WINDOWSIZE].enabled ? "enabled":"disabled");
++     logger(LOG_INFO, "  option multicast:  %s",
+             tftp_default_options[OPT_MULTICAST].enabled ? "enabled":"disabled");
+-     logger(LOG_INFO, "     address range: %s", mcast_addr);
+-     logger(LOG_INFO, "     port range:    %s", mcast_port);
++     logger(LOG_INFO, "     address range:  %s", mcast_addr);
++     logger(LOG_INFO, "     port range:     %s", mcast_port);
+ #ifdef HAVE_PCRE
+      if (pcre_top)
+           logger(LOG_INFO, "  PCRE: using file: %s", pcre_file);
+@@ -1227,6 +1234,7 @@
+             "  --no-timeout               : disable 'timeout' from RFC2349\n"
+             "  --no-tsize                 : disable 'tsize' from RFC2349\n"
+             "  --no-blksize               : disable 'blksize' from RFC2348\n"
++            "  --no-windowsize            : disable 'windowsize' from RFC7440\n"
+             "  --no-multicast             : disable 'multicast' from RFC2090\n"
+             "  --logfile <file>           : logfile to log logs to ;-) (use - for stdout)\n"
+             "  --pidfile <file>           : write PID to this file\n"
+--- a/tftpd_file.c
++++ b/tftpd_file.c
+@@ -99,7 +99,7 @@
+  *
+  *     1) send a ACK or OACK
+  *     2) wait replay
+- *          - if DATA packet, read it, send an acknoledge, goto 2
++ *          - if DATA packet, read it, send an acknowledge, goto 2
+  *          - if ERROR abort
+  *          - if TIMEOUT goto previous state
+  */
+@@ -119,6 +119,8 @@
+      char filename[MAXLEN];
+      char string[MAXLEN];
+      int timeout = data->timeout;
++     int windowblock = 0;         /* number of block in a window, c.f. RFC7440 */
++     int windowsize = 1;          /* c.f. RFC7440 */
+      int number_of_timeout = 0;
+      int all_blocks_received = 0; /* temporary kludge */
+      int convert = 0;           /* if true, do netascii conversion */
+@@ -181,11 +183,41 @@
+           logger(LOG_DEBUG, "timeout option -> %d", timeout);
+      }
+ 
+-     /* blksize options */
++     /* windowsize option */
++     if ((result = opt_get_windowsize(data->tftp_options)) > -1)
++     {
++          if ((result < 1) || (result > 65535))
++          {
++               tftp_send_error(sockfd, sa, EOPTNEG, data->data_buffer, data->data_buffer_size);
++               if (data->trace)
++                    logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", EOPTNEG,
++                           tftp_errmsg[EOPTNEG]);
++               fclose(fp);
++               return ERR;
++          }
++          windowsize = result;
++          opt_set_windowsize(windowsize, data->tftp_options);
++          logger(LOG_DEBUG, "windowsize option -> %d", windowsize);
++     }
++
++     /*
++      *  blksize option, must be the last option evaluated,
++      *  because data->data_buffer_size may be modified here,
++      *  and may be smaller than the buffer containing options
++      */
+      if ((result = opt_get_blksize(data->tftp_options)) > -1)
+      {
+-          if ((result < 8) || (result > 65464))
++          /*
++           *  If we receive more options, we have to make sure our buffer for
++           *  the OACK is not too small.  Use the string representation of
++           *  the options here for simplicity, which puts us on the save side.
++           *  Better solution: Do not use the same buffer for OACK and data.
++           */
++          opt_options_to_string(data->tftp_options, string, MAXLEN);
++          if ((result < strlen(string)-2) || (result > 65464))
+           {
++               logger(LOG_ERR, "Options <%s> require roughly a blksize of %d for the OACK.",
++                      string, strlen(string)-2);
+                tftp_send_error(sockfd, sa, EOPTNEG, data->data_buffer, data->data_buffer_size);
+                if (data->trace)
+                     logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", EOPTNEG,
+@@ -349,9 +381,11 @@
+                /* We need to seek to the right place in the file */
+ 	       block_number = tftp_rollover_blocknumber(
+ 		      ntohs(tftphdr->th_block), prev_block_number, 0);
++
++               windowblock++;
+                if (data->trace)
+-                    logger(LOG_DEBUG, "received DATA <block: %ld, size: %d>",
+-                           block_number, data_size - 4);
++                    logger(LOG_DEBUG, "received %d. DATA <block: %ld, size %d>",
++                           windowblock, block_number, data_size - 4);
+ 
+                if (tftp_file_write(fp, tftphdr->th_data, data->data_buffer_size - 4, block_number,
+                                    data_size - 4, convert, &prev_block_number, &temp)
+@@ -371,7 +405,16 @@
+                     all_blocks_received = 1;
+                else
+                     all_blocks_received = 0;
+-               state = S_SEND_ACK;
++
++               if ((windowblock >= windowsize) || (all_blocks_received))
++               {
++                    windowblock = 0;
++                    state = S_SEND_ACK;
++               }
++               else
++               {
++                    state = S_WAIT_PACKET;
++               }
+                break;
+           case S_END:
+                fclose(fp);
+@@ -420,6 +463,8 @@
+      char filename[MAXLEN];
+      char string[MAXLEN];
+      int timeout = data->timeout;
++     int windowblock = 0;
++     int windowsize = 1;
+      int number_of_timeout = 0;
+      int mcast_switch = data->mcast_switch_client;
+      struct stat file_stat;
+@@ -529,10 +574,10 @@
+           logger(LOG_INFO, "timeout option -> %d", timeout);
+      }
+ 
+-     /* blksize options */
+-     if ((result = opt_get_blksize(data->tftp_options)) > -1)
++     /* windowsize option */
++     if ((result = opt_get_windowsize(data->tftp_options)) > -1)
+      {
+-          if ((result < 8) || (result > 65464))
++          if ((result < 1) || (result > 65535))
+           {
+                tftp_send_error(sockfd, sa, EOPTNEG, data->data_buffer, data->data_buffer_size);
+                if (data->trace)
+@@ -541,42 +586,9 @@
+                fclose(fp);
+                return ERR;
+           }
+-
+-          data->data_buffer_size = result + 4;
+-          data->data_buffer = realloc(data->data_buffer, data->data_buffer_size);
+-
+-          if (data->data_buffer == NULL)
+-          {
+-               logger(LOG_ERR, "memory allocation failure");
+-               fclose(fp);
+-               return ERR;
+-          }
+-          tftphdr = (struct tftphdr *)data->data_buffer;
+-
+-          if (data->data_buffer == NULL)
+-          {
+-               tftp_send_error(sockfd, sa, ENOSPACE, data->data_buffer, data->data_buffer_size);
+-               if (data->trace)
+-                    logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", ENOSPACE,
+-                           tftp_errmsg[ENOSPACE]);
+-               fclose(fp);
+-               return ERR;
+-          }
+-          opt_set_blksize(result, data->tftp_options);
+-          logger(LOG_INFO, "blksize option -> %d", result);
+-     }
+-
+-     /* Verify that the file can be sent in MAXBLOCKS blocks of BLKSIZE octets */
+-     if ((file_stat.st_size / (data->data_buffer_size - 4)) > MAXBLOCKS)
+-     {
+-          tftp_send_error(sockfd, sa, EUNDEF, data->data_buffer, data->data_buffer_size);
+-          logger(LOG_NOTICE, "Requested file too big, increase BLKSIZE");
+-          logger(LOG_NOTICE, "Only %d blocks of %d bytes can be served via multicast", MAXBLOCKS, data->data_buffer_size);
+-          if (data->trace)
+-               logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", EUNDEF,
+-                      tftp_errmsg[EUNDEF]);
+-          fclose(fp);
+-          return ERR;
++          windowsize = result;
++          opt_set_windowsize(windowsize, data->tftp_options);
++          logger(LOG_INFO, "windowsize option -> %d", windowsize);
+      }
+ 
+      /* multicast option */
+@@ -701,6 +713,69 @@
+           }
+      }
+ 
++     /*
++      *  blksize option, must be the last option evaluated,
++      *  because data->data_buffer_size may be modified here,
++      *  and may be smaller than the buffer containing options
++      */
++     if ((result = opt_get_blksize(data->tftp_options)) > -1)
++     {
++          /*
++           *  If we have more options, we have to make sure our buffer for
++           *  the OACK is not too small.  Use the string representation of
++           *  the options here for simplicity, which puts us on the save side.
++           *  Better solution: Do not use the same buffer for OACK and data.
++           */
++          opt_options_to_string(data->tftp_options, string, MAXLEN);
++          if ((result < strlen(string)-2) || (result > 65464))
++          {
++               logger(LOG_ERR, "Options <%s> require roughly a blksize of %d for the OACK.",
++                      string, strlen(string)-2);
++               tftp_send_error(sockfd, sa, EOPTNEG, data->data_buffer, data->data_buffer_size);
++               if (data->trace)
++                    logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", EOPTNEG,
++                           tftp_errmsg[EOPTNEG]);
++               fclose(fp);
++               return ERR;
++          }
++
++          data->data_buffer_size = result + 4;
++          data->data_buffer = realloc(data->data_buffer, data->data_buffer_size);
++
++          if (data->data_buffer == NULL)
++          {
++               logger(LOG_ERR, "memory allocation failure");
++               fclose(fp);
++               return ERR;
++          }
++          tftphdr = (struct tftphdr *)data->data_buffer;
++
++          if (data->data_buffer == NULL)
++          {
++               tftp_send_error(sockfd, sa, ENOSPACE, data->data_buffer, data->data_buffer_size);
++               if (data->trace)
++                    logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", ENOSPACE,
++                           tftp_errmsg[ENOSPACE]);
++               fclose(fp);
++               return ERR;
++          }
++          opt_set_blksize(result, data->tftp_options);
++          logger(LOG_INFO, "blksize option -> %d", result);
++     }
++
++     /* Verify that the file can be sent in MAXBLOCKS blocks of BLKSIZE octets */
++     if ((file_stat.st_size / (data->data_buffer_size - 4)) > MAXBLOCKS)
++     {
++          tftp_send_error(sockfd, sa, EUNDEF, data->data_buffer, data->data_buffer_size);
++          logger(LOG_NOTICE, "Requested file too big, increase BLKSIZE");
++          logger(LOG_NOTICE, "Only %d blocks of %d bytes can be served via multicast", MAXBLOCKS, data->data_buffer_size);
++          if (data->trace)
++               logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", EUNDEF,
++                      tftp_errmsg[EUNDEF]);
++          fclose(fp);
++          return ERR;
++     }
++
+      /* copy options to local structure, used when falling back a client to slave */
+      memcpy(options, data->tftp_options, sizeof(options));
+      opt_set_multicast(options, data->mc_addr, data->mc_port, 0);
+@@ -768,10 +843,23 @@
+                     tftp_send_data(sockfd, sa, block_number + 1,
+                                    data_size, data->data_buffer);
+                }
++
++               windowblock++;
++               last_requested_block++;
+                if (data->trace)
+-                    logger(LOG_DEBUG, "sent DATA <block: %ld, size %d>",
+-                           block_number + 1, data_size - 4);
+-               state = S_WAIT_PACKET;
++                    logger(LOG_DEBUG, "sent %d. DATA <block: %ld, size %d>",
++                           windowblock, block_number + 1, data_size - 4);
++
++               if ((windowblock >= windowsize) || (last_block != -1))
++               {
++                    windowblock = 0;
++                    state = S_WAIT_PACKET;
++               }
++               else
++               {
++                    block_number = tftp_rollover_blocknumber(
++                         ntohs(tftphdr->th_block), prev_block_number, 0);
++               }
+                break;
+           case S_WAIT_PACKET:
+                data_size = data->data_buffer_size;
+-- a/tftp_def.c
++++ b/tftp_def.c
+@@ -33,13 +33,14 @@
+ 
+ // FIXME: is there a way to use TIMEOUT and SEGSIZE here?
+ struct tftp_opt tftp_default_options[OPT_NUMBER + 1] = {
+-     { "filename", "", 0, 1},   /* file to transfer */
+-     { "mode", "octet", 0, 1},  /* mode for transfer */
+-     { "tsize", "0", 0, 1 },    /* RFC1350 options. See RFC2347, */
+-     { "timeout", "5", 0, 1 },  /* 2348, 2349, 2090.  */
+-     { "blksize", "512", 0, 1 }, /* This is the default option */
+-     { "multicast", "", 0, 1 }, /* structure */
+-     { "password", "", 0, 1},   /* password */
++     { "filename", "", 0, 1},     /* file to transfer */
++     { "mode", "octet", 0, 1},    /* mode for transfer */
++     { "tsize", "0", 0, 1 },      /* RFC1350 options. See RFC2347, */
++     { "timeout", "5", 0, 1 },    /* 2348, 2349, 2090.  */
++     { "blksize", "512", 0, 1 },  /* This is the default option */
++     { "multicast", "", 0, 1 },   /* structure */
++     { "password", "", 0, 1},     /* password */
++     { "windowsize", "1", 0, 1 }, /* Default without RFC7440 */
+      { "", "", 0, 0}
+ };
+ 
+--- a/tftpd.h
++++ b/tftpd.h
+@@ -33,6 +33,7 @@
+      /* private to thread */
+      char *data_buffer;
+      int data_buffer_size;
++     int windowsize;
+ 
+      int timeout;
+      int checkport;             /* Disable TID check. Violate RFC */
+--- a/tftp_file.c
++++ b/tftp_file.c
+@@ -113,6 +113,8 @@
+ {
+      int state = S_SEND_REQ;    /* current state in the state machine */
+      int timeout_state = state; /* what state should we go on when timeout */
++     int windowblock = 0;       /* number of block in a window, c.f. RFC7440 */
++     int windowsize = 1;        /* c.f. RFC7440 */
+      int result;
+      long block_number = 0;
+      long last_block_number = -1;/* block number of last block for multicast */
+@@ -406,8 +408,8 @@
+                     memcpy(data->tftp_options_reply, tftp_default_options,
+                            sizeof(tftp_default_options));
+                     /*
+-                     * look in the returned string for tsize, timeout, blksize
+-                     * or multicast
++                     * look in the returned string for tsize, timeout,
++                     * blksize, windowsize or multicast
+                      */
+                     opt_disable_options(data->tftp_options_reply, NULL);
+                     opt_parse_options(data->data_buffer, data_size,
+@@ -415,22 +417,26 @@
+                     if (data->trace)
+                          fprintf(stderr, "received OACK <");
+                     /* tsize: funny, now we know the file size */
+-                    if ((result = opt_get_tsize(data->tftp_options_reply)) >
+-                        -1)
++                    if ((result = opt_get_tsize(data->tftp_options_reply)) > -1)
+                     {
+                          if (data->trace)
+                               fprintf(stderr, "tsize: %d, ", result);
+                     }
++                    /* windowsize */
++                    if ((result = opt_get_windowsize(data->tftp_options_reply)) > -1)
++                    {
++                         if (data->trace)
++                              fprintf(stderr, "windowsize: %d, ", result);
++                         windowsize = result;
++                    }
+                     /* timeout */
+-                    if ((result = opt_get_timeout(data->tftp_options_reply))
+-                        > -1)
++                    if ((result = opt_get_timeout(data->tftp_options_reply)) > -1)
+                     {
+                          if (data->trace)
+                               fprintf(stderr, "timeout: %d, ", result);
+                     }
+                     /* blksize: resize the buffer please */
+-                    if ((result = opt_get_blksize(data->tftp_options_reply))
+-                        > -1)
++                    if ((result = opt_get_blksize(data->tftp_options_reply)) > -1)
+                     {
+                          if (data->trace)
+                               fprintf(stderr, "blksize: %d, ", result);
+@@ -572,7 +578,18 @@
+                          state = S_WAIT_PACKET;
+                }
+                else
+-                    state = S_SEND_ACK;
++               {
++                    windowblock++;
++                    if ((windowblock >= windowsize) || (last_block_number != -1))
++                    {
++                         windowblock = 0;
++                         state = S_SEND_ACK;
++                    }
++                    else
++                    {
++                         state = S_WAIT_PACKET;
++                    }
++               }
+                break;
+           case S_END:
+           case S_ABORT:
+@@ -628,6 +645,8 @@
+ {
+      int state = S_SEND_REQ;    /* current state in the state machine */
+      int timeout_state = state; /* what state should we go on when timeout */
++     int windowblock = 0;       /* number of block in a window, c.f. RFC7440 */
++     int windowsize = 1;        /* c.f. RFC7440 */
+      int result;
+      long block_number = 0;
+      long last_requested_block = -1;
+@@ -749,13 +768,27 @@
+ 
+                if (feof(fp))
+                     last_block = block_number;
++
+                tftp_send_data(sockfd, &sa, block_number + 1,
+                               data_size, data->data_buffer);
+                data->file_size += data_size;
++
++               windowblock++;
++               last_requested_block++;
+                if (data->trace)
+-                    fprintf(stderr, "sent DATA <block: %ld, size: %d>\n",
+-                            block_number + 1, data_size - 4);
+-               state = S_WAIT_PACKET;
++                    fprintf(stderr, "sent %d. DATA <block: %ld, size %d>\n",
++                           windowblock, block_number + 1, data_size - 4);
++
++               if ((windowblock >= windowsize) || (last_block != -1))
++               {
++                    windowblock = 0;
++                    state = S_WAIT_PACKET;
++               }
++               else
++               {
++                    block_number = tftp_rollover_blocknumber(
++                         ntohs(tftphdr->th_block), prev_block_number, 0);
++               }
+                break;
+           case S_WAIT_PACKET:
+                data_size = data->data_buffer_size;
+@@ -869,6 +902,13 @@
+                     if (data->trace)
+                          fprintf(stderr, "tsize: %d, ", result);
+                }
++               /* windowsize */
++               if ((result = opt_get_windowsize(data->tftp_options_reply)) > -1)
++               {
++                    if (data->trace)
++                         fprintf(stderr, "windowsize: %d, ", result);
++                    windowsize = result;
++               }
+                /* timeout */
+                if ((result = opt_get_timeout(data->tftp_options_reply)) > -1)
+                {

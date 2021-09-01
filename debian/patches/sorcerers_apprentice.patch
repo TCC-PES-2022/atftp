@@ -164,7 +164,15 @@ Forwarded: https://sourceforge.net/p/atftp/support-requests/9/
       long last_block = -1;
       int data_size;
       struct sockaddr_storage *sa = &data->client_info->client;
-@@ -818,6 +820,10 @@
+@@ -733,6 +735,7 @@
+                     state = S_SEND_OACK;
+                else
+                     state = S_SEND_DATA;
++               last_requested_block = 0;
+                break;
+           case S_SEND_OACK:
+                timeout_state = state;
+@@ -818,6 +821,10 @@
                                            sockaddr_get_port(
                                                 &client_info->client));
                                     sa = &client_info->client;
@@ -175,7 +183,7 @@ Forwarded: https://sourceforge.net/p/atftp/support-requests/9/
                                     state = S_SEND_OACK;
                                     break;
                                }
-@@ -903,6 +909,28 @@
+@@ -903,6 +910,28 @@
                      if (data->trace)
                           logger(LOG_DEBUG, "received ACK <block: %ld>",
                                  block_number);
@@ -186,15 +194,15 @@ Forwarded: https://sourceforge.net/p/atftp/support-requests/9/
 +                         if (multicast) {
 +                              if (last_requested_block >= block_number) {
 +                                   if (data->trace)
-+                                        logger(LOG_DEBUG, "received duplicated ACK <block: %d >= %d>", last_requested_block, block_number);
++                                        logger(LOG_INFO, "received duplicated ACK <block: %d >= %d>", last_requested_block, block_number);
 +                                   break;
 +                              } else
 +                                   last_requested_block = block_number;
 +                              /* unicast, blocks should be requested one after another */
 +                         } else {
-+                              if (last_requested_block + 1 != block_number && last_requested_block != -1) {
++                              if (last_requested_block != block_number) {
 +                                   if (data->trace)
-+                                        logger(LOG_DEBUG, "received out of order ACK <block: %d != %d>", last_requested_block + 1, block_number);
++                                        logger(LOG_INFO, "received out of order ACK <block: %d != %d>", last_requested_block, block_number);
 +                                   break;
 +                              } else
 +                                   last_requested_block = block_number;
@@ -204,7 +212,7 @@ Forwarded: https://sourceforge.net/p/atftp/support-requests/9/
                      if ((last_block != -1) && (block_number > last_block))
                      {
                           state = S_END;
-@@ -1001,6 +1029,8 @@
+@@ -1001,6 +1030,8 @@
                           /* nedd to send an oack to that client */
                           state = S_SEND_OACK;                
                           fseek(fp, 0, SEEK_SET);
@@ -213,4 +221,3 @@ Forwarded: https://sourceforge.net/p/atftp/support-requests/9/
                      }
                      else
                      {
-

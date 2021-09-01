@@ -383,13 +383,13 @@
       /* copy options to local structure, used when falling back a client to slave */
       memcpy(options, data->tftp_options, sizeof(options));
       opt_set_multicast(options, data->mc_addr, data->mc_port, 0);
-@@ -768,10 +843,23 @@
+@@ -768,11 +843,23 @@
                      tftp_send_data(sockfd, sa, block_number + 1,
                                     data_size, data->data_buffer);
                 }
 +
 +               windowblock++;
-+               last_requested_block++;
+                last_requested_block++;
                 if (data->trace)
 -                    logger(LOG_DEBUG, "sent DATA <block: %ld, size %d>",
 -                           block_number + 1, data_size - 4);
@@ -410,7 +410,7 @@
                 break;
            case S_WAIT_PACKET:
                 data_size = data->data_buffer_size;
--- a/tftp_def.c
+--- a/tftp_def.c
 +++ b/tftp_def.c
 @@ -33,13 +33,14 @@
  

@@ -172,7 +172,15 @@ Forwarded: https://sourceforge.net/p/atftp/support-requests/9/
                 break;
            case S_SEND_OACK:
                 timeout_state = state;
-@@ -818,6 +821,10 @@
+@@ -765,6 +768,7 @@
+                     tftp_send_data(sockfd, sa, block_number + 1,
+                                    data_size, data->data_buffer);
+                }
++               last_requested_block++;
+                if (data->trace)
+                     logger(LOG_DEBUG, "sent DATA <block: %ld, size %d>",
+                            block_number + 1, data_size - 4);
+@@ -818,6 +822,10 @@
                                            sockaddr_get_port(
                                                 &client_info->client));
                                     sa = &client_info->client;
@@ -183,7 +191,7 @@ Forwarded: https://sourceforge.net/p/atftp/support-requests/9/
                                     state = S_SEND_OACK;
                                     break;
                                }
-@@ -903,6 +910,28 @@
+@@ -903,6 +911,28 @@
                      if (data->trace)
                           logger(LOG_DEBUG, "received ACK <block: %ld>",
                                  block_number);
@@ -212,7 +220,7 @@ Forwarded: https://sourceforge.net/p/atftp/support-requests/9/
                      if ((last_block != -1) && (block_number > last_block))
                      {
                           state = S_END;
-@@ -1001,6 +1030,8 @@
+@@ -1001,6 +1031,8 @@
                           /* nedd to send an oack to that client */
                           state = S_SEND_OACK;                
                           fseek(fp, 0, SEEK_SET);

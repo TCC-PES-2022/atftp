@@ -54,7 +54,7 @@ Forwarded: yes
  
  .TP
  .B \-\-no\-source\-port\-checking
-@@ -190,14 +190,14 @@
+@@ -182,14 +182,14 @@
  
  .TP
  .B \-\-mcast\-switch\-client
@@ -95,7 +95,7 @@ Forwarded: yes
  
 --- a/tftp.c
 +++ b/tftp.c
-@@ -709,9 +709,9 @@
+@@ -708,9 +708,9 @@
                 {
                      fclose(fp);
  #if HAVE_READLINE
@@ -107,7 +107,7 @@ Forwarded: yes
                      fgets(string, MAXLEN, stdin);
                      string[strlen(string) - 1] = 0;
  #endif
-@@ -909,7 +909,7 @@
+@@ -908,7 +908,7 @@
            if (tftp_result == OK)
            {
                 print_eng((double)data.file_size, string, sizeof(string), "%3.3f%cB");
@@ -118,7 +118,7 @@ Forwarded: yes
                 fprintf(stderr, "  Throughput:        ");
 --- a/tftp_file.c
 +++ b/tftp_file.c
-@@ -125,7 +125,7 @@
+@@ -124,7 +124,7 @@
       struct tftphdr *tftphdr = (struct tftphdr *)data->data_buffer;
       FILE *fp = NULL;           /* the local file pointer */
       int number_of_timeout = 0;
@@ -127,7 +127,7 @@ Forwarded: yes
  
       int oacks = 0;             /* count OACK for improved error checking */
       int multicast = 0;         /* set to 1 if multicast */
-@@ -141,7 +141,7 @@
+@@ -140,7 +140,7 @@
       int prev_bitmap_hole = -1; /* the previous hole found in the bitmap */
       char string[MAXLEN];
  
@@ -136,7 +136,7 @@ Forwarded: yes
       int temp = 0;
       int err;
  
-@@ -642,10 +642,10 @@
+@@ -640,10 +640,10 @@
       FILE *fp;                  /* the local file pointer */
       int number_of_timeout = 0;
       struct stat file_stat;
@@ -162,7 +162,7 @@ Forwarded: yes
       if (data->data_buffer_size != (SEGSIZE + 4))
 --- a/tftpd.c
 +++ b/tftpd.c
-@@ -187,12 +187,12 @@
+@@ -186,12 +186,12 @@
       }
  
       /*
@@ -177,7 +177,7 @@ Forwarded: yes
  		 "specifying the --daemon option.\n");
            tftpd_usage();
            exit(1);
-@@ -346,7 +346,7 @@
+@@ -345,7 +345,7 @@
       }
  
  #if defined(SOL_IP) && defined(IP_PKTINFO)
@@ -186,7 +186,7 @@ Forwarded: yes
       if (setsockopt(0, SOL_IP, IP_PKTINFO, &one, sizeof(one)) != 0)
       {
            logger(LOG_WARNING, "Failed to set socket option: %s", strerror(errno));
-@@ -430,7 +430,7 @@
+@@ -429,7 +429,7 @@
            }
  #endif
  
@@ -197,7 +197,7 @@ Forwarded: yes
            {
 --- a/tftpd_file.c
 +++ b/tftpd_file.c
-@@ -121,16 +121,16 @@
+@@ -120,16 +120,16 @@
       int timeout = data->timeout;
       int number_of_timeout = 0;
       int all_blocks_received = 0; /* temporary kludge */
@@ -217,7 +217,7 @@ Forwarded: yes
       }
  
       /* file name verification */
-@@ -432,7 +432,7 @@
+@@ -430,7 +430,7 @@
       struct client_info *client_old = NULL;
       struct tftp_opt options[OPT_NUMBER];
  
@@ -226,7 +226,7 @@ Forwarded: yes
       long prev_file_pos = 0;
       int temp = 0;
  
-@@ -440,7 +440,7 @@
+@@ -438,7 +438,7 @@
       if (strcasecmp(data->tftp_options[OPT_MODE].value, "netascii") == 0)
       {
            convert = 1;
@@ -235,7 +235,7 @@ Forwarded: yes
       }
  
       /* file name verification */
-@@ -633,7 +633,7 @@
+@@ -631,7 +631,7 @@
                                data->data_buffer, data->data_buffer_size);
  
                 /* We are done */
@@ -244,7 +244,7 @@ Forwarded: yes
                 fclose(fp);
                 return OK;
            }
-@@ -1036,7 +1036,7 @@
+@@ -1004,7 +1004,7 @@
                      }
                      else
                      {

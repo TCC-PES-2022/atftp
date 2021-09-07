@@ -199,7 +199,7 @@
 +          opt_options_to_string(data->tftp_options, string, MAXLEN);
 +          if ((result < strlen(string)-2) || (result > 65464))
            {
-+               logger(LOG_ERR, "Options <%s> require roughly a blksize of %d for the OACK.",
++               logger(LOG_NOTICE, "Options <%s> require roughly a blksize of %d for the OACK.",
 +                      string, strlen(string)-2);
                 tftp_send_error(sockfd, sa, EOPTNEG, data->data_buffer, data->data_buffer_size);
                 if (data->trace)
@@ -564,18 +564,30 @@
  
 --- a/tftp_file.c
 +++ b/tftp_file.c
-@@ -112,8 +112,11 @@
+@@ -110,14 +110,17 @@
+  */
+ int tftp_receive_file(struct client_data *data)
  {
-      int state = S_SEND_REQ;    /* current state in the state machine */
-      int timeout_state = state; /* what state should we go on when timeout */
-+     int windowblock = 0;       /* number of block in a window, c.f. RFC7440 */
-+     int windowsize = 1;        /* c.f. RFC7440 */
+-     int state = S_SEND_REQ;    /* current state in the state machine */
+-     int timeout_state = state; /* what state should we go on when timeout */
++     int state = S_SEND_REQ;       /* current state in the state machine */
++     int timeout_state = state;    /* what state should we go on when timeout */
++     int windowblock = 0;          /* number of block in a window, c.f. RFC7440 */
++     int windowsize = 1;           /* c.f. RFC7440 */
       int result;
       long block_number = 0;
+-     long last_block_number = -1;/* block number of last block for multicast */
+-     int data_size;             /* size of data received */
+-     int sockfd = data->sockfd; /* just to simplify calls */
+-     struct sockaddr_storage sa; /* a copy of data.sa_peer */
 +     long last_received_block = 0;
-      long last_block_number = -1;/* block number of last block for multicast */
-      int data_size;             /* size of data received */
-      int sockfd = data->sockfd; /* just to simplify calls */
++     long last_block_number = -1;  /* block number of last block for multicast */
++     int data_size;                /* size of data received */
++     int sockfd = data->sockfd;    /* just to simplify calls */
++     struct sockaddr_storage sa;   /* a copy of data.sa_peer */
+      struct sockaddr_storage from;
+      char from_str[SOCKADDR_PRINT_ADDR_LEN];
+      int connected;             /* 1 when sockfd is connected */
 @@ -232,6 +235,7 @@
                                     call to tftp_send_request */
                 break;
@@ -655,7 +667,7 @@
 +               if (last_received_block + 1 == block_number)
 +               {
 +                    if (data->trace)
-+                         fprintf(stderr, "Update last received <block: %d → %ld>\n",
++                         fprintf(stderr, "Update last received <block: %ld → %ld>\n",
 +                                 last_received_block, block_number);
 +                    last_received_block = block_number;
 +               }

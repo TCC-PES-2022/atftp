@@ -89,14 +89,6 @@
  #define VAL_SIZE     MAXLEN
 --- a/tftpd.c
 +++ b/tftpd.c
-@@ -632,6 +632,7 @@
-           logger(LOG_NOTICE, "Invalid request in 1st packet");
-           abort = 1;
-      }
-+     logger(LOG_INFO, "size of RRQ data: %d", data_size);
- 
-      /* now unlock stdin */
-      pthread_mutex_unlock(&stdin_mutex);
 @@ -904,6 +905,7 @@
            { "no-timeout", 0, NULL, 'T' },
            { "no-tsize", 0, NULL, 'S' },
@@ -502,7 +494,7 @@
                                     tftp_send_oack(sockfd, &from, options,
                                                    data->data_buffer, data->data_buffer_size);
                                }
-@@ -912,32 +1001,25 @@
+@@ -912,32 +1001,24 @@
                           logger(LOG_DEBUG, "received ACK <block: %ld>",
                                  block_number);
  
@@ -537,18 +529,17 @@
                           state = S_END;
                           break;
                      }
-+                    if (block_number != (last_ackd_block + windowsize) && last_ackd_block != -1) 
++                    if (block_number != (last_ackd_block + windowsize) && last_ackd_block != -1)
 +                         logger(LOG_WARNING, "missing blocks in window or no window ACK: expected %ld, got %d",
 +                                windowsize, block_number - last_ackd_block);
-+                         
++
 +                    logger(LOG_DEBUG, "update last ACK'd <block: %ld → %ld>",
 +                           last_ackd_block, block_number);
 +                    last_ackd_block = block_number;
-+
                      state = S_SEND_DATA;
                      break;
                 case GET_ERROR:
-@@ -982,10 +1064,11 @@
+@@ -982,10 +1063,11 @@
                           }
                      }
                      /* Got an ERROR from the current master client */
@@ -607,7 +598,43 @@
       int result;
       long block_number = 0;
       long last_block_number = -1;/* block number of last block for multicast */
-@@ -406,8 +408,8 @@
+@@ -144,6 +146,7 @@
+      long prev_block_number = 0; /* needed to support netascii conversion */
+      int temp = 0;
+      int err;
++     int last_received_block = 0;
+ 
+      data->file_size = 0;
+      tftp_cancel = 0;
+@@ -233,6 +236,7 @@
+                                    call to tftp_send_request */
+                break;
+           case S_SEND_ACK:
++               windowblock = 0;
+                timeout_state = S_SEND_ACK;
+                if (multicast)
+                {
+@@ -242,8 +246,9 @@
+                     block_number = prev_bitmap_hole;
+                }
+                if (data->trace)
+-                    fprintf(stderr, "sent ACK <block: %ld>\n", block_number);
+-               tftp_send_ack(sockfd, &sa, block_number);
++                    fprintf(stderr, "sent ACK <block: %d>\n", last_received_block);
++               tftp_send_ack(sockfd, &sa, last_received_block);
++
+                /* if we just ACK the last block we are done */
+                if (block_number == last_block_number)
+                     state = S_END;
+@@ -270,6 +275,7 @@
+                     result = tftp_get_packet(sockfd, -1, NULL, &sa, &from, NULL,
+                                              data->timeout, &data_size,
+                                              data->data_buffer);
++
+                     /* Check that source port match */
+                     if ((sockaddr_get_port(&sa) != sockaddr_get_port(&from)) &&
+                         ((result == GET_OACK) || (result == GET_ERROR) ||
+@@ -406,8 +412,8 @@
                      memcpy(data->tftp_options_reply, tftp_default_options,
                             sizeof(tftp_default_options));
                      /*
@@ -618,7 +645,7 @@
                       */
                      opt_disable_options(data->tftp_options_reply, NULL);
                      opt_parse_options(data->data_buffer, data_size,
-@@ -415,22 +417,26 @@
+@@ -415,22 +421,26 @@
                      if (data->trace)
                           fprintf(stderr, "received OACK <");
                      /* tsize: funny, now we know the file size */
@@ -651,7 +678,27 @@
                      {
                           if (data->trace)
                                fprintf(stderr, "blksize: %d, ", result);
-@@ -572,7 +578,18 @@
+@@ -538,6 +548,19 @@
+ 		    block_number = tftp_rollover_blocknumber(
+ 			ntohs(tftphdr->th_block), prev_block_number, 0);
+ 	       }
++               if (last_received_block + 1 == block_number)
++               {
++                    if (data->trace)
++                         fprintf(stderr, "Update last received <block: %d → %ld>\n",
++                                 last_received_block, block_number);
++                    last_received_block = block_number;
++               }
++               else
++               {
++                    fprintf(stderr, "Drop out-of-order block <block: %ld>\n", block_number);
++                    state = S_WAIT_PACKET;
++                    break;
++               }
+                if (data->trace)
+                     fprintf(stderr, "received DATA <block: %ld, size: %d>\n",
+                             block_number, data_size - 4);
+@@ -572,7 +595,17 @@
                           state = S_WAIT_PACKET;
                 }
                 else
@@ -660,7 +707,6 @@
 +                    windowblock++;
 +                    if ((windowblock >= windowsize) || (last_block_number != -1))
 +                    {
-+                         windowblock = 0;
 +                         state = S_SEND_ACK;
 +                    }
 +                    else
@@ -671,7 +717,7 @@
                 break;
            case S_END:
            case S_ABORT:
-@@ -628,6 +645,8 @@
+@@ -628,6 +661,8 @@
  {
       int state = S_SEND_REQ;    /* current state in the state machine */
       int timeout_state = state; /* what state should we go on when timeout */
@@ -679,12 +725,8 @@
 +     int windowsize = 1;        /* c.f. RFC7440 */
       int result;
       long block_number = 0;
--     long last_ackd_block = -1;
-+     long last_ackd_block = -1;
-      long last_block = -1;
-      int data_size;             /* size of data received */
-      int sockfd = data->sockfd; /* just to simplify calls */
-@@ -749,13 +802,27 @@
+      long last_ackd_block = -1;
+@@ -749,13 +784,27 @@
  
                 if (feof(fp))
                      last_block = block_number;
@@ -715,7 +757,7 @@
                 break;
            case S_WAIT_PACKET:
                 data_size = data->data_buffer_size;
-@@ -869,6 +902,13 @@
+@@ -869,6 +918,13 @@
                      if (data->trace)
                           fprintf(stderr, "tsize: %d, ", result);
                 }

@@ -39,11 +39,6 @@ Type: boolean
 Default: true
 _Description: Enable 'block size' support?
 
-Template: atftpd/prevent_sas
-Type: boolean
-Default: true
-_Description: Prevent Sorcerer's Apprentice Syndrome?
-
 Template: atftpd/multicast
 Type: boolean
 Default: true

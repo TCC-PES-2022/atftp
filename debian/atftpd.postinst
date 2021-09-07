@@ -47,11 +47,6 @@ if [ "$RET" != "true" ]; then
     NOBLKSIZE="--no-blksize"
 fi
 
-db_get atftpd/prevent_sas
-if [ "$RET" = "true" ]; then
-    PREVSAS="--prevent-sas"
-fi
-
 db_get atftpd/multicast
 if [ "$RET" != "true" ]; then
     NOMCAST="--no-multicast"
@@ -117,7 +112,7 @@ if [ "$RET" ]; then
 fi
 
 
-OPTIONS="$(echo $TFTPD_PORT $TFTPD_TIMEOUT $RETRY_TIMEOUT $NOTIMEOUT $NOTSIZE $NOBLKSIZE $PREVSAS \
+OPTIONS="$(echo $TFTPD_PORT $TFTPD_TIMEOUT $RETRY_TIMEOUT $NOTIMEOUT $NOTSIZE $NOBLKSIZE \
 	$NOMCAST $MCASTPORT $MCASTADDR $MCASTTTL $MAXTHREAD $VERBOSITY $LOGFILE $BASEDIR | tr -s ' ')"
 
 if [ ! -f "$CONFIGFILE" ]; then

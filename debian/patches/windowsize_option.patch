@@ -752,3 +752,43 @@
                 /* timeout */
                 if ((result = opt_get_timeout(data->tftp_options_reply)) > -1)
                 {
+--- a/atftp.1
++++ b/atftp.1
+@@ -69,12 +69,14 @@
+ arguments as the interactive one. For example, use: --option "blksize 1428"
+ to configure block size.
+ .br
+-Possible Values are:
++Possible settings are:
+ .br
+   --option "tsize enable"
+   --option "tsize disable"
+   --option "blksize 8"
+   --option "blksize 65464"
++  --option "timeout 1"
++  --option "windowsize 4"
+ 
+ .TP
+ .B \-\-mtftp <"name value">
+--- a/atftpd.8
++++ b/atftpd.8
+@@ -74,6 +74,11 @@
+ acknowledging the 'blksize' request by the client.
+ 
+ .TP
++.B \-\-no\-windowsize
++disable 'windowsize' from RFC7440. This will prevent the server from
++acknowledging the 'windowsize' request by the client.
++
++.TP
+ .B \-\-no\-multicast
+ disable 'multicast' from RFC2090. This will prevent the server from
+ acknowledging the 'multicast' request by the client.
+@@ -134,7 +139,6 @@
+ the packets don't leave the local network, see ip(4). Scope may also
+ be determine by the address as described RFC2365.
+ 
+-
+ .TP
+ .B \-\-mcast\-addr
+ Specify the IP address range to be used for multicast transfer. Format

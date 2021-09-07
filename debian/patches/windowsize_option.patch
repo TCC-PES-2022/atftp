@@ -564,7 +564,7 @@
  
 --- a/tftp_file.c
 +++ b/tftp_file.c
-@@ -112,6 +112,8 @@
+@@ -112,8 +112,11 @@
  {
       int state = S_SEND_REQ;    /* current state in the state machine */
       int timeout_state = state; /* what state should we go on when timeout */
@@ -572,15 +572,10 @@
 +     int windowsize = 1;        /* c.f. RFC7440 */
       int result;
       long block_number = 0;
++     long last_received_block = 0;
       long last_block_number = -1;/* block number of last block for multicast */
-@@ -143,6 +145,7 @@
-      long prev_block_number = 0; /* needed to support netascii conversion */
-      int temp = 0;
-      int err;
-+     int last_received_block = 0;
- 
-      data->file_size = 0;
-      tftp_cancel = 0;
+      int data_size;             /* size of data received */
+      int sockfd = data->sockfd; /* just to simplify calls */
 @@ -232,6 +235,7 @@
                                     call to tftp_send_request */
                 break;

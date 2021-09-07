@@ -15,7 +15,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: atftp\n"
 "Report-Msgid-Bugs-To: atftp@packages.debian.org\n"
-"POT-Creation-Date: 2021-08-23 21:53+0200\n"
+"POT-Creation-Date: 2021-07-28 21:48+0200\n"
 "PO-Revision-Date: 2009-06-27 12:30+0200\n"
 "Last-Translator: Miroslav Kure <kurem@debian.cz>\n"
 "Language-Team: Czech <debian-l10n-czech@lists.debian.org>\n"
@@ -97,36 +97,30 @@ msgstr "Povolit podporu „block size“?"
 #. Type: boolean
 #. Description
 #: ../atftpd.templates:8001
-msgid "Prevent Sorcerer's Apprentice Syndrome?"
-msgstr ""
-
-#. Type: boolean
-#. Description
-#: ../atftpd.templates:9001
 msgid "Enable multicast support?"
 msgstr "Povolit podporu multicastu?"
 
 #. Type: string
 #. Description
-#: ../atftpd.templates:10001
+#: ../atftpd.templates:9001
 msgid "TTL for multicast packets:"
 msgstr "TTL pro multicastové pakety:"
 
 #. Type: string
 #. Description
-#: ../atftpd.templates:11001
+#: ../atftpd.templates:10001
 msgid "Port to listen for tftp request:"
 msgstr "Port, na kterém se má naslouchat tftp požadavkům:"
 
 #. Type: string
 #. Description
-#: ../atftpd.templates:12001
+#: ../atftpd.templates:11001
 msgid "Port range for multicast file transfer:"
 msgstr "Rozsah portů pro hromadný (multicast) přenos souborů:"
 
 #. Type: string
 #. Description
-#: ../atftpd.templates:12001
+#: ../atftpd.templates:11001
 msgid ""
 "Multicast transfer will use any available port in a given set. For example, "
 "\"2000-2003, 3000\" allow atftpd to use port 2000 to 2003 and 3000."
@@ -136,13 +130,13 @@ msgstr ""
 
 #. Type: string
 #. Description
-#: ../atftpd.templates:13001
+#: ../atftpd.templates:12001
 msgid "Address range for multicast transfer:"
 msgstr "Rozsah adres pro hromadné přenosy:"
 
 #. Type: string
 #. Description
-#: ../atftpd.templates:13001
+#: ../atftpd.templates:12001
 msgid ""
 "Multicast transfer will use any available addresses from a given set of "
 "addresses. Syntax is \"a.b.c.d-d,a.b.c.d,...\""
@@ -152,21 +146,30 @@ msgstr ""
 
 #. Type: boolean
 #. Description
-#: ../atftpd.templates:14001
-#, fuzzy
-#| msgid "Log to file instead of syslog?"
-msgid "Log to file instead of journal/syslog?"
+#: ../atftpd.templates:13001
+msgid "Log to file instead of syslog?"
 msgstr "Nepoužívat pro záznamy syslog, ale samostatný soubor?"
+
+#. Type: boolean
+#. Description
+#: ../atftpd.templates:13001
+msgid ""
+"If your server does intensive tftp file serving, it is a good idea to accept "
+"here. That will avoid cluttering your syslog with tftpd logs."
+msgstr ""
+"Pokud bude váš server nabízet tftp soubory mnoha klientům, je dobré tuto "
+"možnost povolit, protože se pak záznamy tftpd nebudou míchat se záznamy "
+"syslogu."
 
 #. Type: string
 #. Description
-#: ../atftpd.templates:15001
+#: ../atftpd.templates:14001
 msgid "Log file:"
 msgstr "Soubor pro záznamy:"
 
 #. Type: string
 #. Description
-#: ../atftpd.templates:15001
+#: ../atftpd.templates:14001
 msgid ""
 "A file where atftpd will write its logs. This file will be made writable for "
 "the user 'nobody' and group 'nogroup'."
@@ -177,27 +180,19 @@ msgstr ""
 
 #. Type: string
 #. Description
-#: ../atftpd.templates:16001
+#: ../atftpd.templates:15001
 msgid "Base directory:"
 msgstr "Základní adresář:"
 
 #. Type: string
 #. Description
-#: ../atftpd.templates:16001
+#: ../atftpd.templates:15001
 msgid ""
 "The directory tree from where atftpd can serve files. That directory must be "
 "world readable."
 msgstr ""
 "Adresářový strom, ze kterého atftpd nabízí soubory. Adresář musí být čitelný "
 "pro všechny."
-
-#~ msgid ""
-#~ "If your server does intensive tftp file serving, it is a good idea to "
-#~ "accept here. That will avoid cluttering your syslog with tftpd logs."
-#~ msgstr ""
-#~ "Pokud bude váš server nabízet tftp soubory mnoha klientům, je dobré tuto "
-#~ "možnost povolit, protože se pak záznamy tftpd nebudou míchat se záznamy "
-#~ "syslogu."
 
 #~ msgid "Should the server be started by inetd?"
 #~ msgstr "Má se server spouštět přes inetd?"

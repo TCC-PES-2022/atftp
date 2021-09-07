@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: atftp 0.7.dfsg-9.2\n"
 "Report-Msgid-Bugs-To: atftp@packages.debian.org\n"
-"POT-Creation-Date: 2021-08-23 21:53+0200\n"
+"POT-Creation-Date: 2021-07-28 21:48+0200\n"
 "PO-Revision-Date: 2010-10-27 22:46+1030\n"
 "Last-Translator: Clytie Siddall <clytie@riverland.net.au>\n"
 "Language-Team: Vietnamese <vi-VN@googlegroups.com>\n"
@@ -90,36 +90,30 @@ msgstr "Bật hỗ trợ « block size » (kích cỡ khối) ?"
 #. Type: boolean
 #. Description
 #: ../atftpd.templates:8001
-msgid "Prevent Sorcerer's Apprentice Syndrome?"
-msgstr ""
-
-#. Type: boolean
-#. Description
-#: ../atftpd.templates:9001
 msgid "Enable multicast support?"
 msgstr "Bật hỗ trợ truyền một-nhiều ?"
 
 #. Type: string
 #. Description
-#: ../atftpd.templates:10001
+#: ../atftpd.templates:9001
 msgid "TTL for multicast packets:"
 msgstr "TTL (thời gian bền bỉ) cho gói tin truyền một-nhiều :"
 
 #. Type: string
 #. Description
-#: ../atftpd.templates:11001
+#: ../atftpd.templates:10001
 msgid "Port to listen for tftp request:"
 msgstr "Cổng trên đó cần lắng nghe yêu cầu tftp:"
 
 #. Type: string
 #. Description
-#: ../atftpd.templates:12001
+#: ../atftpd.templates:11001
 msgid "Port range for multicast file transfer:"
 msgstr "Phạm vi cổng để truyền một-nhiều :"
 
 #. Type: string
 #. Description
-#: ../atftpd.templates:12001
+#: ../atftpd.templates:11001
 msgid ""
 "Multicast transfer will use any available port in a given set. For example, "
 "\"2000-2003, 3000\" allow atftpd to use port 2000 to 2003 and 3000."
@@ -130,13 +124,13 @@ msgstr ""
 
 #. Type: string
 #. Description
-#: ../atftpd.templates:13001
+#: ../atftpd.templates:12001
 msgid "Address range for multicast transfer:"
 msgstr "Phạm vị địa chỉ để truyền một-nhiều:"
 
 #. Type: string
 #. Description
-#: ../atftpd.templates:13001
+#: ../atftpd.templates:12001
 msgid ""
 "Multicast transfer will use any available addresses from a given set of "
 "addresses. Syntax is \"a.b.c.d-d,a.b.c.d,...\""
@@ -146,21 +140,29 @@ msgstr ""
 
 #. Type: boolean
 #. Description
-#: ../atftpd.templates:14001
-#, fuzzy
-#| msgid "Log to file instead of syslog?"
-msgid "Log to file instead of journal/syslog?"
+#: ../atftpd.templates:13001
+msgid "Log to file instead of syslog?"
 msgstr "Ghi lưu vào tập tin thay cho syslog ?"
+
+#. Type: boolean
+#. Description
+#: ../atftpd.templates:13001
+msgid ""
+"If your server does intensive tftp file serving, it is a good idea to accept "
+"here. That will avoid cluttering your syslog with tftpd logs."
+msgstr ""
+"Nếu máy này có phục vụ rất nhiều tập tin tftp thì khuyên bạn bật tuỳ chọn "
+"này. Nó tránh có sổ theo dõi hệ thống (syslog) đầy bản ghi lưu tftpd."
 
 #. Type: string
 #. Description
-#: ../atftpd.templates:15001
+#: ../atftpd.templates:14001
 msgid "Log file:"
 msgstr "Tập tin theo dõi:"
 
 #. Type: string
 #. Description
-#: ../atftpd.templates:15001
+#: ../atftpd.templates:14001
 msgid ""
 "A file where atftpd will write its logs. This file will be made writable for "
 "the user 'nobody' and group 'nogroup'."
@@ -170,26 +172,19 @@ msgstr ""
 
 #. Type: string
 #. Description
-#: ../atftpd.templates:16001
+#: ../atftpd.templates:15001
 msgid "Base directory:"
 msgstr "Thư mục cơ bản:"
 
 #. Type: string
 #. Description
-#: ../atftpd.templates:16001
+#: ../atftpd.templates:15001
 msgid ""
 "The directory tree from where atftpd can serve files. That directory must be "
 "world readable."
 msgstr ""
 "Đây là cây thư mục từ đó atftpd có thể phục vụ tập tin. Thư mục này phải cấp "
 "quyền đọc cho tất cả."
-
-#~ msgid ""
-#~ "If your server does intensive tftp file serving, it is a good idea to "
-#~ "accept here. That will avoid cluttering your syslog with tftpd logs."
-#~ msgstr ""
-#~ "Nếu máy này có phục vụ rất nhiều tập tin tftp thì khuyên bạn bật tuỳ chọn "
-#~ "này. Nó tránh có sổ theo dõi hệ thống (syslog) đầy bản ghi lưu tftpd."
 
 #~ msgid "Should the server be started by inetd?"
 #~ msgstr "inetd có nên khởi chạy trình phục vụ ?"

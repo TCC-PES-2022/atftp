@@ -413,7 +413,7 @@
                      state = S_SEND_OACK;
                 else
                      state = S_SEND_DATA;
-                last_ackd_block = 0;
+-               last_ackd_block = 0;
                 break;
            case S_SEND_OACK:
                 timeout_state = state;
@@ -453,6 +453,92 @@
                 break;
            case S_WAIT_PACKET:
                 data_size = data->data_buffer_size;
+@@ -805,8 +895,7 @@
+                               {
+                                    /* Send an OACK to the old client remove is
+                                       master client status */
+-                                   opt_options_to_string(options,
+-                                                         string, MAXLEN);
++                                   opt_options_to_string(options, string, MAXLEN);
+                                    if (data->trace)
+                                         logger(LOG_DEBUG, "sent OACK <%s>", string);
+                                    tftp_send_oack(sockfd, sa, options,
+@@ -823,9 +912,6 @@
+                                                &client_info->client));
+                                    sa = &client_info->client;
+ 
+-                                   /* rewind the last_ackd_block counter */
+-                                   last_ackd_block = -1;
+-
+                                    state = S_SEND_OACK;
+                                    break;
+                               }
+@@ -839,7 +925,8 @@
+                                    break;
+                               }
+                          }
+-                         logger(LOG_WARNING, "timeout: retrying...");
++                         logger(LOG_WARNING, "timeout: retrying ...");
++                         block_number = last_ackd_block;
+                          state = timeout_state;
+                     }
+                     break;
+@@ -870,8 +957,7 @@
+                               else
+                                    /* If not, send and OACK with mc=0 to shut it up. */
+                               {
+-                                   opt_options_to_string(options,
+-                                                         string, MAXLEN);
++                                   opt_options_to_string(options, string, MAXLEN);
+                                    if (data->trace)
+                                         logger(LOG_DEBUG, "sent OACK <%s>", string);
+                                    tftp_send_oack(sockfd, &from, options,
+@@ -912,32 +998,25 @@
+                          logger(LOG_DEBUG, "received ACK <block: %ld>",
+                                 block_number);
+ 
+-                    /* if turned on, check whether the block request isn't already fulfilled */
+-                    if (tftpd_prevent_sas) {
+-                         /* multicast, block numbers could contain gaps */
+-                         if (multicast) {
+-                              if (last_ackd_block >= block_number) {
+-                                   if (data->trace)
+-                                        logger(LOG_INFO, "received duplicated ACK <block: %d >= %d>", last_ackd_block, block_number);
+-                                   break;
+-                              } else
+-                                   last_ackd_block = block_number;
+-                              /* unicast, blocks should be requested one after another */
+-                         } else {
+-                              if (last_ackd_block != block_number) {
+-                                   if (data->trace)
+-                                        logger(LOG_INFO, "received out of order ACK <block: %d != %d>", last_ackd_block, block_number);
+-                                   break;
+-                              } else
+-                                   last_ackd_block = block_number;
+-                         }
++                    if (last_ackd_block > block_number) {
++                         if (data->trace)
++                              logger(LOG_DEBUG, "ignore outdated ACK <block: %ld < %ld>",
++                                     block_number, last_ackd_block);
++                         break;
+                     }
+-
+                     if ((last_block != -1) && (block_number > last_block))
+                     {
+                          state = S_END;
+                          break;
+                     }
++                    if (block_number != (last_ackd_block + windowsize) && last_ackd_block != -1) 
++                         logger(LOG_WARNING, "missing blocks in window or no window ACK: expected %ld, got %d",
++                                windowsize, block_number - last_ackd_block);
++                         
++                    logger(LOG_DEBUG, "update last ACK'd <block: %ld → %ld>",
++                           last_ackd_block, block_number);
++                    last_ackd_block = block_number;
++
+                     state = S_SEND_DATA;
+                     break;
+                case GET_ERROR:
 --- a/tftp_def.c
 +++ b/tftp_def.c
 @@ -33,13 +33,14 @@

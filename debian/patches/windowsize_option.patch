@@ -212,7 +212,20 @@
                 tftp_send_error(sockfd, sa, EOPTNEG, data->data_buffer, data->data_buffer_size);
                 if (data->trace)
                      logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", EOPTNEG,
-@@ -349,9 +381,11 @@
+@@ -254,9 +286,11 @@
+                timeout_state = state;
+                tftp_send_oack(sockfd, sa, data->tftp_options,
+                               data->data_buffer, data->data_buffer_size);
+-               opt_options_to_string(data->tftp_options, string, MAXLEN);
+                if (data->trace)
++               {
++                    opt_options_to_string(data->tftp_options, string, MAXLEN);
+                     logger(LOG_DEBUG, "sent OACK <%s>", string);
++               }
+                state = S_WAIT_PACKET;
+                break;
+           case S_WAIT_PACKET:
+@@ -349,9 +383,11 @@
                 /* We need to seek to the right place in the file */
  	       block_number = tftp_rollover_blocknumber(
  		      ntohs(tftphdr->th_block), prev_block_number, 0);
@@ -226,7 +239,7 @@
  
                 if (tftp_file_write(fp, tftphdr->th_data, data->data_buffer_size - 4, block_number,
                                     data_size - 4, convert, &prev_block_number, &temp)
-@@ -371,7 +405,16 @@
+@@ -371,7 +407,16 @@
                      all_blocks_received = 1;
                 else
                      all_blocks_received = 0;
@@ -244,7 +257,7 @@
                 break;
            case S_END:
                 fclose(fp);
-@@ -420,6 +463,8 @@
+@@ -420,6 +465,8 @@
       char filename[MAXLEN];
       char string[MAXLEN];
       int timeout = data->timeout;
@@ -253,7 +266,7 @@
       int number_of_timeout = 0;
       int mcast_switch = data->mcast_switch_client;
       struct stat file_stat;
-@@ -529,10 +574,10 @@
+@@ -529,10 +576,10 @@
            logger(LOG_INFO, "timeout option -> %d", timeout);
       }
  
@@ -267,7 +280,7 @@
            {
                 tftp_send_error(sockfd, sa, EOPTNEG, data->data_buffer, data->data_buffer_size);
                 if (data->trace)
-@@ -541,42 +586,9 @@
+@@ -541,42 +588,9 @@
                 fclose(fp);
                 return ERR;
            }
@@ -313,7 +326,20 @@
       }
  
       /* multicast option */
-@@ -701,6 +713,69 @@
+@@ -626,9 +640,10 @@
+                   not be a problem: the client thread will receive a second OACK and fall
+                   back to non master mode. Then the server will timeout and either resend
+                   OACK or continu with the next client */
+-               opt_options_to_string(data->tftp_options, string, MAXLEN);
+-               if (data->trace)
++               if (data->trace) {
++                    opt_options_to_string(data->tftp_options, string, MAXLEN);
+                     logger(LOG_DEBUG, "sent OACK <%s>", string);
++               }
+                tftp_send_oack(thread->sockfd, sa, data->tftp_options,
+                               data->data_buffer, data->data_buffer_size);
+ 
+@@ -701,6 +716,69 @@
            }
       }
  
@@ -383,7 +409,24 @@
       /* copy options to local structure, used when falling back a client to slave */
       memcpy(options, data->tftp_options, sizeof(options));
       opt_set_multicast(options, data->mc_addr, data->mc_port, 0);
-@@ -768,11 +843,23 @@
+@@ -735,13 +813,14 @@
+                     state = S_SEND_OACK;
+                else
+                     state = S_SEND_DATA;
+                last_ackd_block = 0;
+                break;
+           case S_SEND_OACK:
+                timeout_state = state;
+-               opt_options_to_string(data->tftp_options, string, MAXLEN);
+                if (data->trace)
++               {
++                    opt_options_to_string(data->tftp_options, string, MAXLEN);
+                     logger(LOG_DEBUG, "sent OACK <%s>", string);
++               }
+                tftp_send_oack(sockfd, sa, data->tftp_options,
+                               data->data_buffer, data->data_buffer_size);
+                state = S_WAIT_PACKET;
+@@ -768,11 +847,22 @@
                      tftp_send_data(sockfd, sa, block_number + 1,
                                     data_size, data->data_buffer);
                 }

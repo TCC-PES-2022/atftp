@@ -87,7 +87,7 @@ Forwarded: https://sourceforge.net/p/atftp/support-requests/9/
       int timeout_state = state; /* what state should we go on when timeout */
       int result;
       long block_number = 0;
-+     long last_requested_block = -1;
++     long last_ackd_block = -1;
       long last_block = -1;
       int data_size;             /* size of data received */
       int sockfd = data->sockfd; /* just to simplify calls */
@@ -98,13 +98,13 @@ Forwarded: https://sourceforge.net/p/atftp/support-requests/9/
 +
 +                    /* if turned on, check whether the block request isn't already fulfilled */
 +                    if (tftp_prevent_sas) {
-+                         if (last_requested_block >= block_number) {
++                         if (last_ackd_block >= block_number) {
 +                              if (data->trace)
 +                                   fprintf(stderr, "received duplicated ACK <block: %ld >= %ld>\n",
-+                                           last_requested_block, block_number);
++                                           last_ackd_block, block_number);
 +                              break;
 +                         } else
-+                              last_requested_block = block_number;
++                              last_ackd_block = block_number;
 +                    }
 +
                      if (data->trace)
@@ -160,7 +160,7 @@ Forwarded: https://sourceforge.net/p/atftp/support-requests/9/
       int timeout_state = state;
       int result;
       long block_number = 0;
-+     long last_requested_block = -1;
++     long last_ackd_block = -1;
       long last_block = -1;
       int data_size;
       struct sockaddr_storage *sa = &data->client_info->client;
@@ -168,7 +168,7 @@ Forwarded: https://sourceforge.net/p/atftp/support-requests/9/
                      state = S_SEND_OACK;
                 else
                      state = S_SEND_DATA;
-+               last_requested_block = 0;
++               last_ackd_block = 0;
                 break;
            case S_SEND_OACK:
                 timeout_state = state;
@@ -176,7 +176,7 @@ Forwarded: https://sourceforge.net/p/atftp/support-requests/9/
                      tftp_send_data(sockfd, sa, block_number + 1,
                                     data_size, data->data_buffer);
                 }
-+               last_requested_block++;
++               last_ackd_block++;
                 if (data->trace)
                      logger(LOG_DEBUG, "sent DATA <block: %ld, size %d>",
                             block_number + 1, data_size - 4);
@@ -185,8 +185,8 @@ Forwarded: https://sourceforge.net/p/atftp/support-requests/9/
                                                 &client_info->client));
                                     sa = &client_info->client;
 +
-+                                   /* rewind the last_requested_block counter */
-+                                   last_requested_block = -1;
++                                   /* rewind the last_ackd_block counter */
++                                   last_ackd_block = -1;
 +
                                     state = S_SEND_OACK;
                                     break;
@@ -200,20 +200,20 @@ Forwarded: https://sourceforge.net/p/atftp/support-requests/9/
 +                    if (tftpd_prevent_sas) {
 +                         /* multicast, block numbers could contain gaps */
 +                         if (multicast) {
-+                              if (last_requested_block >= block_number) {
++                              if (last_ackd_block >= block_number) {
 +                                   if (data->trace)
-+                                        logger(LOG_INFO, "received duplicated ACK <block: %d >= %d>", last_requested_block, block_number);
++                                        logger(LOG_INFO, "received duplicated ACK <block: %d >= %d>", last_ackd_block, block_number);
 +                                   break;
 +                              } else
-+                                   last_requested_block = block_number;
++                                   last_ackd_block = block_number;
 +                              /* unicast, blocks should be requested one after another */
 +                         } else {
-+                              if (last_requested_block != block_number) {
++                              if (last_ackd_block != block_number) {
 +                                   if (data->trace)
-+                                        logger(LOG_INFO, "received out of order ACK <block: %d != %d>", last_requested_block, block_number);
++                                        logger(LOG_INFO, "received out of order ACK <block: %d != %d>", last_ackd_block, block_number);
 +                                   break;
 +                              } else
-+                                   last_requested_block = block_number;
++                                   last_ackd_block = block_number;
 +                         }
 +                    }
 +
@@ -225,7 +225,7 @@ Forwarded: https://sourceforge.net/p/atftp/support-requests/9/
                           state = S_SEND_OACK;                
                           fseek(fp, 0, SEEK_SET);
 +			 /* reset the last block received counter */
-+			 last_requested_block = -1;
++			 last_ackd_block = -1;
                      }
                      else
                      {

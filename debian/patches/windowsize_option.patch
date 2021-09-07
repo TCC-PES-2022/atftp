@@ -387,9 +387,9 @@
                      tftp_send_data(sockfd, sa, block_number + 1,
                                     data_size, data->data_buffer);
                 }
+-               last_ackd_block++;
 +
 +               windowblock++;
-                last_requested_block++;
                 if (data->trace)
 -                    logger(LOG_DEBUG, "sent DATA <block: %ld, size %d>",
 -                           block_number + 1, data_size - 4);
@@ -527,8 +527,12 @@
 +     int windowsize = 1;        /* c.f. RFC7440 */
       int result;
       long block_number = 0;
-      long last_requested_block = -1;
-@@ -749,13 +768,27 @@
+-     long last_ackd_block = -1;
++     long last_ackd_block = -1;
+      long last_block = -1;
+      int data_size;             /* size of data received */
+      int sockfd = data->sockfd; /* just to simplify calls */
+@@ -749,13 +802,27 @@
  
                 if (feof(fp))
                      last_block = block_number;
@@ -538,7 +542,7 @@
                 data->file_size += data_size;
 +
 +               windowblock++;
-+               last_requested_block++;
++               last_ackd_block++;
                 if (data->trace)
 -                    fprintf(stderr, "sent DATA <block: %ld, size: %d>\n",
 -                            block_number + 1, data_size - 4);

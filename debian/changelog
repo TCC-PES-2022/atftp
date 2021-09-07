@@ -1,11 +1,12 @@
 atftp (0.7.git20210202-4) UNRELEASED; urgency=medium
 
-  * Sorcerer's Apprentice Syndrome patch:
-     - Fix condition that was never true. Modify log relevance.
-     - Refresh patches; fix block counter.
   * Draft implementation of the windowsize option from RFC7440.
+  * Prevent the Sorcerer's Apprentice Syndrome in any case and
+    remove its debconf configuration.
+  * Client side windowsize option handling.
+  * Update README and fix default configuration file syntax.
 
- -- Andreas B. Mundt <andi@debian.org>  Wed, 01 Sep 2021 12:48:47 +0200
+ -- Andreas B. Mundt <andi@debian.org>  Tue, 07 Sep 2021 15:01:29 +0200
 
 atftp (0.7.git20210202-3) unstable; urgency=medium
 

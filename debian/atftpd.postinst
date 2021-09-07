@@ -118,8 +118,7 @@ OPTIONS="$(echo $TFTPD_PORT $TFTPD_TIMEOUT $RETRY_TIMEOUT $NOTIMEOUT $NOTSIZE $N
 if [ ! -f "$CONFIGFILE" ]; then
 	cat <<EOF > "$CONFIGFILE"
 ## Options for atftpd:
-
-OPTIONS=\"$OPTIONS\"
+OPTIONS="$OPTIONS"
 EOF
 else
 	grep -Eq '^ *OPTIONS=' $CONFIGFILE || echo "OPTIONS=" >> $CONFIGFILE

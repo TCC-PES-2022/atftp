@@ -453,17 +453,22 @@
                 break;
            case S_WAIT_PACKET:
                 data_size = data->data_buffer_size;
-@@ -805,8 +895,7 @@
+@@ -805,10 +895,11 @@
                                {
                                     /* Send an OACK to the old client remove is
                                        master client status */
 -                                   opt_options_to_string(options,
 -                                                         string, MAXLEN);
-+                                   opt_options_to_string(options, string, MAXLEN);
-                                    if (data->trace)
+-                                   if (data->trace)
++
++                                   if (data->trace) {
++                                        opt_options_to_string(options, string, MAXLEN);
                                          logger(LOG_DEBUG, "sent OACK <%s>", string);
++                                   }
                                     tftp_send_oack(sockfd, sa, options,
-@@ -823,9 +912,6 @@
+                                                   data->data_buffer, data->data_buffer_size);
+ 
+@@ -823,9 +914,6 @@
                                                 &client_info->client));
                                     sa = &client_info->client;
  
@@ -473,7 +478,7 @@
                                     state = S_SEND_OACK;
                                     break;
                                }
-@@ -839,7 +925,8 @@
+@@ -839,7 +927,8 @@
                                     break;
                                }
                           }
@@ -483,17 +488,21 @@
                           state = timeout_state;
                      }
                      break;
-@@ -870,8 +957,7 @@
+@@ -870,10 +959,10 @@
                                else
                                     /* If not, send and OACK with mc=0 to shut it up. */
                                {
 -                                   opt_options_to_string(options,
 -                                                         string, MAXLEN);
-+                                   opt_options_to_string(options, string, MAXLEN);
-                                    if (data->trace)
+-                                   if (data->trace)
++                                   if (data->trace) {
++                                        opt_options_to_string(options, string, MAXLEN);
                                          logger(LOG_DEBUG, "sent OACK <%s>", string);
++                                   }
                                     tftp_send_oack(sockfd, &from, options,
-@@ -912,32 +998,25 @@
+                                                   data->data_buffer, data->data_buffer_size);
+                               }
+@@ -912,32 +1001,25 @@
                           logger(LOG_DEBUG, "received ACK <block: %ld>",
                                  block_number);
  
@@ -539,6 +548,20 @@
                      state = S_SEND_DATA;
                      break;
                 case GET_ERROR:
+@@ -982,10 +1064,11 @@
+                          }
+                     }
+                     /* Got an ERROR from the current master client */
+-                    Strncpy(string, tftphdr->th_msg, sizeof(string));
+-                    if (data->trace)
++                    if (data->trace) {
++                         Strncpy(string, tftphdr->th_msg, sizeof(string));
+                          logger(LOG_DEBUG, "received ERROR <code: %d, msg: %s>",
+                                 ntohs(tftphdr->th_code), string);
++                    }
+                     if (multicast)
+                     {
+                          logger(LOG_DEBUG, "Marking client as done");
 --- a/tftp_def.c
 +++ b/tftp_def.c
 @@ -33,13 +33,14 @@

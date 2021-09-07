@@ -1,12 +1,13 @@
-atftp (0.7.git20210202-4) UNRELEASED; urgency=medium
+atftp (0.7.git20210202-4) unstable; urgency=medium
 
   * Draft implementation of the windowsize option from RFC7440.
   * Prevent the Sorcerer's Apprentice Syndrome in any case and
     remove its debconf configuration.
-  * Client side windowsize option handling.
+  * Add configuration of 'windowsize' option to debconf.
+  * Client side windowsize option handling, minor fixes.
   * Update README and fix default configuration file syntax.
 
- -- Andreas B. Mundt <andi@debian.org>  Tue, 07 Sep 2021 15:01:29 +0200
+ -- Andreas B. Mundt <andi@debian.org>  Wed, 08 Sep 2021 12:07:38 +0200
 
 atftp (0.7.git20210202-3) unstable; urgency=medium
 

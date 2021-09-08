@@ -37,7 +37,12 @@ _Description: Enable 'tsize' support?
 Template: atftpd/blksize
 Type: boolean
 Default: true
-_Description: Enable 'block size' support?
+_Description: Enable 'blksize' support?
+
+Template: atftpd/windowsize
+Type: boolean
+Default: true
+_Description: Enable 'windowsize' support?
 
 Template: atftpd/multicast
 Type: boolean

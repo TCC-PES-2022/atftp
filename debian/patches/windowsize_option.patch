@@ -202,20 +202,25 @@
 +          opt_options_to_string(data->tftp_options, string, MAXLEN);
 +          if ((result < strlen(string)-2) || (result > 65464))
            {
-+               logger(LOG_NOTICE, "Options <%s> require roughly a blksize of %d for the OACK.",
++               logger(LOG_NOTICE, "options <%s> require roughly a blksize of %d for the OACK.",
 +                      string, strlen(string)-2);
                 tftp_send_error(sockfd, sa, EOPTNEG, data->data_buffer, data->data_buffer_size);
                 if (data->trace)
                      logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", EOPTNEG,
-@@ -240,6 +273,7 @@
+@@ -240,29 +273,32 @@
                      state = S_SEND_ACK;
                 break;
            case S_SEND_ACK:
 +               windowblock = 0;
                 timeout_state = state;
-                tftp_send_ack(sockfd, sa, block_number);
+-               tftp_send_ack(sockfd, sa, block_number);
++               tftp_send_ack(sockfd, sa, last_received_block);
                 if (data->trace)
-@@ -250,19 +284,21 @@
+-                    logger(LOG_DEBUG, "sent ACK <block: %ld>", block_number);
++                    logger(LOG_DEBUG, "sent ACK <block: %ld>", last_received_block);
+                if (all_blocks_received)
+                     state = S_END;
+                else
                      state = S_WAIT_PACKET;
                 break;
            case S_SEND_OACK:
@@ -239,6 +244,15 @@
                 switch (result)
                 {
                 case GET_TIMEOUT:
+@@ -276,7 +312,7 @@
+                     }
+                     else
+                     {
+-                         logger(LOG_WARNING, "timeout: retrying...");
++                         logger(LOG_WARNING, "timeout: retrying ...");
+                          state = timeout_state;
+                     }
+                     break;
 @@ -346,11 +382,38 @@
                 break;
            case S_DATA_RECEIVED:
@@ -247,18 +261,18 @@
 +               block_number = tftp_rollover_blocknumber(
  		      ntohs(tftphdr->th_block), prev_block_number, 0);
 +               /* The first data package acknowledges the OACK */
-+               if ((block_number == 1) && (timeout_state = S_SEND_OACK))
++               if ((last_received_block < windowsize) && (timeout_state = S_SEND_OACK))
 +                    timeout_state = S_SEND_ACK;
 +               if (last_received_block + 1 == block_number)
 +               {
 +                    if (data->trace)
-+                         logger(LOG_DEBUG, "Update last received <block: %ld → %ld>\n",
++                         logger(LOG_DEBUG, "update last received <block: %ld → %ld>\n",
 +                                 last_received_block, block_number);
 +                    last_received_block = block_number;
 +               }
 +               else
 +               {
-+                    logger(LOG_DEBUG, "Drop out-of-order block <block: %ld>\n", block_number);
++                    logger(LOG_DEBUG, "drop out-of-order block <block: %ld>\n", block_number);
 +                    if (block_number == last_received_block)
 +                    {
 +                         /* we already acknowledged that block, that must have been lost → ACK again */
@@ -704,13 +718,13 @@
 +               if (last_received_block + 1 == block_number)
 +               {
 +                    if (data->trace)
-+                         fprintf(stderr, "Update last received <block: %ld → %ld>\n",
++                         fprintf(stderr, "update last received <block: %ld → %ld>\n",
 +                                 last_received_block, block_number);
 +                    last_received_block = block_number;
 +               }
 +               else
 +               {
-+                    fprintf(stderr, "Drop out-of-order block <block: %ld>\n", block_number);
++                    fprintf(stderr, "drop out-of-order block <block: %ld>\n", block_number);
 +                    if (block_number == last_received_block)
 +                    {
 +                         /* we already acknowledged that block, that must have been lost → ACK again */

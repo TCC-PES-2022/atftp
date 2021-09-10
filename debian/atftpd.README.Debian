@@ -7,6 +7,8 @@ override like:
 
 [Service]
 DynamicUser=no
+User=nobody
+Group=nogroup
 
 in '/etc/systemd/system/atftpd.service.d/override.conf'. 
 

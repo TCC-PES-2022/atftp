@@ -253,7 +253,7 @@
                           state = timeout_state;
                      }
                      break;
-@@ -346,11 +382,38 @@
+@@ -346,15 +382,24 @@
                 break;
            case S_DATA_RECEIVED:
                 /* We need to seek to the right place in the file */
@@ -263,56 +263,40 @@
 +               /* The first data package acknowledges the OACK */
 +               if ((last_received_block < windowsize) && (timeout_state = S_SEND_OACK))
 +                    timeout_state = S_SEND_ACK;
-+               if (last_received_block + 1 == block_number)
++               if (last_received_block + 1 != block_number)
 +               {
-+                    if (data->trace)
-+                         logger(LOG_DEBUG, "update last received <block: %ld → %ld>\n",
-+                                 last_received_block, block_number);
-+                    last_received_block = block_number;
-+               }
-+               else
-+               {
-+                    logger(LOG_DEBUG, "drop out-of-order block <block: %ld>\n", block_number);
-+                    if (block_number == last_received_block)
-+                    {
-+                         /* we already acknowledged that block, that must have been lost → ACK again */
-+                         state = S_SEND_ACK;
-+                    }
-+                    else
-+                    {
-+                         /* start with empty window again */
-+                         windowblock = 0;
-+                         state = S_WAIT_PACKET;
-+                    }
++                    logger(LOG_DEBUG, "got wrong block <block: %ld>", block_number);
++                    state = S_SEND_ACK;
 +                    break;
 +               }
 +               windowblock++;
                 if (data->trace)
 -                    logger(LOG_DEBUG, "received DATA <block: %ld, size: %d>",
 -                           block_number, data_size - 4);
-+                    logger(LOG_DEBUG, "received %d. DATA <block: %ld, size %d>",
-+                           windowblock, block_number, data_size - 4);
- 
+-
++                    logger(LOG_DEBUG, "received %d. DATA <block: %ld, size %d>, update last received block: %ld → %ld>",
++                           windowblock, block_number, data_size - 4, last_received_block, block_number);
++               last_received_block = block_number;
                 if (tftp_file_write(fp, tftphdr->th_data, data->data_buffer_size - 4, block_number,
-                                    data_size - 4, convert, &prev_block_number, &temp)
-@@ -370,7 +433,15 @@
+-                                   data_size - 4, convert, &prev_block_number, &temp)
+-                   != data_size - 4)
++                                   data_size - 4, convert, &prev_block_number, &temp) != data_size - 4)
+                {
+                     logger(LOG_ERR, "%s: %d: error writing to file %s",
+                            __FILE__, __LINE__, filename);
+@@ -370,7 +415,10 @@
                      all_blocks_received = 1;
                 else
                      all_blocks_received = 0;
 -               state = S_SEND_ACK;
-+
 +               if ((windowblock >= windowsize) || (all_blocks_received))
-+               {
 +                    state = S_SEND_ACK;
-+               }
 +               else
-+               {
 +                    state = S_WAIT_PACKET;
-+               }
                 break;
            case S_END:
                 fclose(fp);
-@@ -407,6 +478,7 @@
+@@ -407,6 +455,7 @@
       int timeout_state = state;
       int result;
       long block_number = 0;
@@ -320,7 +304,7 @@
       long last_block = -1;
       int data_size;
       struct sockaddr_storage *sa = &data->client_info->client;
-@@ -418,6 +490,8 @@
+@@ -418,6 +467,8 @@
       char filename[MAXLEN];
       char string[MAXLEN];
       int timeout = data->timeout;
@@ -329,7 +313,7 @@
       int number_of_timeout = 0;
       int mcast_switch = data->mcast_switch_client;
       struct stat file_stat;
-@@ -527,10 +601,10 @@
+@@ -527,10 +578,10 @@
            logger(LOG_INFO, "timeout option -> %d", timeout);
       }
  
@@ -343,7 +327,7 @@
            {
                 tftp_send_error(sockfd, sa, EOPTNEG, data->data_buffer, data->data_buffer_size);
                 if (data->trace)
-@@ -539,42 +613,9 @@
+@@ -539,42 +590,9 @@
                 fclose(fp);
                 return ERR;
            }
@@ -389,7 +373,7 @@
       }
  
       /* multicast option */
-@@ -624,9 +665,11 @@
+@@ -624,9 +642,11 @@
                    not be a problem: the client thread will receive a second OACK and fall
                    back to non master mode. Then the server will timeout and either resend
                    OACK or continu with the next client */
@@ -402,7 +386,7 @@
                 tftp_send_oack(thread->sockfd, sa, data->tftp_options,
                                data->data_buffer, data->data_buffer_size);
  
-@@ -699,6 +742,69 @@
+@@ -699,6 +719,69 @@
            }
       }
  
@@ -472,7 +456,7 @@
       /* copy options to local structure, used when falling back a client to slave */
       memcpy(options, data->tftp_options, sizeof(options));
       opt_set_multicast(options, data->mc_addr, data->mc_port, 0);
-@@ -736,9 +842,11 @@
+@@ -736,9 +819,11 @@
                 break;
            case S_SEND_OACK:
                 timeout_state = state;
@@ -485,33 +469,62 @@
                 tftp_send_oack(sockfd, sa, data->tftp_options,
                                data->data_buffer, data->data_buffer_size);
                 state = S_WAIT_PACKET;
-@@ -765,10 +873,22 @@
+@@ -750,10 +835,6 @@
+                                           convert, &prev_block_number, &prev_file_pos, &temp);
+                data_size += 4;  /* need to consider tftp header */
+ 
+-               /* record the last block number */
+-               if (feof(fp))
+-                    last_block = block_number;
+-
+                if (multicast)
+                {
+                     tftp_send_data(sockfd, &data->sa_mcast,
+@@ -765,15 +846,39 @@
                      tftp_send_data(sockfd, sa, block_number + 1,
                                     data_size, data->data_buffer);
                 }
-+
 +               windowblock++;
                 if (data->trace)
 -                    logger(LOG_DEBUG, "sent DATA <block: %ld, size %d>",
 -                           block_number + 1, data_size - 4);
--               state = S_WAIT_PACKET;
 +                    logger(LOG_DEBUG, "sent %d. DATA <block: %ld, size %d>",
 +                           windowblock, block_number + 1, data_size - 4);
-+
-+               if ((windowblock >= windowsize) || (last_block != -1))
-+               {
-+                    windowblock = 0;
-+                    state = S_WAIT_PACKET;
-+               }
+                state = S_WAIT_PACKET;
++               /* record the last block number */
++               if (feof(fp))
++                    last_block = block_number;
 +               else
-+               {
 +                    block_number = tftp_rollover_blocknumber(
 +                         ntohs(tftphdr->th_block), prev_block_number, 0);
-+               }
                 break;
            case S_WAIT_PACKET:
                 data_size = data->data_buffer_size;
-@@ -801,10 +921,12 @@
+-               result = tftp_get_packet(sockfd, -1, NULL, sa, &from, NULL,
+-                                        timeout, &data_size, data->data_buffer);
++               if ((windowblock >= windowsize) || (block_number == 0) || (last_block != -1))
++               {
++                    windowblock = 0;
++                    /* we wait for the ACK */
++                    result = tftp_get_packet(sockfd, -1, NULL, sa, &from, NULL,
++                                             timeout, &data_size, data->data_buffer);
++               }
++               else
++               {
++                    /* we check if an unsolicitated ACK arrived */
++                    result = tftp_get_packet(sockfd, -1, NULL, sa, &from, NULL,
++                                             0, &data_size, data->data_buffer);
++                    if (result == GET_TIMEOUT)
++                    {
++                         /* we send the next block */
++                         state = S_SEND_DATA;
++                         break;
++                    }
++               }
+                switch (result)
+                {
+                case GET_TIMEOUT:
+@@ -801,10 +906,12 @@
                                {
                                     /* Send an OACK to the old client remove is
                                        master client status */
@@ -526,7 +539,7 @@
                                     tftp_send_oack(sockfd, sa, options,
                                                    data->data_buffer, data->data_buffer_size);
  
-@@ -831,7 +953,8 @@
+@@ -831,7 +938,8 @@
                                     break;
                                }
                           }
@@ -536,7 +549,7 @@
                           state = timeout_state;
                      }
                      break;
-@@ -862,15 +985,15 @@
+@@ -862,15 +970,15 @@
                                else
                                     /* If not, send and OACK with mc=0 to shut it up. */
                                {
@@ -555,7 +568,15 @@
                           }
                      }
                      else
-@@ -901,13 +1024,26 @@
+@@ -893,6 +1001,7 @@
+                     }
+                     /* The ACK is from the current client */
+                     number_of_timeout = 0;
++                    windowblock = 0;
+ 		    if (multicast)
+ 			    block_number = ntohs(tftphdr->th_block);
+ 		    else
+@@ -901,13 +1010,26 @@
  				ntohs(tftphdr->th_block), prev_block_number, 0);
  		    }
                      if (data->trace)
@@ -575,8 +596,8 @@
                           break;
                      }
 +                    if (block_number != (last_ackd_block + windowsize) && last_ackd_block != -1)
-+                         logger(LOG_WARNING, "missing ACK for some blocks in window: expected %d blocks, got %ld",
-+                                windowsize, block_number - last_ackd_block);
++                         logger(LOG_WARNING, "window not complete/ordered: %ld/%d valid",
++                                block_number - last_ackd_block, windowsize);
 +                    if (data->trace)
 +                         logger(LOG_DEBUG, "update last ACK'd <block: %ld → %ld>", last_ackd_block, block_number);
 +
@@ -584,7 +605,7 @@
                      state = S_SEND_DATA;
                      break;
                 case GET_ERROR:
-@@ -952,10 +1088,12 @@
+@@ -952,10 +1074,12 @@
                           }
                      }
                      /* Got an ERROR from the current master client */
@@ -711,37 +732,36 @@
                      {
                           if (data->trace)
                                fprintf(stderr, "blksize: %d, ", result);
-@@ -537,6 +545,29 @@
+@@ -537,15 +545,22 @@
  		    block_number = tftp_rollover_blocknumber(
  			ntohs(tftphdr->th_block), prev_block_number, 0);
  	       }
-+               if (last_received_block + 1 == block_number)
++               if ((last_received_block < windowsize) && (timeout_state = S_SEND_OACK))
++                    timeout_state = S_SEND_ACK;
++               if (last_received_block + 1 != block_number)
 +               {
-+                    if (data->trace)
-+                         fprintf(stderr, "update last received <block: %ld → %ld>\n",
-+                                 last_received_block, block_number);
-+                    last_received_block = block_number;
-+               }
-+               else
-+               {
-+                    fprintf(stderr, "drop out-of-order block <block: %ld>\n", block_number);
-+                    if (block_number == last_received_block)
-+                    {
-+                         /* we already acknowledged that block, that must have been lost → ACK again */
-+                         state = S_SEND_ACK;
-+                    }
-+                    else
-+                    {
-+                         /* start with empty window again */
-+                         windowblock = 0;
-+                         state = S_WAIT_PACKET;
-+                    }
++                    fprintf(stderr, "got wrong block <block: %ld>\n", block_number);
++                    state = S_SEND_ACK;
 +                    break;
 +               }
++               windowblock++;
                 if (data->trace)
-                     fprintf(stderr, "received DATA <block: %ld, size: %d>\n",
-                             block_number, data_size - 4);
-@@ -565,13 +596,23 @@
+-                    fprintf(stderr, "received DATA <block: %ld, size: %d>\n",
+-                            block_number, data_size - 4);
+-
++                    fprintf(stderr, "received %d. DATA <block: %ld, size %d>, update last received block: %ld → %ld\n",
++                            windowblock, block_number, data_size - 4, last_received_block, block_number);
++               last_received_block = block_number;
+                if (tftp_file_write(fp, tftphdr->th_data, data->data_buffer_size - 4, block_number,
+-                                   data_size - 4, convert, &prev_block_number, &temp)
+-                   != data_size - 4)
++                                   data_size - 4, convert, &prev_block_number, &temp) != data_size - 4)
+                {
+-
+                     fprintf(stderr, "tftp: error writing to file %s\n",
+                             data->local_file);
+                     tftp_send_error(sockfd, &sa, ENOSPACE, data->data_buffer,
+@@ -565,13 +580,18 @@
                           |= (1 << ((block_number - 1) % 32));
                      /* if we are the master client we ack, else
                         we just wait for data */
@@ -754,20 +774,15 @@
                 else
 -                    state = S_SEND_ACK;
 +               {
-+                    windowblock++;
 +                    if ((windowblock >= windowsize) || (last_block_number != -1))
-+                    {
 +                         state = S_SEND_ACK;
-+                    }
 +                    else
-+                    {
 +                         state = S_WAIT_PACKET;
-+                    }
 +               }
                 break;
            case S_END:
            case S_ABORT:
-@@ -627,6 +668,8 @@
+@@ -627,6 +647,8 @@
  {
       int state = S_SEND_REQ;    /* current state in the state machine */
       int timeout_state = state; /* what state should we go on when timeout */
@@ -776,7 +791,12 @@
       int result;
       long block_number = 0;
       long last_block = -1;
-@@ -750,10 +793,21 @@
+@@ -745,21 +767,41 @@
+                                           convert, &prev_block_number, &prev_file_pos, &temp);
+                data_size += 4;  /* need to consider tftp header */
+ 
+-               if (feof(fp))
+-                    last_block = block_number;
                 tftp_send_data(sockfd, &sa, block_number + 1,
                                data_size, data->data_buffer);
                 data->file_size += data_size;
@@ -784,24 +804,51 @@
                 if (data->trace)
 -                    fprintf(stderr, "sent DATA <block: %ld, size: %d>\n",
 -                            block_number + 1, data_size - 4);
--               state = S_WAIT_PACKET;
 +                    fprintf(stderr, "sent %d. DATA <block: %ld, size %d>\n",
 +                           windowblock, block_number + 1, data_size - 4);
-+
-+               if ((windowblock >= windowsize) || (last_block != -1))
-+               {
-+                    windowblock = 0;
-+                    state = S_WAIT_PACKET;
-+               }
+                state = S_WAIT_PACKET;
++               if (feof(fp))
++                    last_block = block_number;
 +               else
-+               {
 +                    block_number = tftp_rollover_blocknumber(
 +                         ntohs(tftphdr->th_block), prev_block_number, 0);
-+               }
                 break;
            case S_WAIT_PACKET:
                 data_size = data->data_buffer_size;
-@@ -855,6 +909,13 @@
+-               result = tftp_get_packet(sockfd, -1, NULL, &sa, &from, NULL,
+-                                        data->timeout, &data_size,
+-                                        data->data_buffer);
++               if ((windowblock >= windowsize) || (block_number == 0) || (last_block != -1))
++               {
++                    windowblock = 0;
++                    /* we wait for the ACK */
++                    result = tftp_get_packet(sockfd, -1, NULL, &sa, &from, NULL,
++                                             data->timeout, &data_size, data->data_buffer);
++               }
++               else
++               {
++                    /* we check if an unsolicitated ACK arrived */
++                    result = tftp_get_packet(sockfd, -1, NULL, &sa, &from, NULL,
++                                             0, &data_size, data->data_buffer);
++                    if (result == GET_TIMEOUT)
++                    {
++                         /* we send the next block */
++                         state = S_SEND_DATA;
++                         break;
++                    }
++               }
+                /* check that source port match */
+                if (sockaddr_get_port(&sa) != sockaddr_get_port(&from))
+                {
+@@ -783,6 +825,7 @@
+                     break;
+                case GET_ACK:
+                     number_of_timeout = 0;
++                    windowblock = 0;
+                     /* if the socket if not connected, connect it */
+                     if (!connected)
+                     {
+@@ -855,6 +898,13 @@
                      if (data->trace)
                           fprintf(stderr, "tsize: %d, ", result);
                 }
@@ -900,3 +947,15 @@
            return ERR;
       }
       /* if disabling an option */
+--- a/tftp_io.c
++++ b/tftp_io.c
+@@ -235,7 +235,8 @@
+ 
+      /* Wait up to five seconds. */
+      tv.tv_sec = timeout;
+-     tv.tv_usec = 0;
++     /* We wait that long for out-of-order ACKs between data packages. */
++     tv.tv_usec = 50;
+ 
+      /* Watch socket to see when it has input. */
+      FD_ZERO(&rfds);

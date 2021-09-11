@@ -406,7 +406,7 @@
 +          opt_options_to_string(data->tftp_options, string, MAXLEN);
 +          if ((result < strlen(string)-2) || (result > 65464))
 +          {
-+               logger(LOG_ERR, "Options <%s> require roughly a blksize of %d for the OACK.",
++               logger(LOG_NOTICE, "options <%s> require roughly a blksize of %d for the OACK.",
 +                      string, strlen(string)-2);
 +               tftp_send_error(sockfd, sa, EOPTNEG, data->data_buffer, data->data_buffer_size);
 +               if (data->trace)

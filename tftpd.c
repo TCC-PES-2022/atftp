@@ -65,6 +65,8 @@ int listen_local = 0;
 
 int tftpd_daemon = 0;           /* By default we are started by inetd */
 int tftpd_daemon_no_fork = 0;   /* For who want a false daemon mode */
+int tftpd_prevent_sas = 0;      /* For who don't want the sorcerer's apprentice syndrome */
+int drop_privs = 0;             /* whether it was explicitly requested to switch to another user. */
 short tftpd_port = 69;          /* Port atftpd listen to */
 char tftpd_addr[MAXLEN] = "";   /* IP address atftpd binds to */
 
@@ -186,12 +188,12 @@ int main(int argc, char **argv)
      }
 
      /*
-      * Can't be started from the prompt without explicitely specifying
+      * Can't be started from the prompt without explicitly specifying
       * the --daemon option.
       */
      if (isatty(0) && !(tftpd_daemon))
      {
-	  printf("Can't be started from the prompt without explicitely "
+	  printf("Can't be started from the prompt without explicitly "
 		 "specifying the --daemon option.\n");
           tftpd_usage();
           exit(1);
@@ -297,14 +299,35 @@ int main(int argc, char **argv)
           close(sockfd);
 
           /* release priviliedge */
-          user = getpwnam(user_name);
-          group = getgrnam(group_name);
-          if (!user || !group)
+
+          /* first see if we are or can somehow become root, if so prepare
+           * for drop even if not requested on command line */
+          if (geteuid() == 0)
           {
-               logger(LOG_ERR,
-                      "atftpd: can't change identity to %s.%s, exiting.",
-                      user_name, group_name);
-               exit(1);
+               drop_privs = 1;
+          }
+          else if (getuid() == 0)
+          {
+               if (seteuid(0) == 0)
+                    drop_privs = 1;
+          }
+
+          if (drop_privs)
+          {
+               user = getpwnam(user_name);
+               group = getgrnam(group_name);
+               if (!user || !group)
+               {
+                    logger(LOG_ERR,
+                           "atftpd: can't change identity to %s.%s: no such user/group. exiting.",
+                           user_name, group_name);
+                    exit(1);
+               }
+          }
+          else
+          { /* make null pointers to prevent goofing up in case we accidenally access them */
+               user = NULL;
+               group = NULL;
           }
 
           /* write our pid in the specified file before changing user*/
@@ -318,26 +341,27 @@ int main(int argc, char **argv)
                     exit(1);
                }
                /* to be able to remove it later */
-               if (chown(pidfile, user->pw_uid, group->gr_gid) != OK) {
-	            logger(LOG_ERR,
-		           "atftpd: failed to chown our pid file %s to owner %s.%s.",
+               if (drop_privs && chown(pidfile, user->pw_uid, group->gr_gid) != OK) {
+                 logger(LOG_ERR,
+                     "atftpd: failed to chown our pid file %s to owner %s.%s.",
                            pidfile, user_name, group_name);
                     exit(1);
-	       }
+               }
           }
 
-	  if (setgid(group->gr_gid) != OK) {
-	      logger(LOG_ERR,
-		      "atftpd: failed to setgid to group %d (%s).",
-		      group->gr_gid, group_name);
-	      exit(1);
-	  }
-	  if (setuid(user->pw_uid) != OK) {
-	      logger(LOG_ERR,
-		      "atftpd: failed to setuid to user %d (%s).",
-		      user->pw_uid, user_name);
-	      exit(1);
-	  }
+          if (drop_privs)
+          {
+               if (setregid(group->gr_gid, group->gr_gid) == -1)
+               {
+                    logger(LOG_ERR, "atftpd: failed to setregid to %s.", group_name);
+                    exit(1);
+               }
+               if (setreuid(user->pw_uid, user->pw_uid) == -1)
+               {
+                    logger(LOG_ERR, "atftpd: failed to setreuid to %s.", user_name);
+                    exit(1);
+               }
+          }
 
           /* Reopen log file now that we changed user, and that we've
            * open and dup2 the socket. */
@@ -345,7 +369,7 @@ int main(int argc, char **argv)
      }
 
 #if defined(SOL_IP) && defined(IP_PKTINFO)
-     /* We need to retieve some information from incomming packets */
+     /* We need to retieve some information from incoming packets */
      if (setsockopt(0, SOL_IP, IP_PKTINFO, &one, sizeof(one)) != 0)
      {
           logger(LOG_WARNING, "Failed to set socket option: %s", strerror(errno));
@@ -429,7 +453,7 @@ int main(int argc, char **argv)
           }
 #endif
 
-          /* A timeout of 0 is interpreted as infinity. Wait for incomming
+          /* A timeout of 0 is interpreted as infinity. Wait for incoming
              packets */
           if (!tftpd_cancel)
           {
@@ -524,6 +548,9 @@ int main(int argc, char **argv)
                                   (void *)new) != 0)
                {
                     logger(LOG_ERR, "Failed to start new thread");
+                    free(new->data_buffer);
+                    free(new->tftp_options);
+                    free(new->client_info);
                     free(new);
                     pthread_mutex_unlock(&stdin_mutex);
                }
@@ -927,6 +954,7 @@ int tftpd_cmd_line_options(int argc, char **argv)
           { "mtftp", 1, NULL, OPT_MTFTP },
           { "mtftp-port", 1, NULL, OPT_MTFTP_PORT },
 #endif
+          { "prevent-sas", 0, NULL, 'X' },
           { "no-source-port-checking", 0, NULL, OPT_PORT_CHECK },
           { "mcast-switch-client", 0, NULL, OPT_MCAST_SWITCH },
           { "version", 0, NULL, 'V' },
@@ -996,6 +1024,9 @@ int tftpd_cmd_line_options(int argc, char **argv)
           case 'N':
                tftpd_daemon_no_fork = 1;
                break;
+          case 'X':
+               tftpd_prevent_sas = 1;
+               break;
           case 'U':
                tmp = strtok(optarg, ".");
                if (tmp != NULL)
@@ -1003,9 +1034,11 @@ int tftpd_cmd_line_options(int argc, char **argv)
                tmp = strtok(NULL, "");
                if (tmp != NULL)
                     Strncpy(group_name, tmp, MAXLEN);
+               drop_privs = 1;
                break;
           case 'G':
                Strncpy(group_name, optarg, MAXLEN);
+               drop_privs = 1;
                break;
           case 'P':
                tftpd_port = (short)atoi(optarg);
@@ -1228,6 +1261,7 @@ void tftpd_usage(void)
             "  --listen-local             : force listen on local network address\n"
             "  --daemon                   : run atftpd standalone (no inetd)\n"
             "  --no-fork                  : run as a daemon, don't fork\n"
+            "  --prevent-sas              : prevent Sorcerer's Apprentice Syndrome\n"
             "  --user <user[.group]>      : default is nobody\n"
             "  --group <group>            : default is nogroup\n"
             "  --port <port>              : port on which atftp listen\n"

@@ -55,6 +55,7 @@
 extern char directory[MAXLEN];
 /* read only except for the main thread */
 extern int tftpd_cancel;
+extern int tftpd_prevent_sas;
 
 #ifdef HAVE_PCRE
 extern tftpd_pcre_self_t *pcre_top;
@@ -114,22 +115,22 @@ int tftpd_receive_file(struct thread_data *data)
      struct sockaddr_storage from;
      char addr_str[SOCKADDR_PRINT_ADDR_LEN];
      struct tftphdr *tftphdr = (struct tftphdr *)data->data_buffer;
-     FILE *fp;
+     FILE *fp = NULL;
      char filename[MAXLEN];
      char string[MAXLEN];
      int timeout = data->timeout;
      int number_of_timeout = 0;
      int all_blocks_received = 0; /* temporary kludge */
-     int convert = 0;           /* if true, do netascii convertion */
+     int convert = 0;           /* if true, do netascii conversion */
 
-     long prev_block_number = 0; /* needed to support netascii convertion */
+     long prev_block_number = 0; /* needed to support netascii conversion */
      int temp = 0;
 
      /* look for mode option */
      if (strcasecmp(data->tftp_options[OPT_MODE].value, "netascii") == 0)
      {
           convert = 1;
-          logger(LOG_DEBUG, "will do netascii convertion");
+          logger(LOG_DEBUG, "will do netascii conversion");
      }
 
      /* file name verification */
@@ -137,18 +138,6 @@ int tftpd_receive_file(struct thread_data *data)
              MAXLEN);
      if (tftpd_rules_check(filename) != OK)
      {
-          tftp_send_error(sockfd, sa, EACCESS, data->data_buffer, data->data_buffer_size);
-          if (data->trace)
-               logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", EACCESS,
-                      tftp_errmsg[EACCESS]);
-          return ERR;
-     }
-
-     /* Open the file for writing. */
-     if ((fp = fopen(filename, "w")) == NULL)
-     {
-          /* Can't create the file. */
-          logger(LOG_INFO, "Can't open %s for writing", filename);
           tftp_send_error(sockfd, sa, EACCESS, data->data_buffer, data->data_buffer_size);
           if (data->trace)
                logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", EACCESS,
@@ -172,7 +161,6 @@ int tftpd_receive_file(struct thread_data *data)
                if (data->trace)
                     logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", EOPTNEG,
                            tftp_errmsg[EOPTNEG]);
-               fclose(fp);
                return ERR;
           }
           timeout = result;
@@ -180,16 +168,28 @@ int tftpd_receive_file(struct thread_data *data)
           logger(LOG_DEBUG, "timeout option -> %d", timeout);
      }
 
-     /* blksize options */
+     /*
+      *  blksize option, must be the last option evaluated,
+      *  because data->data_buffer_size may be modified here,
+      *  and may be smaller than the buffer containing options
+      */
      if ((result = opt_get_blksize(data->tftp_options)) > -1)
      {
-          if ((result < 8) || (result > 65464))
+          /*
+           *  If we receive more options, we have to make sure our buffer for
+           *  the OACK is not too small.  Use the string representation of
+           *  the options here for simplicity, which puts us on the save side.
+           *  FIXME: Use independent buffers for OACK and data.
+           */
+          opt_options_to_string(data->tftp_options, string, MAXLEN);
+          if ((result < strlen(string)-2) || (result > 65464))
           {
+               logger(LOG_NOTICE, "options <%s> require roughly a blksize of %d for the OACK.",
+                      string, strlen(string)-2);
                tftp_send_error(sockfd, sa, EOPTNEG, data->data_buffer, data->data_buffer_size);
                if (data->trace)
                     logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", EOPTNEG,
                            tftp_errmsg[EOPTNEG]);
-               fclose(fp);
                return ERR;
           }
 
@@ -199,7 +199,6 @@ int tftpd_receive_file(struct thread_data *data)
           if (data->data_buffer == NULL)
           {
                logger(LOG_ERR, "memory allocation failure");
-               fclose(fp);
                return ERR;
           }
           tftphdr = (struct tftphdr *)data->data_buffer;
@@ -210,7 +209,6 @@ int tftpd_receive_file(struct thread_data *data)
                if (data->trace)
                     logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", ENOSPACE,
                            tftp_errmsg[ENOSPACE]);
-               fclose(fp);
                return ERR;
           }
           opt_set_blksize(result, data->tftp_options);
@@ -345,6 +343,20 @@ int tftpd_receive_file(struct thread_data *data)
                }
                break;
           case S_DATA_RECEIVED:
+               if (fp == NULL) {
+                       /* Open the file for writing. */
+                       if ((fp = fopen(filename, "w")) == NULL)
+                       {
+                               /* Can't create the file. */
+                               logger(LOG_INFO, "Can't open %s for writing", filename);
+                               tftp_send_error(sockfd, sa, EACCESS, data->data_buffer, data->data_buffer_size);
+                               if (data->trace)
+                                       logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", EACCESS,
+                                                       tftp_errmsg[EACCESS]);
+                               return ERR;
+                       }
+               }
+
                /* We need to seek to the right place in the file */
 	       block_number = tftp_rollover_blocknumber(
 		      ntohs(tftphdr->th_block), prev_block_number, 0);
@@ -373,13 +385,13 @@ int tftpd_receive_file(struct thread_data *data)
                state = S_SEND_ACK;
                break;
           case S_END:
-               fclose(fp);
+               if (fp != NULL) fclose(fp);
                return OK;
           case S_ABORT:
-               fclose(fp);
+               if (fp != NULL) fclose(fp);
                return ERR;
           default:
-               fclose(fp);
+               if (fp != NULL) fclose(fp);
                logger(LOG_ERR, "%s: %d: tftpd_file.c: huh?",
                       __FILE__, __LINE__);
                return ERR;
@@ -430,15 +442,20 @@ int tftpd_send_file(struct thread_data *data)
      struct client_info *client_old = NULL;
      struct tftp_opt options[OPT_NUMBER];
 
-     long prev_block_number = 0; /* needed to support netascii convertion */
+     long prev_block_number = 0; /* needed to support netascii conversion */
      long prev_file_pos = 0;
      int temp = 0;
+
+     long prev_sent_block = -1;
+     int prev_sent_count = 0;
+     int prev_ack_count = 0;
+     int curr_sent_count = 0;
 
      /* look for mode option */
      if (strcasecmp(data->tftp_options[OPT_MODE].value, "netascii") == 0)
      {
           convert = 1;
-          logger(LOG_DEBUG, "will do netascii convertion");
+          logger(LOG_DEBUG, "will do netascii conversion");
      }
 
      /* file name verification */
@@ -527,11 +544,24 @@ int tftpd_send_file(struct thread_data *data)
           logger(LOG_INFO, "timeout option -> %d", timeout);
      }
 
-     /* blksize options */
+     /*
+      *  blksize option, must be the last option evaluated,
+      *  because data->data_buffer_size may be modified here,
+      *  and may be smaller than the buffer containing options
+      */
      if ((result = opt_get_blksize(data->tftp_options)) > -1)
      {
-          if ((result < 8) || (result > 65464))
+          /*
+           *  If we receive more options, we have to make sure our buffer for
+           *  the OACK is not too small.  Use the string representation of
+           *  the options here for simplicity, which puts us on the save side.
+           *  FIXME: Use independent buffers for OACK and data.
+           */
+          opt_options_to_string(data->tftp_options, string, MAXLEN);
+          if ((result < strlen(string)-2) || (result > 65464))
           {
+               logger(LOG_NOTICE, "options <%s> require roughly a blksize of %d for the OACK.",
+                      string, strlen(string)-2);
                tftp_send_error(sockfd, sa, EOPTNEG, data->data_buffer, data->data_buffer_size);
                if (data->trace)
                     logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", EOPTNEG,
@@ -631,7 +661,7 @@ int tftpd_send_file(struct thread_data *data)
                               data->data_buffer, data->data_buffer_size);
 
                /* We are done */
-               logger(LOG_INFO, "Client transfered to %p", thread);
+               logger(LOG_INFO, "Client transferred to %p", thread);
                fclose(fp);
                return OK;
           }
@@ -818,6 +848,10 @@ int tftpd_send_file(struct thread_data *data)
                                           sockaddr_get_port(
                                                &client_info->client));
                                    sa = &client_info->client;
+
+                                   /* rewind the prev_sent_block counter */
+                                   prev_sent_block = -1;
+
                                    state = S_SEND_OACK;
                                    break;
                               }
@@ -891,6 +925,7 @@ int tftpd_send_file(struct thread_data *data)
                                           "source port mismatch, check bypassed");
                          }
                     }
+
                     /* The ACK is from the current client */
                     number_of_timeout = 0;
 		    if (multicast)
@@ -903,11 +938,93 @@ int tftpd_send_file(struct thread_data *data)
                     if (data->trace)
                          logger(LOG_DEBUG, "received ACK <block: %ld>",
                                 block_number);
+
+                    /* Now check the ACK number and possibly ignore the request */
+
+                    /* multicast, block numbers could contain gaps */
+                    if (multicast) {
+                         /* if turned on, check whether the block request isn't already fulfilled */
+                         if (tftpd_prevent_sas) {
+                              if (prev_sent_block >= block_number) {
+                                   if (data->trace)
+                                        logger(LOG_DEBUG, "received duplicated ACK <block: %d >= %d>", prev_sent_block, block_number);
+                                   break;
+                              } else
+                                   prev_sent_block = block_number;
+                         }
+                         /* don't prevent thes SAS */
+                         /* use a heuristic suggested by Vladimir Nadvornik */
+                         else {
+                              /* here comes the ACK again */
+                              if (prev_sent_block == block_number) {
+                                   /* drop if number of ACKs == times of previous block sending */
+                                   if (++prev_ack_count == prev_sent_count) {
+                                        logger(LOG_DEBUG, "ACK count (%d) == previous block transmission count -> dropping ACK", prev_ack_count);
+                                        break;
+                                   }
+                                   /* else resend the block */
+                                   logger(LOG_DEBUG, "resending block %d", block_number + 1);
+                              }
+                              /* received ACK to sent block -> move on to next block */
+                              else if (prev_sent_block < block_number) {
+                                   prev_sent_block = block_number;
+                                   prev_sent_count = curr_sent_count;
+                                   curr_sent_count = 0;
+                                   prev_ack_count = 1;
+                              }
+                              /* block with low number -> ignore it completely */
+                              else {
+                                   logger(LOG_DEBUG, "ignoring ACK %d", block_number);
+                                   break;
+                              }
+                         }
+                         /* unicast, blocks should be requested one after another */
+                    } else {
+                         /* if turned on, check whether the block request isn't already fulfilled */
+                         if (tftpd_prevent_sas) {
+                              if (prev_sent_block + 1 != block_number) {
+                                   logger(LOG_WARNING, "timeout: retrying...");
+                                   if (data->trace)
+                                        logger(LOG_DEBUG, "received out of order ACK <block: %d != %d>", prev_sent_block + 1, block_number);
+                                   break;
+                              } else {
+                                   prev_sent_block = block_number;
+                              }
+                              /* don't prevent thes SAS */
+                              /* use a heuristic suggested by Vladimir Nadvornik */
+                              } else {
+                              /* here comes the ACK again */
+                              if (prev_sent_block == block_number) {
+                                   /* drop if number of ACKs == times of previous block sending */
+                                   if (++prev_ack_count == prev_sent_count) {
+                                        logger(LOG_DEBUG, "ACK count (%d) == previous block transmission count -> dropping ACK", prev_ack_count);
+                                        break;
+                                   }
+                                   /* else resend the block */
+                                   logger(LOG_DEBUG, "resending block %d", block_number + 1);
+                              }
+                              /* received ACK to sent block -> move on to next block */
+                              else if (prev_sent_block < block_number) {
+                                   prev_sent_block = block_number;
+                                   prev_sent_count = curr_sent_count;
+                                   curr_sent_count = 0;
+                                   prev_ack_count = 1;
+                              }
+                              /* nor previous nor current block number -> ignore it completely */
+                              else {
+                                   logger(LOG_DEBUG, "ignoring ACK %d", block_number);
+                                   break;
+                              }
+                         }
+                    }
+
                     if ((last_block != -1) && (block_number > last_block))
                     {
                          state = S_END;
                          break;
                     }
+
+                    curr_sent_count++;
                     state = S_SEND_DATA;
                     break;
                case GET_ERROR:
@@ -1001,10 +1118,12 @@ int tftpd_send_file(struct thread_data *data)
                          /* nedd to send an oack to that client */
                          state = S_SEND_OACK;                
                          fseek(fp, 0, SEEK_SET);
+			 /* reset the last block received counter */
+			 prev_sent_block = -1;
                     }
                     else
                     {
-                         logger(LOG_INFO, "No more client, end of tranfers");
+                         logger(LOG_INFO, "No more client, end of transfers");
                          fclose(fp);
                          return OK;
                     }

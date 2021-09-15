@@ -64,7 +64,7 @@ int tftp_send_request(int socket, struct sockaddr_storage *sa, short type,
      buf_index += strlen(mode);
      buf_index++;
      
-     for (i = 2; ; i++)
+     for (i = 2; i < OPT_NUMBER; i++)
      {
           if (strlen(tftp_options[i].option) == 0)
                break;
@@ -391,11 +391,8 @@ int tftp_file_read(FILE *fp, char *data_buffer, int data_buffer_size, long block
 	   */
 	  if ((block_number != *prev_block_number) && (block_number != *prev_block_number + 1))
 	       return ERR;
-	  if (block_number == *prev_block_number)
-	  {
-	       if (fseek(fp, *prev_file_pos, SEEK_SET) != 0)
-		     return ERR;
-	  }
+	  if (block_number == *prev_block_number && fseek(fp, *prev_file_pos, SEEK_SET) != 0)
+          return ERR;
 
 	  *prev_file_pos = ftell(fp);
 
@@ -445,7 +442,7 @@ int tftp_file_write(FILE *fp, char *data_buffer, int data_buffer_size, long bloc
                     int convert, long *prev_block_number, int *temp)
 {
      static long filepos;
-     int bytes_written;
+     int bytes_written = 0;
      int c;
      char prevchar = *temp;
 
@@ -454,11 +451,13 @@ int tftp_file_write(FILE *fp, char *data_buffer, int data_buffer_size, long bloc
 	  /* Simple case, just seek and write */
           long position = (block_number - 1)*data_buffer_size;
           if (position != filepos)
+          {
                if (fseek(fp, position, SEEK_SET) != 0)
                     return 0;
                else
                     filepos = position;
-	  bytes_written = fwrite(data_buffer, 1, data_size, fp);
+          }
+          bytes_written = fwrite(data_buffer, 1, data_size, fp);
           filepos += bytes_written;
      }
      else if (block_number != *prev_block_number)
@@ -482,20 +481,21 @@ int tftp_file_write(FILE *fp, char *data_buffer, int data_buffer_size, long bloc
                {
                     if (c == '\n')
                     {
-                         fseek(fp, -1, SEEK_CUR); /* cr,lf to lf */
+                         if (fseek(fp, -1, SEEK_CUR) != 0) /* cr,lf to lf */
+                              return ERR;
                          if (fputc(c, fp) == EOF)
-                              break;
+                              return ERR;
                     }
                     else if (c != '\0')           /* cr,nul to cr */
                     {
                          if (fputc(c, fp) == EOF)
-                              break;
+                              return ERR;
                     }
                }
                else
                {
                     if (fputc(c, fp) == EOF)
-                         break;
+                         return ERR;
                }
                prevchar = c;
           }

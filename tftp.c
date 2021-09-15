@@ -38,7 +38,7 @@
 #include <readline/history.h>
 #endif
 
-#if HAVE_ARGZ
+#if HAVE_ARGZ_H
 #include <argz.h>
 #else
 #include "argz.h"
@@ -58,6 +58,7 @@
 /* defined as extern in tftp_file.c and mtftp_file.c, set by the signal
    handler */
 int tftp_cancel = 0;
+int tftp_prevent_sas = 0;
 
 /* local flags */
 int interactive = 1;            /* if false, we run in batch mode */
@@ -708,11 +709,14 @@ int get_file(int argc, char **argv)
                {
                     fclose(fp);
 #if HAVE_READLINE
-                    string = readline("Overwite local file [y/n]? ");
+                    string = readline("Overwrite local file [y/n]? ");
 #else
-                    fprintf(stderr, "Overwite local file [y/n]? ");
-                    fgets(string, MAXLEN, stdin);
-                    string[strlen(string) - 1] = 0;
+                    fprintf(stderr, "Overwrite local file [y/n]? ");
+                    if (fgets(string, MAXLEN, stdin) == NULL) {
+                         string[0] = 0;
+                    } else {
+                         string[strlen(string) - 1] = 0;
+                    }
 #endif
                     if (!(strcasecmp(string, "y") == 0))
                     {
@@ -908,7 +912,7 @@ int status(int argc, char **argv)
           if (tftp_result == OK)
           {
                print_eng((double)data.file_size, string, sizeof(string), "%3.3f%cB");
-               fprintf(stderr, "  Bytes transfered:  %s\n", string);
+               fprintf(stderr, "  Bytes transferred:  %s\n", string);
                fprintf(stderr, "  Time of transfer: %8.3fs\n",
                        (double)(tmp.tv_sec + tmp.tv_usec * 1e-6));
                fprintf(stderr, "  Throughput:        ");
@@ -1006,6 +1010,7 @@ int tftp_cmd_line_options(int argc, char **argv)
 #endif
           { "mtftp", 1, NULL, '1'},
           { "no-source-port-checking", 0, NULL, '0'},
+          { "prevent-sas", 0, NULL, 'X'},
           { "verbose", 0, NULL, 'v'},
           { "trace", 0, NULL, 'd'},
 #if DEBUG
@@ -1114,6 +1119,9 @@ int tftp_cmd_line_options(int argc, char **argv)
 #endif
           case '0':
                data.checkport = 0;
+               break;
+          case 'X':
+               tftp_prevent_sas = 1;
                break;
           case 'v':
                snprintf(string, sizeof(string), "verbose on");
@@ -1226,6 +1234,7 @@ void tftp_usage(void)
              "  --mtftp <\"name value\">   : set mtftp variable to value\n"
 #endif
              "  --no-source-port-checking: violate RFC, see man page\n"
+             "  --prevent-sas            : prevent Sorcerer's Apprentice Syndrome\n"
              "  --verbose                : set verbose mode on\n"
              "  --trace                  : set trace mode on\n"
 #if DEBUG

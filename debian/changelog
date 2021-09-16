@@ -1,3 +1,13 @@
+atftp (0.7.git20210915-1) UNRELEASED; urgency=medium
+
+  * New upstream release (0.7.5).
+  * Remove patches applied upstream.
+  * Refresh windowsize option patch and adapt it to the latest 
+    upstream changes.
+  * Fix systemd 'override.conf' example.
+
+ -- Andreas B. Mundt <andi@debian.org>  Wed, 15 Sep 2021 22:04:06 +0200
+
 atftp (0.7.git20210202-4) unstable; urgency=medium
 
   * Draft implementation of the windowsize option from RFC7440.

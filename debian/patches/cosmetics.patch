@@ -75,7 +75,7 @@
                 {
                      logger(LOG_ERR, "%s: %d: error writing to file %s",
                             __FILE__, __LINE__, filename);
-@@ -581,11 +576,8 @@
+@@ -582,11 +577,8 @@
            opt_set_windowsize(windowsize, data->tftp_options);
            logger(LOG_INFO, "windowsize option -> %d", windowsize);
       }
@@ -89,7 +89,7 @@
       if ((result = opt_get_blksize(data->tftp_options)) > -1)
       {
            /*
-@@ -691,9 +683,11 @@
+@@ -692,9 +684,11 @@
                    not be a problem: the client thread will receive a second OACK and fall
                    back to non master mode. Then the server will timeout and either resend
                    OACK or continu with the next client */
@@ -102,7 +102,7 @@
                 tftp_send_oack(thread->sockfd, sa, data->tftp_options,
                                data->data_buffer, data->data_buffer_size);
  
-@@ -803,9 +797,10 @@
+@@ -804,9 +798,10 @@
                 break;
            case S_SEND_OACK:
                 timeout_state = state;
@@ -115,7 +115,7 @@
                 tftp_send_oack(sockfd, sa, data->tftp_options,
                                data->data_buffer, data->data_buffer_size);
                 state = S_WAIT_PACKET;
-@@ -813,7 +808,6 @@
+@@ -814,7 +809,6 @@
            case S_SEND_DATA:
                 windowblock++;
                 timeout_state = state;
@@ -123,7 +123,7 @@
                 data_size = tftp_file_read(fp, tftphdr->th_data, data->data_buffer_size - 4, block_number,
                                            convert, &prev_block_number, &prev_file_pos, &temp);
                 data_size += 4;  /* need to consider tftp header */
-@@ -883,10 +877,12 @@
+@@ -886,10 +880,12 @@
                                {
                                     /* Send an OACK to the old client remove is
                                        master client status */
@@ -138,7 +138,7 @@
                                     tftp_send_oack(sockfd, sa, options,
                                                    data->data_buffer, data->data_buffer_size);
  
-@@ -950,15 +946,15 @@
+@@ -953,15 +949,15 @@
                                else
                                     /* If not, send and OACK with mc=0 to shut it up. */
                                {
@@ -157,23 +157,25 @@
                           }
                      }
                      else
-@@ -983,33 +979,29 @@
-                     /* The ACK is from the current client */
-                     number_of_timeout = 0;
-                     windowblock = 0;
--		    if (multicast)
--			    block_number = ntohs(tftphdr->th_block);
--		    else
+@@ -978,8 +974,7 @@
+                                    break;
+                               }
+                               else
+-                                   logger(LOG_WARNING,
+-                                          "source port mismatch, check bypassed");
++                                   logger(LOG_WARNING, "source port mismatch, check bypassed");
+                          }
+                     }
+ 
+@@ -988,19 +983,14 @@
+ 		    if (multicast)
+ 			    block_number = ntohs(tftphdr->th_block);
+ 		    else
 -		    {
 -			    block_number = tftp_rollover_blocknumber(
 -				ntohs(tftphdr->th_block), prev_block_number, 0);
 -		    }
-+                    if (multicast)
-+                         block_number = ntohs(tftphdr->th_block);
-+                    else {
-+                         block_number = tftp_rollover_blocknumber(
-+                              ntohs(tftphdr->th_block), prev_block_number, 0);
-+                    }
++			    block_number = tftp_rollover_blocknumber(ntohs(tftphdr->th_block), prev_block_number, 0);
                      if (data->trace)
 -                         logger(LOG_DEBUG, "received ACK <block: %ld>",
 -                                block_number);
@@ -185,11 +187,11 @@
                      if (multicast) {
 -                         /* if turned on, check whether the block request isn't already fulfilled */
 +                         /* multicast, block numbers could contain gaps */
++                         /* check whether the block request isn't already fulfilled */
                           if (data->tftp_options[OPT_WINDOWSIZE].enabled || tftpd_prevent_sas) {
-+                              /* check whether the block request isn't already fulfilled */
-                               if (last_ackd_block >= block_number) {
+                               if ((last_ackd_block >= block_number) || (in_window_ack > 1)) {
                                     if (data->trace)
-                                         logger(LOG_DEBUG, "received duplicated ACK block: %ld >= %ld", last_ackd_block, block_number);
+@@ -1008,10 +998,9 @@
                                     break;
                                } else
                                     last_ackd_block = block_number;
@@ -203,28 +205,17 @@
                                /* here comes the ACK again */
                                if (last_ackd_block == block_number) {
                                     /* drop if number of ACKs == times of previous block sending */
-@@ -1026,17 +1018,16 @@
-                                    prev_sent_count = curr_sent_count;
-                                    curr_sent_count = 0;
-                                    prev_ack_count = 1;
--                              }
--                              /* block with low number -> ignore it completely */
--                              else {
-+                              } else {
-+                                   /* block with low number -> ignore it completely */
-                                    logger(LOG_DEBUG, "ignoring ACK %d", block_number);
-                                    break;
-                               }
+@@ -1037,8 +1026,8 @@
                           }
                      } else {
                           /* unicast, blocks should be requested one after another */
 -                         /* if turned on, check whether the block request isn't already fulfilled */
                           if (data->tftp_options[OPT_WINDOWSIZE].enabled || tftpd_prevent_sas) {
 +                              /* check whether the block request isn't already fulfilled */
-                               if (last_ackd_block > block_number) {
+                               if ((last_ackd_block > block_number) || (in_window_ack > 1)) {
                                     if (data->trace)
-                                         logger(LOG_DEBUG, "ignore outdated ACK block: %ld < %ld",
-@@ -1050,7 +1041,7 @@
+                                         logger(LOG_DEBUG, "ignore outdated/duplicate ACK: %ld", block_number);
+@@ -1051,7 +1040,7 @@
                                     logger(LOG_DEBUG, "update last ACK'd <block: %ld → %ld>", last_ackd_block, block_number);
                                last_ackd_block = block_number;
                           } else {
@@ -233,22 +224,17 @@
                                /* use a heuristic suggested by Vladimir Nadvornik */
                                /* here comes the ACK again */
                                if (last_ackd_block == block_number) {
-@@ -1076,13 +1067,10 @@
-                               }
+@@ -1078,8 +1067,7 @@
                           }
                      }
--
+ 
 -                    if ((last_block != -1) && (block_number > last_block))
 -                    {
 +                    if ((last_block != -1) && (block_number > last_block)) {
                           state = S_END;
                           break;
                      }
--
-                     curr_sent_count++;
-                     state = S_SEND_DATA;
-                     break;
-@@ -1128,10 +1116,12 @@
+@@ -1129,10 +1117,12 @@
                           }
                      }
                      /* Got an ERROR from the current master client */

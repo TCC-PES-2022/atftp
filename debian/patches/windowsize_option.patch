@@ -211,16 +211,17 @@
       long last_block = -1;
       int data_size;
       struct sockaddr_storage *sa = &data->client_info->client;
-@@ -430,6 +450,8 @@
+@@ -430,6 +450,9 @@
       char filename[MAXLEN];
       char string[MAXLEN];
       int timeout = data->timeout;
 +     int windowblock = 0;
 +     int windowsize = 1;
++     int in_window_ack = -1;
       int number_of_timeout = 0;
       int mcast_switch = data->mcast_switch_client;
       struct stat file_stat;
-@@ -446,7 +468,6 @@
+@@ -446,7 +469,6 @@
       long prev_file_pos = 0;
       int temp = 0;
  
@@ -228,7 +229,7 @@
       int prev_sent_count = 0;
       int prev_ack_count = 0;
       int curr_sent_count = 0;
-@@ -544,6 +565,22 @@
+@@ -544,6 +566,22 @@
            logger(LOG_INFO, "timeout option -> %d", timeout);
       }
  
@@ -251,7 +252,7 @@
       /*
        *  blksize option, must be the last option evaluated,
        *  because data->data_buffer_size may be modified here,
-@@ -774,6 +811,7 @@
+@@ -774,6 +812,7 @@
                 state = S_WAIT_PACKET;
                 break;
            case S_SEND_DATA:
@@ -259,7 +260,7 @@
                 timeout_state = state;
  
                 data_size = tftp_file_read(fp, tftphdr->th_data, data->data_buffer_size - 4, block_number,
-@@ -796,19 +834,33 @@
+@@ -796,19 +835,35 @@
                                     data_size, data->data_buffer);
                 }
                 if (data->trace)
@@ -277,6 +278,7 @@
 +                    /* we wait for the ACK */
 +                    result = tftp_get_packet(sockfd, -1, NULL, sa, &from, NULL,
 +                                             timeout, &data_size, data->data_buffer);
++                    in_window_ack = 0;
 +               } else {
 +                    /* we check if an unsolicitated ACK arrived */
 +                    result = tftp_get_packet(sockfd, -1, NULL, sa, &from, NULL,
@@ -288,6 +290,7 @@
 +                         state = S_SEND_DATA;
 +                         break;
 +                    }
++                    in_window_ack++;
 +               }
                 switch (result)
                 {
@@ -298,7 +301,7 @@
                      if (number_of_timeout > NB_OF_RETRY)
                      {
                           logger(LOG_INFO, "client (%s) not responding",
-@@ -849,8 +901,8 @@
+@@ -849,8 +904,8 @@
                                                 &client_info->client));
                                     sa = &client_info->client;
  
@@ -309,7 +312,7 @@
  
                                     state = S_SEND_OACK;
                                     break;
-@@ -866,6 +918,8 @@
+@@ -866,6 +921,8 @@
                                }
                           }
                           logger(LOG_WARNING, "timeout: retrying...");
@@ -318,25 +321,17 @@
                           state = timeout_state;
                      }
                      break;
-@@ -928,6 +982,7 @@
- 
-                     /* The ACK is from the current client */
-                     number_of_timeout = 0;
-+                    windowblock = 0;
- 		    if (multicast)
- 			    block_number = ntohs(tftphdr->th_block);
- 		    else
-@@ -944,19 +999,19 @@
+@@ -944,19 +1001,19 @@
                      /* multicast, block numbers could contain gaps */
                      if (multicast) {
                           /* if turned on, check whether the block request isn't already fulfilled */
 -                         if (tftpd_prevent_sas) {
 -                              if (prev_sent_block >= block_number) {
 +                         if (data->tftp_options[OPT_WINDOWSIZE].enabled || tftpd_prevent_sas) {
-+                              if (last_ackd_block >= block_number) {
++                              if ((last_ackd_block >= block_number) || (in_window_ack > 1)) {
                                     if (data->trace)
 -                                        logger(LOG_DEBUG, "received duplicated ACK <block: %d >= %d>", prev_sent_block, block_number);
-+                                        logger(LOG_DEBUG, "received duplicated ACK block: %ld >= %ld", last_ackd_block, block_number);
++                                        logger(LOG_DEBUG, "received outdated/duplicate ACK block: %ld", block_number);
                                     break;
                                } else
 -                                   prev_sent_block = block_number;
@@ -351,7 +346,7 @@
                                     /* drop if number of ACKs == times of previous block sending */
                                     if (++prev_ack_count == prev_sent_count) {
                                          logger(LOG_DEBUG, "ACK count (%d) == previous block transmission count -> dropping ACK", prev_ack_count);
-@@ -966,8 +1021,8 @@
+@@ -966,8 +1023,8 @@
                                     logger(LOG_DEBUG, "resending block %d", block_number + 1);
                                }
                                /* received ACK to sent block -> move on to next block */
@@ -362,7 +357,7 @@
                                     prev_sent_count = curr_sent_count;
                                     curr_sent_count = 0;
                                     prev_ack_count = 1;
-@@ -978,23 +1033,27 @@
+@@ -978,23 +1035,26 @@
                                     break;
                                }
                           }
@@ -374,11 +369,10 @@
 -                              if (prev_sent_block + 1 != block_number) {
 -                                   logger(LOG_WARNING, "timeout: retrying...");
 +                         if (data->tftp_options[OPT_WINDOWSIZE].enabled || tftpd_prevent_sas) {
-+                              if (last_ackd_block > block_number) {
++                              if ((last_ackd_block > block_number) || (in_window_ack > 1)) {
                                     if (data->trace)
 -                                        logger(LOG_DEBUG, "received out of order ACK <block: %d != %d>", prev_sent_block + 1, block_number);
-+                                        logger(LOG_DEBUG, "ignore outdated ACK block: %ld < %ld",
-+                                               block_number, last_ackd_block);
++                                        logger(LOG_DEBUG, "ignore outdated/duplicate ACK: %ld", block_number);
                                     break;
 -                              } else {
 -                                   prev_sent_block = block_number;
@@ -399,7 +393,7 @@
                                     /* drop if number of ACKs == times of previous block sending */
                                     if (++prev_ack_count == prev_sent_count) {
                                          logger(LOG_DEBUG, "ACK count (%d) == previous block transmission count -> dropping ACK", prev_ack_count);
-@@ -1004,8 +1063,8 @@
+@@ -1004,8 +1064,8 @@
                                     logger(LOG_DEBUG, "resending block %d", block_number + 1);
                                }
                                /* received ACK to sent block -> move on to next block */
@@ -410,7 +404,16 @@
                                     prev_sent_count = curr_sent_count;
                                     curr_sent_count = 0;
                                     prev_ack_count = 1;
-@@ -1119,7 +1178,7 @@
+@@ -1023,7 +1083,7 @@
+                          state = S_END;
+                          break;
+                     }
+-
++                    windowblock = 0;
+                     curr_sent_count++;
+                     state = S_SEND_DATA;
+                     break;
+@@ -1119,7 +1179,7 @@
                           state = S_SEND_OACK;                
                           fseek(fp, 0, SEEK_SET);
  			 /* reset the last block received counter */

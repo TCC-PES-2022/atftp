@@ -1,8 +1,7 @@
-atftp (0.7.git20210915-1) UNRELEASED; urgency=medium
+atftp (0.7.git20210915-1) unstable; urgency=medium
 
-  * New upstream release (0.7.5).
-  * Remove patches applied upstream.
-  * Refresh windowsize option patch and adapt it to the latest 
+  * New upstream release (0.7.5). Remove patches applied upstream.
+  * Refresh windowsize option patch and adapt it to the latest
     upstream changes.
   * Fix systemd 'override.conf' example.
 

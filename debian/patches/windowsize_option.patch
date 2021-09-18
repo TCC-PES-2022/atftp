@@ -312,10 +312,12 @@
  
                                     state = S_SEND_OACK;
                                     break;
-@@ -866,6 +921,8 @@
+@@ -865,7 +920,9 @@
+                                    break;
                                }
                           }
-                          logger(LOG_WARNING, "timeout: retrying...");
+-                         logger(LOG_WARNING, "timeout: retrying...");
++                         logger(LOG_WARNING, "timeout block %ld: retrying ...", block_number);
 +                         /* rewind the block_number to the last block we received */
 +                         block_number = last_ackd_block;
                           state = timeout_state;
@@ -378,8 +380,8 @@
 -                                   prev_sent_block = block_number;
                                }
 +                              if ((last_ackd_block + windowsize != block_number) && (last_ackd_block != -1) && (last_block == -1))
-+                                   logger(LOG_WARNING, "window not complete/ordered: %ld/%d valid",
-+                                          block_number - last_ackd_block, windowsize);
++                                   logger(LOG_WARNING, "window block %ld not complete/ordered: %ld/%d valid",
++                                          block_number, block_number - last_ackd_block, windowsize);
 +                              if (data->trace)
 +                                   logger(LOG_DEBUG, "update last ACK'd <block: %ld → %ld>", last_ackd_block, block_number);
 +                              last_ackd_block = block_number;

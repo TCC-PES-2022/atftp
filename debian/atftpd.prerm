@@ -2,6 +2,19 @@
 
 set -e
 
+if [ "$1" = "failed-upgrade" ]; then
+    case "$2" in
+        0.7.git20210202-[123])
+	    set +e
+	    if ! . /etc/default/atftpd 2>/dev/null; then
+		echo "Remove broken /etc/default/atftpd"
+		rm -f /etc/default/atftpd
+	    fi
+	    set -e
+        ;;
+    esac
+fi
+
 # Stops daemon if it is running under our control
 if [ -x /etc/init.d/atftpd ]; then 
     if which invoke-rc.d > /dev/null ; then

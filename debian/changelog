@@ -1,3 +1,13 @@
+atftp (0.7.git20210915-2) unstable; urgency=medium
+
+  [ Sophie Brun ]
+  * Fix syntax error in '/etc/default/atftpd' (Closes: #994808)
+
+  [ Andreas B. Mundt ]
+  * Add test for syntax errors in default configuration.
+
+ -- Andreas B. Mundt <andi@debian.org>  Wed, 22 Sep 2021 18:09:29 +0200
+
 atftp (0.7.git20210915-1) unstable; urgency=medium
 
   * New upstream release (0.7.5). Remove patches applied upstream.

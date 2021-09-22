@@ -3,13 +3,8 @@
 set -e
 
 if [ "$1" = "upgrade" ] && dpkg --compare-versions "$2" lt-nl "0.7.git20210915-2" && [ -f /etc/default/atftpd ]; then
-    set +e
-    if ! . /etc/default/atftpd 2>/dev/null; then
-	echo "Remove broken /etc/default/atftpd"
-	rm -f /etc/default/atftpd
-    fi
-    set -e
+    sed -i -e 's/^OPTIONS=\\"/OPTIONS="/' -e 's/\\"$/"/' /etc/default/atftpd
+    echo "Fix broken syntax in /etc/default/atftpd"
 fi
-
 
 #DEBHELPER#

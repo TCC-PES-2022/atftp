@@ -1,3 +1,7 @@
+## Check default configuration for obvious syntax errors:
+Test-Command: sh -c ". /etc/default/atftpd"
+Restrictions: superficial
+
 Tests: make-check
 Depends: @builddeps@
 Restrictions: allow-stderr

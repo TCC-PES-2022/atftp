@@ -1,3 +1,9 @@
+atftp (0.7.git20210915-3) UNRELEASED; urgency=medium
+
+  * Implement simple congestion control if windowsize option is used.
+
+ -- Andreas B. Mundt <andi@debian.org>  Fri, 24 Sep 2021 09:07:45 +0200
+
 atftp (0.7.git20210915-2) unstable; urgency=medium
 
   [ Sophie Brun ]

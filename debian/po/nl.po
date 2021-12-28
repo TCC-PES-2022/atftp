@@ -1,4 +1,4 @@
-# translation of atftp_0.7.dfsg-1_templates.po to Dutch
+# Translation of atftp_0.7.git20210202-3 debconf templates to Dutch
 # This file is distributed under the same license as the atftp package.
 #
 #    Translators, if you are not familiar with the PO format, gettext
@@ -13,20 +13,22 @@
 #
 # Luk Claes <luk.claes@ugent.be>, 2004
 # Kurt De Bree <kdebree@telenet.be>, 2006.
+# Frans Spiesschaert <Frans.Spiesschaert@yucom.be>, 2021.
 # This is an unofficial translation
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: atftp_0.7.dfsg-1\n"
+"Project-Id-Version: atftp_0.7.git20210202-3\n"
 "Report-Msgid-Bugs-To: atftp@packages.debian.org\n"
-"POT-Creation-Date: 2021-07-28 21:48+0200\n"
-"PO-Revision-Date: 2006-10-05 19:50+0100\n"
-"Last-Translator: Kurt De Bree <kdebree@telenet.be>\n"
+"POT-Creation-Date: 2021-08-23 21:53+0200\n"
+"PO-Revision-Date: 2021-08-31 23:31+0200\n"
+"Last-Translator: Frans Spiesschaert <Frans.Spiesschaert@yucom.be>\n"
 "Language-Team: Debian l10n Dutch <debian-l10n-dutch@lists.debian.org>\n"
-"Language: \n"
+"Language: nl\n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=utf-8\n"
+"Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 2.2.1\n"
 
 #. Type: string
 #. Description
@@ -103,30 +105,37 @@ msgstr "'blokgrootte'-ondersteuning activeren?"
 #. Type: boolean
 #. Description
 #: ../atftpd.templates:8001
+msgid "Prevent Sorcerer's Apprentice Syndrome?"
+msgstr ""
+"Het Sorcerer's Apprentice Syndrome (tovenaarsleerlingsyndroom) voorkomen?"
+
+#. Type: boolean
+#. Description
+#: ../atftpd.templates:9001
 msgid "Enable multicast support?"
 msgstr "'Multicast'-ondersteuning activeren?"
 
 #. Type: string
 #. Description
-#: ../atftpd.templates:9001
+#: ../atftpd.templates:10001
 msgid "TTL for multicast packets:"
 msgstr "TTL (Time To Level) voor multicast-pakketten:"
 
 #. Type: string
 #. Description
-#: ../atftpd.templates:10001
+#: ../atftpd.templates:11001
 msgid "Port to listen for tftp request:"
 msgstr "Poort waarnaar moet geluisterd worden voor tftp-aanvragen:"
 
 #. Type: string
 #. Description
-#: ../atftpd.templates:11001
+#: ../atftpd.templates:12001
 msgid "Port range for multicast file transfer:"
 msgstr "Poortbereik voor multicast-bestandsuitwisseling:"
 
 #. Type: string
 #. Description
-#: ../atftpd.templates:11001
+#: ../atftpd.templates:12001
 msgid ""
 "Multicast transfer will use any available port in a given set. For example, "
 "\"2000-2003, 3000\" allow atftpd to use port 2000 to 2003 and 3000."
@@ -137,13 +146,13 @@ msgstr ""
 
 #. Type: string
 #. Description
-#: ../atftpd.templates:12001
+#: ../atftpd.templates:13001
 msgid "Address range for multicast transfer:"
 msgstr "Adresbereik voor multicast-uitwisseling:"
 
 #. Type: string
 #. Description
-#: ../atftpd.templates:12001
+#: ../atftpd.templates:13001
 msgid ""
 "Multicast transfer will use any available addresses from a given set of "
 "addresses. Syntax is \"a.b.c.d-d,a.b.c.d,...\""
@@ -153,30 +162,19 @@ msgstr ""
 
 #. Type: boolean
 #. Description
-#: ../atftpd.templates:13001
-msgid "Log to file instead of syslog?"
-msgstr "In bestand bewaren in plaats van in syslog?"
-
-#. Type: boolean
-#. Description
-#: ../atftpd.templates:13001
-msgid ""
-"If your server does intensive tftp file serving, it is a good idea to accept "
-"here. That will avoid cluttering your syslog with tftpd logs."
-msgstr ""
-"Als uw server intensieve tftp-bestandsbediening doet, is het een goed idee "
-"om hier te aanvaarden. Dit zal voorkomen dat uw syslog een warboel wordt van "
-"tftpd-berichten."
+#: ../atftpd.templates:14001
+msgid "Log to file instead of journal/syslog?"
+msgstr "Naar een bestand loggen in plaats van in journal/syslog?"
 
 #. Type: string
 #. Description
-#: ../atftpd.templates:14001
+#: ../atftpd.templates:15001
 msgid "Log file:"
 msgstr "Logbestand:"
 
 #. Type: string
 #. Description
-#: ../atftpd.templates:14001
+#: ../atftpd.templates:15001
 msgid ""
 "A file where atftpd will write its logs. This file will be made writable for "
 "the user 'nobody' and group 'nogroup'."
@@ -186,28 +184,16 @@ msgstr ""
 
 #. Type: string
 #. Description
-#: ../atftpd.templates:15001
+#: ../atftpd.templates:16001
 msgid "Base directory:"
 msgstr "Basismap:"
 
 #. Type: string
 #. Description
-#: ../atftpd.templates:15001
+#: ../atftpd.templates:16001
 msgid ""
 "The directory tree from where atftpd can serve files. That directory must be "
 "world readable."
 msgstr ""
 "De mapstructuur waar atftpd bestanden kan bedienen. Deze map moet leesbaar "
 "zijn voor de wereld."
-
-#~ msgid "Should the server be started by inetd?"
-#~ msgstr "Moet de server door inetd worden gestart?"
-
-#~ msgid ""
-#~ "atftpd can be started by the inetd superserver or as a daemon and handle "
-#~ "incoming connections by itself. The latter is only recommend for very "
-#~ "high usage server."
-#~ msgstr ""
-#~ "atftpd kan worden gestart door de inetd-superserver of als een "
-#~ "achtergronddienst en zelf binnenkomende verbindingen afhandelen. Dit "
-#~ "laatste wordt enkel aanbevolen voor een zeer veel gebruikte server."

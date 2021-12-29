@@ -342,7 +342,7 @@ Author: Andreas B. Mundt <andi@debian.org>
       }
 --- a/configure.ac
 +++ b/configure.ac
-@@ -169,11 +169,11 @@
+@@ -169,13 +169,13 @@
     AC_SUBST(LIBWRAP)
  fi
  
@@ -350,18 +350,24 @@ Author: Andreas B. Mundt <andi@debian.org>
 +dnl If we want to compile pcre2 stuff, check for libraries
  if test x$libpcre = xtrue; then
     dnl Checking to pcre.
-    AC_CHECK_LIB(pcre, pcre_version,
+-   AC_CHECK_LIB(pcre, pcre_version,
 -	        [LIBPCRE=-lpcre]
++   AC_CHECK_LIB(pcre2-8, pcre2_config_8,
 +	        [LIBPCRE=-lpcre2-8]
  		[AC_DEFINE([HAVE_PCRE], 1,
- 		"Support for libpcre pattern subsitution")])
+-		"Support for libpcre pattern subsitution")])
++		"Support for libpcre2 pattern subsitution")])
     AC_SUBST(LIBPCRE)
-@@ -191,7 +191,7 @@
+ fi
+ 
+@@ -190,8 +190,8 @@
+ if test x$libwrap = xtrue; then
  AC_CHECK_HEADERS(tcpd.h)
  fi
- if test x$libpcre = xtrue; then
+-if test x$libpcre = xtrue; then
 -AC_CHECK_HEADERS(pcre.h)
-+AC_CHECK_HEADERS(pcre2.h)
++if test x$libpcre2 = xtrue; then
++AC_CHECK_HEADERS([pcre2.h],[],[],[#define PCRE2_CODE_UNIT_WIDTH 8])
  fi
  
  dnl Checks for typedefs, structures, and compiler characteristics.

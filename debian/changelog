@@ -5,8 +5,9 @@ atftp (0.7.git20210915-3) UNRELEASED; urgency=medium
   * Switch to maintained library and port to PCRE2 (closes: #1000071).
   * Update some po-debconf translations, thanks to all translaters.
     (Closes: #995082, #996629, #1000762).
+  * Add patch descriptions and switch to DEP-5 copyright format.
 
- -- Andreas B. Mundt <andi@debian.org>  Tue, 28 Dec 2021 21:02:31 +0100
+ -- Andreas B. Mundt <andi@debian.org>  Wed, 29 Dec 2021 09:17:33 +0100
 
 atftp (0.7.git20210915-2) unstable; urgency=medium
 

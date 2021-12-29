@@ -1,3 +1,6 @@
+Description: Implement simple congestion control as suggested by RFC5405 (section-3.1).
+Forwarded: https://sourceforge.net/p/atftp/support-requests/10/
+Author: Andreas B. Mundt <andi@debian.org>
 --- a/tftp_file.c
 +++ b/tftp_file.c
 @@ -259,7 +259,7 @@

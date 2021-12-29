@@ -1,3 +1,7 @@
+Description: Port to maintained PCRE2 API.
+Bug-Debian: http://bugs.debian.org/1000071
+Forwarded: https://sourceforge.net/p/atftp/support-requests/11/
+Author: Andreas B. Mundt <andi@debian.org>
 --- a/tftpd_pcre.h
 +++ b/tftpd_pcre.h
 @@ -20,7 +20,8 @@

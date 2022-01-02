@@ -360,13 +360,11 @@ Author: Andreas B. Mundt <andi@debian.org>
     AC_SUBST(LIBPCRE)
  fi
  
-@@ -190,8 +190,8 @@
- if test x$libwrap = xtrue; then
+@@ -191,7 +191,7 @@
  AC_CHECK_HEADERS(tcpd.h)
  fi
--if test x$libpcre = xtrue; then
+ if test x$libpcre = xtrue; then
 -AC_CHECK_HEADERS(pcre.h)
-+if test x$libpcre2 = xtrue; then
 +AC_CHECK_HEADERS([pcre2.h],[],[],[#define PCRE2_CODE_UNIT_WIDTH 8])
  fi
  

@@ -1,3 +1,12 @@
+atftp (0.7.git20210915-4) UNRELEASED; urgency=medium
+
+  * Fix pcre2 build configuration.
+  * Allow IPv6 connections.
+  * Update dutch translations (closes: #1004319). Thanks to
+    Frans Spiesschaert <Frans.Spiesschaert@yucom.be>.
+
+ -- Andreas B. Mundt <andi@debian.org>  Fri, 11 Feb 2022 12:27:00 +0100
+
 atftp (0.7.git20210915-3) unstable; urgency=medium
 
   * Implement simple congestion control if windowsize option is used.

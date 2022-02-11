@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: atftp\n"
 "Report-Msgid-Bugs-To: atftp@packages.debian.org\n"
-"POT-Creation-Date: 2021-07-28 21:48+0200\n"
+"POT-Creation-Date: 2022-02-11 12:31+0100\n"
 "PO-Revision-Date: 2010-12-30 19:25+0200\n"
 "Last-Translator: Joe Hansen <joedalton2@yahoo.dk>\n"
 "Language-Team: Danish <debian-l10n-danish@lists.debian.org>\n"
@@ -84,36 +84,46 @@ msgstr "Aktiver understøttelse af »tsize«?"
 #. Type: boolean
 #. Description
 #: ../atftpd.templates:7001
-msgid "Enable 'block size' support?"
+#, fuzzy
+#| msgid "Enable 'block size' support?"
+msgid "Enable 'blksize' support?"
 msgstr "Aktiver understøttelse af blokstørrelse (»block size«)?"
 
 #. Type: boolean
 #. Description
 #: ../atftpd.templates:8001
+#, fuzzy
+#| msgid "Enable 'tsize' support?"
+msgid "Enable 'windowsize' support?"
+msgstr "Aktiver understøttelse af »tsize«?"
+
+#. Type: boolean
+#. Description
+#: ../atftpd.templates:9001
 msgid "Enable multicast support?"
 msgstr "Aktiver understøttelse af »multicast«?"
 
 #. Type: string
 #. Description
-#: ../atftpd.templates:9001
+#: ../atftpd.templates:10001
 msgid "TTL for multicast packets:"
 msgstr "TTL for multicastpakker:"
 
 #. Type: string
 #. Description
-#: ../atftpd.templates:10001
+#: ../atftpd.templates:11001
 msgid "Port to listen for tftp request:"
 msgstr "Port der skal lyttes på for tftp-forespørgsel:"
 
 #. Type: string
 #. Description
-#: ../atftpd.templates:11001
+#: ../atftpd.templates:12001
 msgid "Port range for multicast file transfer:"
 msgstr "Portområde for multicast-filoverførsel:"
 
 #. Type: string
 #. Description
-#: ../atftpd.templates:11001
+#: ../atftpd.templates:12001
 msgid ""
 "Multicast transfer will use any available port in a given set. For example, "
 "\"2000-2003, 3000\" allow atftpd to use port 2000 to 2003 and 3000."
@@ -124,13 +134,13 @@ msgstr ""
 
 #. Type: string
 #. Description
-#: ../atftpd.templates:12001
+#: ../atftpd.templates:13001
 msgid "Address range for multicast transfer:"
 msgstr "Adresseområde for multicast-overførsel:"
 
 #. Type: string
 #. Description
-#: ../atftpd.templates:12001
+#: ../atftpd.templates:13001
 msgid ""
 "Multicast transfer will use any available addresses from a given set of "
 "addresses. Syntax is \"a.b.c.d-d,a.b.c.d,...\""
@@ -140,29 +150,21 @@ msgstr ""
 
 #. Type: boolean
 #. Description
-#: ../atftpd.templates:13001
-msgid "Log to file instead of syslog?"
+#: ../atftpd.templates:14001
+#, fuzzy
+#| msgid "Log to file instead of syslog?"
+msgid "Log to file instead of journal/syslog?"
 msgstr "Log til en fil i stedet for syslog?"
-
-#. Type: boolean
-#. Description
-#: ../atftpd.templates:13001
-msgid ""
-"If your server does intensive tftp file serving, it is a good idea to accept "
-"here. That will avoid cluttering your syslog with tftpd logs."
-msgstr ""
-"Hvis din server laver intensiv tftp-fildeling, er det en god ide at svare ja "
-"her. Det vil undgå at fylde din syslog for meget op med tftpd-beskeder."
 
 #. Type: string
 #. Description
-#: ../atftpd.templates:14001
+#: ../atftpd.templates:15001
 msgid "Log file:"
 msgstr "Logfil:"
 
 #. Type: string
 #. Description
-#: ../atftpd.templates:14001
+#: ../atftpd.templates:15001
 msgid ""
 "A file where atftpd will write its logs. This file will be made writable for "
 "the user 'nobody' and group 'nogroup'."
@@ -172,19 +174,26 @@ msgstr ""
 
 #. Type: string
 #. Description
-#: ../atftpd.templates:15001
+#: ../atftpd.templates:16001
 msgid "Base directory:"
 msgstr "Basismappe:"
 
 #. Type: string
 #. Description
-#: ../atftpd.templates:15001
+#: ../atftpd.templates:16001
 msgid ""
 "The directory tree from where atftpd can serve files. That directory must be "
 "world readable."
 msgstr ""
 "Mappetræet hvorfra atftpd kan betjene filer. Denne mappe skal være læsbar af "
 "alle."
+
+#~ msgid ""
+#~ "If your server does intensive tftp file serving, it is a good idea to "
+#~ "accept here. That will avoid cluttering your syslog with tftpd logs."
+#~ msgstr ""
+#~ "Hvis din server laver intensiv tftp-fildeling, er det en god ide at svare "
+#~ "ja her. Det vil undgå at fylde din syslog for meget op med tftpd-beskeder."
 
 #~ msgid "Should the server be started by inetd?"
 #~ msgstr "Skal serveren startes af inetd?"

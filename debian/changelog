@@ -1,4 +1,4 @@
-atftp (0.7.git20210915-4) UNRELEASED; urgency=medium
+atftp (0.7.git20210915-4) unstable; urgency=medium
 
   * Fix pcre2 build configuration.
   * Allow IPv6 connections.

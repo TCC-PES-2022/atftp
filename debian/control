@@ -33,7 +33,8 @@ Conflicts: tftpd
 Suggests: logrotate
 Description: advanced TFTP server
  Multi-threaded TFTP server implementing all options (option extension and
- multicast) as specified in RFC1350, RFC2090, RFC2347, RFC2348 and RFC2349.
- Atftpd also supports multicast protocol known as mtftp, defined in the PXE
- specification. The server is socket activated by default but supports being
- started from inetd(8) as well as in daemon mode using init scripts.
+ multicast) as specified in RFC1350, RFC2090, RFC2347, RFC2348, RFC2349 and
+ RFC7440. Atftpd also supports the multicast protocol known as mtftp, defined
+ in the PXE specification. The server is socket activated by default but
+ supports being started from inetd(8) as well as in daemon mode using init
+ scripts.

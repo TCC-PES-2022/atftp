@@ -7,4 +7,11 @@ if [ "$1" = "upgrade" ] && dpkg --compare-versions "$2" lt-nl "0.7.git20210915-2
     echo "Fix broken syntax in /etc/default/atftpd"
 fi
 
+if [ "$1" = "upgrade" ] && [ -f /etc/default/atftpde ] && \
+       diff -q /etc/default/atftpd /etc/default/atftpde > /dev/null ; then
+    rm -f /etc/default/atftpde
+    echo "Remove backup file /etc/default/atftpde created by mistake."
+fi
+
+
 #DEBHELPER#

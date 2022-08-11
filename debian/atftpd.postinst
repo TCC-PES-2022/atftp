@@ -130,13 +130,13 @@ else
 	sed -i "s|^ *OPTIONS=.*|OPTIONS=\"$OPTIONS\"|" $CONFIGFILE
 fi
 
-[ -f "$SYSDSOCK" ] && sed -ie "s|^ *ListenDatagram=0\.0\.0\.0.*$|ListenDatagram=0.0.0.0:$PORT|" "$SYSDSOCK"
+[ -f "$SYSDSOCK" ] && sed -i -e "s|^ *ListenDatagram=0\.0\.0\.0.*$|ListenDatagram=0.0.0.0:$PORT|" "$SYSDSOCK"
 
 
 case "$1" in
 	configure)
 		if dpkg --compare-versions "$2" le "0.7.git20210202" ; then
-			sed -ie "s|only with init script|with systemd and init script|" $CONFIGFILE
+			sed -i -e "s|only with init script|with systemd and init script|" $CONFIGFILE
 		fi
 		;;
 esac

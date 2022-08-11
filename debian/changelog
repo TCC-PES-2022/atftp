@@ -1,3 +1,12 @@
+atftp (0.7.git20210915-5) unstable; urgency=medium
+
+  * Fix error leading to backup file '/etc/default/atftpde'.
+  * Fix some shellcheck warnings in maintainer scripts.
+  * Bump Standards-Version to 4.6.1 (no changes needed).
+  * Update package description.
+
+ -- Andreas B. Mundt <andi@debian.org>  Fri, 12 Aug 2022 08:21:51 +0200
+
 atftp (0.7.git20210915-4) unstable; urgency=medium
 
   * Fix pcre2 build configuration.

@@ -72,7 +72,7 @@ fi
 
 db_get atftpd/verbosity
 if [ "$RET" ]; then
-    RET=`echo $RET | cut -f1 -d ' '`
+    RET=$(echo $RET | cut -f1 -d ' ')
     VERBOSITY="--verbose=$RET"
 fi
 
@@ -89,7 +89,7 @@ if [ "$RET" = "true" ]; then
         fi
         # create the logrotate file
         if [ ! -f /etc/logrotate.d/atftpd ] || \
-		! grep -q "^$RET " /etc/logrotate.d/atftpd 2>&1 > /dev/null ; then
+		! grep -q "^$RET " /etc/logrotate.d/atftpd > /dev/null 2>&1 ; then
             cat >/etc/logrotate.d/atftpd <<EOF
 $RET {
     daily

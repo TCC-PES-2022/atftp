@@ -1,3 +1,9 @@
+atftp (0.7.git20210915-6) UNRELEASED; urgency=medium
+
+  * Update spanish translations. Thanks to Camaleón <noelamac@gmail.com>.
+
+ -- Andreas B. Mundt <andi@debian.org>  Tue, 16 Aug 2022 18:51:57 +0200
+
 atftp (0.7.git20210915-5) unstable; urgency=medium
 
   * Fix error leading to backup file '/etc/default/atftpde'.

@@ -4,11 +4,11 @@
 #
 # Changes:
 # - Initial translation
-# 	Sergio Molina <sergio.molina.m@gmail.com>, 2004. 
+# 	Sergio Molina <sergio.molina.m@gmail.com>, 2004.
 # 	Steve Lord Flaubert <stonescenter@gmail.com> , 2006
 #
 #
-# Traductores, si no conoce el formato PO, merece la pena leer la 
+# Traductores, si no conoce el formato PO, merece la pena leer la
 # documentación de gettext, especialmente las secciones dedicadas a este
 # formato, por ejemplo ejecutando:
 # 	info -n '(gettext)PO Files'
@@ -36,13 +36,14 @@ msgstr ""
 "Project-Id-Version: atftp 0.7.dfsg-1\n"
 "Report-Msgid-Bugs-To: atftp@packages.debian.org\n"
 "POT-Creation-Date: 2022-02-11 12:31+0100\n"
-"PO-Revision-Date: 2006-12-06 22:26+0100\n"
-"Last-Translator: Steve Lord Flaubert <stonescenter@gmail.com>\n"
+"PO-Revision-Date: 2022-08-16 15:13+0200\n"
+"Last-Translator: Camaleón <noelamac@gmail.com>\n"
 "Language-Team: Spanish <debian-l10n-spanish@lists.debian.org>\n"
 "Language: es\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 2.4.2\n"
 
 #. Type: string
 #. Description
@@ -82,7 +83,7 @@ msgstr "Máximo número de hilos:"
 #. Description
 #: ../atftpd.templates:3001
 msgid "Maximum number of concurrent threads that can be running."
-msgstr "Máximo número de hilos concurrentes que se puede ejecutar."
+msgstr "Máximo número de hilos concurrentes que se pueden ejecutar."
 
 #. Type: select
 #. Description
@@ -97,9 +98,9 @@ msgid ""
 "Level of logging. 7 logs everything including debug logs. 1 will log only "
 "the system critical logs. 5 (LOG_NOTICE) is the default value."
 msgstr ""
-"Nivel de registro : 7 lo guarda todo, incluyendo los registros de "
-"depuración. 1 grabará sólo los registros críticos del sistema. 5 "
-"(LOG_NOTICE) es el valor por omisión."
+"Nivel de registro: «7» lo guarda todo, incluyendo los registros de "
+"depuración. «1» grabará sólo los registros críticos del sistema. "
+"«5» (LOG_NOTICE) es el valor predeterminado."
 
 #. Type: boolean
 #. Description
@@ -116,18 +117,14 @@ msgstr "¿Habilitar soporte «tsize»?"
 #. Type: boolean
 #. Description
 #: ../atftpd.templates:7001
-#, fuzzy
-#| msgid "Enable 'block size' support?"
 msgid "Enable 'blksize' support?"
-msgstr "¿Habilitar soporte para «block-size»?"
+msgstr "¿Habilitar soporte «blksize»?"
 
 #. Type: boolean
 #. Description
 #: ../atftpd.templates:8001
-#, fuzzy
-#| msgid "Enable 'tsize' support?"
 msgid "Enable 'windowsize' support?"
-msgstr "¿Habilitar soporte «tsize»?"
+msgstr "¿Habilitar soporte «windowsize»?"
 
 #. Type: boolean
 #. Description
@@ -145,13 +142,13 @@ msgstr "TTL para paquetes multicast:"
 #. Description
 #: ../atftpd.templates:11001
 msgid "Port to listen for tftp request:"
-msgstr "Puerto para escuchar peticiones de tftp:"
+msgstr "Puerto para escuchar peticiones de atftp:"
 
 #. Type: string
 #. Description
 #: ../atftpd.templates:12001
 msgid "Port range for multicast file transfer:"
-msgstr "Rango de puertos para transferencia de archivos multicast:"
+msgstr "Rango de puertos para transferencias de archivos multicast:"
 
 #. Type: string
 #. Description
@@ -168,7 +165,7 @@ msgstr ""
 #. Description
 #: ../atftpd.templates:13001
 msgid "Address range for multicast transfer:"
-msgstr "Rango de direcciones para transferencia multicast:"
+msgstr "Rango de direcciones para transferencias multicast:"
 
 #. Type: string
 #. Description
@@ -183,16 +180,14 @@ msgstr ""
 #. Type: boolean
 #. Description
 #: ../atftpd.templates:14001
-#, fuzzy
-#| msgid "Log to file instead of syslog?"
 msgid "Log to file instead of journal/syslog?"
-msgstr "¿Fichero de registro en lugar de syslog?"
+msgstr "¿Archivo de registro en lugar de journal/syslog?"
 
 #. Type: string
 #. Description
 #: ../atftpd.templates:15001
 msgid "Log file:"
-msgstr "Fichero de registro:"
+msgstr "Archivo de registro:"
 
 #. Type: string
 #. Description
@@ -201,7 +196,7 @@ msgid ""
 "A file where atftpd will write its logs. This file will be made writable for "
 "the user 'nobody' and group 'nogroup'."
 msgstr ""
-"Un fichero en el que tftpd escribirá sus registros. Este fichero se hará "
+"Un archivo en el que atftpd escribirá sus registros. Este archivo se hará "
 "escribible al usuario «nobody» y los usuarios del grupo «nogroup»."
 
 #. Type: string
@@ -217,7 +212,7 @@ msgid ""
 "The directory tree from where atftpd can serve files. That directory must be "
 "world readable."
 msgstr ""
-"El árbol de directorios desde dónde atftpd servirá los ficheros. Ese "
+"El árbol de directorios desde donde atftpd servirá los archivos. Ese "
 "directorio debe ser accesible para todos los usuarios."
 
 #~ msgid ""

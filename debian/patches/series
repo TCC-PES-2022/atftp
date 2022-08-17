@@ -3,3 +3,4 @@ cosmetics.patch
 congestion.patch
 pcre2.patch
 fix-windowsize-WRQ.patch
+minor-fixes.patch

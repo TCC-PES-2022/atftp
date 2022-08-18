@@ -1,10 +1,12 @@
-atftp (0.7.git20210915-6) UNRELEASED; urgency=medium
+atftp (0.7.git20210915-6) unstable; urgency=medium
 
   * Update spanish translations (closes: #1017451). Thanks to
     Camaleón <noelamac@gmail.com>.
   * Fix windowsize option for write requests (file uploads).
+  * Some minor (cosmetic) upstream fixes.
+  * Add patch headers and tests for windowsize option.
 
- -- Andreas B. Mundt <andi@debian.org>  Wed, 17 Aug 2022 16:47:12 +0200
+ -- Andreas B. Mundt <andi@debian.org>  Thu, 18 Aug 2022 12:14:12 +0200
 
 atftp (0.7.git20210915-5) unstable; urgency=medium
 

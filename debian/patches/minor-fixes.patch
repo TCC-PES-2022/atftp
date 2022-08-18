@@ -1,3 +1,10 @@
+Description: Fix/update minor issues in upstream.
+Author: Andreas B. Mundt <andi@debian.org>
+Forwarded: https://sourceforge.net/p/atftp/bugs/8/
+Last-Update: 2022-08-18
+---
+This patch header follows DEP-3: http://dep.debian.net/deps/dep3/
+
 --- a/tftp_def.c
 +++ b/tftp_def.c
 @@ -54,7 +54,7 @@

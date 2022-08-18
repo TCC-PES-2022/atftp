@@ -1,3 +1,10 @@
+Description: Fix the 'windowsize' option for write requests.
+Author: Andreas B. Mundt <andi@debian.org>
+Forwarded: https://sourceforge.net/p/atftp/bugs/8/
+Last-Update: 2022-08-18
+---
+This patch header follows DEP-3: http://dep.debian.net/deps/dep3/
+
 --- a/tftpd_file.c
 +++ b/tftpd_file.c
 @@ -155,6 +155,14 @@

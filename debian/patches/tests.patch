@@ -1,3 +1,10 @@
+Description: Improve upstream test script. Include tests for windowsize option.
+Author: Andreas B. Mundt <andi@debian.org>
+Forwarded: https://sourceforge.net/p/atftp/bugs/8/
+Last-Update: 2022-08-18
+---
+This patch header follows DEP-3: http://dep.debian.net/deps/dep3/
+
 --- a/test/test.sh
 +++ b/test/test.sh
 @@ -4,6 +4,8 @@
@@ -9,7 +16,7 @@
  # assume we are called in the source tree after the build
  # so binaries are one dir up
  ATFTP=../atftp
-@@ -106,39 +108,55 @@
+@@ -106,39 +108,59 @@
  	fi
  }
  
@@ -36,21 +43,25 @@
 -	check_file $DIRECTORY/${READFILE} $DIRECTORY/$WRITE
 -	rm -f $DIRECTORY/$WRITE out.bin
 +function check_trace() {
-+    local FILE="$1"
++    local LOG="$1" FILE="$2"
 +    local oack tsize wsize bsize c d e
-+    oack=$(grep "OACK" "$FILE")
-+    tsize=$(echo $oack | sed -E "s/.*tsize: ([0-9]+).*/\1/")
-+    wsize=$(echo $oack | sed -E "s/.*windowsize: ([0-9]+).*/\1/")
-+    bsize=$(echo $oack | sed -E "s/.*blksize: ([0-9]+).*/\1/")
-+    c=$(grep -E "DATA <block:" "$FILE" | wc -l)
-+    d=$(grep "ACK <block:" "$FILE" | wc -l)
-+    e=$(grep "sent ACK <block: 0>" "$FILE" | wc -l)
++    oack=$(grep "OACK" "$LOG")
++    tsize=$(echo $oack | grep tsize | sed -E "s/.*tsize: ([0-9]+).*/\1/")
++    wsize=$(echo $oack | grep windowsize | sed -E "s/.*windowsize: ([0-9]+).*/\1/")
++    bsize=$(echo $oack | grep blksize | sed -E "s/.*blksize: ([0-9]+).*/\1/")
++    c=$(grep -E "DATA <block:" "$LOG" | wc -l)
++    d=$(grep "ACK <block:" "$LOG" | wc -l)
++    e=$(grep "sent ACK <block: 0>" "$LOG" | wc -l)
++    ## defaults, if not found in OACK:
++    : ${tsize:=$(ls -l $FILE | cut -d ' ' -f5)}
++    : ${wsize:=1}
++    : ${bsize:=512}
 +    ## e is for the ACK of the OACK
 +    ## the +1 is the last block, it might be empty and ist ACK'd:
 +    if [[ $((tsize/bsize + 1)) -ne $c ]] || \
 +           [[ $((tsize/(bsize*wsize) + 1 + e)) -ne $d ]] ; then
-+        echo -e "\nexpected blocks: $((tsize/bsize + 1)), received/sent blocks: $c"
-+        echo "expected ACKs: $((tsize/(bsize*wsize) + 1)), sent/received ACKs: $((d-e))"
++        echo -e "\nERROR: expected blocks: $((tsize/bsize + 1)), received/sent blocks: $c"
++        echo "ERROR: expected ACKs: $((tsize/(bsize*wsize) + 1)), sent/received ACKs: $((d-e))"
 +        ERROR=1
 +    else
 +        echo -n "$c blocks, $((d-e)) ACKs → "
@@ -85,18 +96,18 @@
 +    echo -n " put, ${FILE} ($@) ... "
 +    $ATFTP "$@" --put --remote-file $WRITE \
 +           --local-file $DIRECTORY/${FILE} $HOST $PORT 2> $stdout
-+    # wait a second because in some case the server may not have time to close the file
-+    # before the file compare.
 +    if [[ -f "$stdout" ]] ;  then
-+        check_trace "$stdout"
++        check_trace "$stdout" "$DIRECTORY/${FILE}"
 +    fi
-+    sleep 1
++    # wait a second because in some case the server may not have time
++    # to close the file before the file compare:
++    # sleep ## is this still needed?
 +    check_file $DIRECTORY/${FILE} $DIRECTORY/$WRITE
 +    rm -f "$DIRECTORY/$WRITE" "$DIRECTORY/$WRITE.stdout" out.bin
  }
  
  # make sure we have /tftpboot with some files
-@@ -157,6 +175,7 @@
+@@ -157,6 +179,7 @@
  READ_BIG=READ_BIG.bin
  READ_128K=READ_128K.bin
  READ_1M=READ_1M.bin
@@ -104,7 +115,7 @@
  READ_101M=READ_101M.bin
  WRITE=write.bin
  
-@@ -169,15 +188,17 @@
+@@ -169,15 +192,17 @@
  dd if=/dev/urandom of=$DIRECTORY/$READ_BIG bs=1 count=51111 2>/dev/null
  dd if=/dev/urandom of=$DIRECTORY/$READ_128K bs=1K count=128 2>/dev/null
  dd if=/dev/urandom of=$DIRECTORY/$READ_1M bs=1M count=1 2>/dev/null
@@ -115,30 +126,23 @@
  start_server
 +trap stop_server EXIT SIGINT SIGTERM
  
--#
--# test get and put
--#
+ #
+ # test get and put
+ #
 -echo "Testng get and put with standard options"
-+###
-+### test get and put
-+###
 +echo "Testing get and put with standard options"
  test_get_put $READ_0
  test_get_put $READ_511
  test_get_put $READ_512
-@@ -186,10 +207,9 @@
- test_get_put $READ_128K
- test_get_put $READ_1M
- test_get_put $READ_101M
--
-+#
+@@ -189,7 +214,6 @@
+ 
  echo
  echo "Testing get and put with misc blocksizes"
 -
  test_get_put $READ_BIG --option "blksize 8"
  test_get_put $READ_BIG --option "blksize 256"
  test_get_put $READ_1M --option "blksize 1428"
-@@ -197,12 +217,20 @@
+@@ -197,12 +221,21 @@
  test_get_put $READ_1M --option "blksize 16000"
  test_get_put $READ_1M --option "blksize 40000"
  test_get_put $READ_1M --option "blksize 65464"
@@ -152,6 +156,7 @@
 +test_get_put $READ_128K --option "windowsize 8" --option "tsize 0" --option "blksize 1024" --trace
 +test_get_put $READ_128K --option "windowsize 16" --option "tsize 0" --option "blksize 512" --trace
 +test_get_put $READ_101M --option "windowsize 32" --option "tsize 0" --option "blksize 1428" --trace
++test_get_put $READ_1M --option "windowsize 5" --option "tsize 0" --option "blksize 1428" --trace
  
 -# do not run the following test as it will hang...
 -
@@ -160,11 +165,11 @@
 -#test_get_put $READ_1M --option "blksize 10"
 +echo
 +echo "Testing large file with small blocksize so block numbers will wrap over 65536"
-+test_get_put $READ_10M --option "windowsize 1" --option "tsize 0" --option "blksize 128" --trace
++test_get_put $READ_1M --option "blksize 8" --trace
  
  #
  # testing for invalid file name
-@@ -210,7 +238,9 @@
+@@ -210,7 +243,9 @@
  OUTPUTFILE="01-out"
  echo
  echo -n "Test detection of non-existing file name ... "
@@ -174,7 +179,7 @@
  if grep -q "<File not found>" "$OUTPUTFILE"; then
  	echo OK
  else
-@@ -226,16 +256,20 @@
+@@ -226,16 +261,20 @@
  echo
  echo "Testing blksize option ..."
  echo -n " smaller than minimum ... "
@@ -197,7 +202,7 @@
  	echo OK
  else
  	echo ERROR
-@@ -264,16 +298,20 @@
+@@ -264,16 +303,20 @@
  echo ""
  echo "Testing timeout option limit..."
  echo -n " minimum ... "
@@ -220,7 +225,7 @@
  	echo OK
  else
  	echo ERROR
-@@ -286,8 +324,10 @@
+@@ -286,8 +329,10 @@
  OUTPUTFILE="05-out"
  echo
  echo -n "Test returncode after timeout when server is unreachable ... "
@@ -231,7 +236,7 @@
  echo -n "Returncode $Retval: "
  if [ $Retval -eq 255 ]; then
  	echo "OK"
-@@ -342,7 +382,7 @@
+@@ -342,7 +387,7 @@
  	rmdir "$SMALL_FS_DIR"
  else
  	echo
@@ -240,7 +245,7 @@
  fi
  
  # Test that timeout is well set to 1 sec and works.
-@@ -383,7 +423,7 @@
+@@ -383,7 +428,7 @@
  			min=$(echo $line | cut -d ":" -f 2)
  			sec=$(echo $line | cut -d ":" -f 3)
  			cur=$(( 24*60*10#$hrs + 60*10#$min + 10#$sec ))
@@ -249,7 +254,7 @@
  			if [ $prev -gt 0 ]; then
  				if [ $(($cur - $prev)) != 1 ]; then
  					res="ERROR"
-@@ -428,29 +468,30 @@
+@@ -428,29 +473,30 @@
  #
  echo
  echo "Testing high server load"
@@ -290,7 +295,7 @@
  #
  # high server load test passed, now examine the results
  #
-@@ -461,7 +502,8 @@
+@@ -461,7 +507,8 @@
  done
  
  # remove timeout/retry messages, they are no error indicator
@@ -300,17 +305,38 @@
  
  # the remaining output is considered as error messages
  error_cnt=$(wc -l <"$DIRECTORY/high-server-load-out.clean-result")
-@@ -480,8 +522,6 @@
+@@ -474,24 +521,34 @@
+ 	echo "======================================================"
+ 	ERROR=1
+ else
+-	echo "High server load test: OK"
++	echo -e "High server load test: OK\n"
+ fi
+ 
  # remove all empty output files
  find "$DIRECTORY" -name "high-server-load-out.*" -size 0 -delete
  
--stop_server
+ stop_server
 -
++trap - EXIT SIGINT SIGTERM
++tail -n 14 "$SERVER_LOG" | cut -d ' ' -f6-
  echo
++## + 1 is for "Testing tsize option... "
++cat <<EOF
++Expected:
++   number of errors:         $(grep -c '<Failure\s\|<File not\s' $0)
++   number of files sent:     $(( $(grep -c "^test_get_put" $0) + $NBSERVER + 1 ))
++   number of files received: $(grep -c "^test_get_put" $0)
++
++EOF
++
  
  # cleanup
-@@ -491,7 +531,7 @@
- 	echo "Cleaning up test files"
+ if [ $CLEANUP -ne 1 ]; then
+ 	echo "No cleanup, files from test are left in $DIRECTORY"
+ else
+-	echo "Cleaning up test files"
++    	echo "Cleaning up test files"
  	rm -f ??-out $SERVER_LOG
  	cd "$DIRECTORY"
 -	rm -f $READ_0 $READ_511 $READ_512 $READ_2K $READ_BIG $READ_128K $READ_1M $READ_101M $WRITE high-server-load-out.*
@@ -318,3 +344,11 @@
  	cd ..
  	rmdir "$DIRECTORY"
  fi
+@@ -503,7 +560,6 @@
+ 	exit 1
+ else
+ 	echo "OK"
+-	exit 0
+ fi
+ 
+ # vim: ts=4:sw=4:autoindent

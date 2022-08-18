@@ -1,6 +1,10 @@
 Description: Implement the 'windowsize' option documented in RFC 7440.
-Forwarded: https://sourceforge.net/p/atftp/support-requests/10/
 Author: Andreas B. Mundt <andi@debian.org>
+Forwarded: https://sourceforge.net/p/atftp/support-requests/10/
+Last-Update: 2022-08-18
+---
+This patch header follows DEP-3: http://dep.debian.net/deps/dep3/
+
 --- a/options.c
 +++ b/options.c
 @@ -232,6 +232,17 @@

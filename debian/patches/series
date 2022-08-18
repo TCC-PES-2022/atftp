@@ -5,3 +5,4 @@ pcre2.patch
 fix-windowsize-WRQ.patch
 minor-fixes.patch
 tests.patch
+test-pcre.patch

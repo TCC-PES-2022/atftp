@@ -6,3 +6,4 @@ fix-windowsize-WRQ.patch
 minor-fixes.patch
 tests.patch
 test-pcre.patch
+handle-loss-duplication-better.patch

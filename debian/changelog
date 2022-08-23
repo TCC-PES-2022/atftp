@@ -1,3 +1,14 @@
+atftp (0.7.git20210915-7) UNRELEASED; urgency=medium
+
+  * Implement PCRE tests.
+  * Rewrite test script.  Mostly structuring and clean-up.
+  * Improve algorithm (windowsize option):
+      - Do not send multiple identical ACKs without timeout.
+      - Acknowledge only the first outdatet/duplicated block
+        within a window.
+
+ -- Andreas B. Mundt <andi@debian.org>  Tue, 23 Aug 2022 13:31:20 +0200
+
 atftp (0.7.git20210915-6) unstable; urgency=medium
 
   * Update spanish translations (closes: #1017451). Thanks to

@@ -7,3 +7,4 @@ minor-fixes.patch
 tests.patch
 test-pcre.patch
 handle-loss-duplication-better.patch
+fix-last-window.patch

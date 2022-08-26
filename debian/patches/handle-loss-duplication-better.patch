@@ -52,7 +52,7 @@ This patch header follows DEP-3: http://dep.debian.net/deps/dep3/
                      if (number_of_timeout > NB_OF_RETRY)
                           state = S_ABORT;
                      else
-@@ -547,12 +558,39 @@
+@@ -547,12 +558,28 @@
  	       }
                 if ((last_received_block < windowsize) && (timeout_state = S_SEND_OACK))
                      timeout_state = S_SEND_ACK;
@@ -61,32 +61,21 @@ This patch header follows DEP-3: http://dep.debian.net/deps/dep3/
 -                    fprintf(stderr, "got wrong block <block: %ld>\n", block_number);
 -                    state = S_SEND_ACK;
 +
-+               /* Consider two cases here: First, the sequence of blocks contains a gap.
-+                  As soon as we detect this, send an ACK for the last block before the gap.
-+                  Do this only once, not for all (in flight) blocks following: */
-+               if (block_number > last_received_block + 1) {
-+                    fprintf(stderr, "missing block before <block: %ld>: ", block_number);
++               /* The sequence of blocks may contain a gap, i.e. (block_number > last_received_block + 1).
++                  Send an extra ACK for the last block before the gap once.
++
++                  The ACK of a received window gets lost.  The sender times out and starts
++                  sending all blocks of that window again, i.e. (block_number < last_received_block + 1).
++                  Again, send the extra ACK. */
++               if (block_number != last_received_block + 1)
++               {
++                    fprintf(stderr, "got wrong block <block: %ld>, ", block_number);
 +                    if (extra_ack < 1) {
-+                         fprintf(stderr, "sending ACK for <block: %ld>\n", last_received_block);
++                         fprintf(stderr, "sending extra ACK for <block: %ld>\n", last_received_block);
 +                         extra_ack++;
 +                         state = S_SEND_ACK;
 +                    } else {
 +                         fprintf(stderr, "ignoring\n");
-+                         state = S_WAIT_PACKET;
-+                    }
-+                    break;
-+               }
-+               /* Second, the ACK of a received window got lost.  The sender might time out
-+                  and start sending all blocks of that window again.  As soon as we detect this,
-+                  send the ACK again. */
-+               if (block_number < last_received_block + 1) {
-+                    if (extra_ack < 1) {
-+                         fprintf(stderr, "got already received block: <block: %ld>, ACK'ing again <block: %ld>\n",
-+                                 block_number, last_received_block);
-+                         extra_ack++;
-+                         state = S_SEND_ACK;
-+                    } else {
-+                         fprintf(stderr, "ignoring already received block: <block: %ld>\n", block_number);
 +                         state = S_WAIT_PACKET;
 +                    }
                      break;
@@ -96,7 +85,7 @@ This patch header follows DEP-3: http://dep.debian.net/deps/dep3/
                 windowblock++;
                 if (data->trace)
                      fprintf(stderr, "received %d. DATA <block: %ld, size %d>, update last received block: %ld → %ld\n",
-@@ -819,7 +857,7 @@
+@@ -819,7 +846,7 @@
                 {
                 case GET_TIMEOUT:
                      number_of_timeout++;

@@ -1,0 +1,116 @@
+--- a/test/test.sh
++++ b/test/test.sh
+@@ -54,6 +54,7 @@
+ # Options:
+ : "${CLEANUP:=true}"
+ : "${INTERACTIVE:=false}"
++: "${MCASTCLNTS:=}"
+ [[ "$@" =~ no-cleanup ]] && CLEANUP="false"
+ [[ "$@" =~ interactive ]] && INTERACTIVE="true"
+ 
+@@ -469,6 +470,48 @@
+     find "$TDIR" -name "high-server-load-out.*" -size 0 -delete
+ }
+ 
++test_multicast(){
++    local L M N=0 C NUM=6 FILE="128K.bin"
++    echo -e "\n===== Test multicast option ..."
++    echo -en "  Run atftp on: "
++    for C in $MCASTCLNTS ; do
++        echo -n "'$C', "
++        L="/tmp/multicast.log"
++        ssh "$C" "rm -f $L ; for N in \$(seq $NUM) ; do ./atftp --option multicast \
++                 --option 'blksize 500' --get -r $FILE -l /tmp/$FILE --trace $HOST $PORT 2>&1 \
++                 | grep -C3 OACK >> $L ; md5sum /tmp/$FILE >> $L ; rm /tmp/$FILE ; done  " &
++        N=$(( N + 1 ))
++    done
++    echo "fetching '$FILE'."
++    sleep 3
++    echo -en "  Copy log file: "
++    for C in $MCASTCLNTS ; do
++        echo -n "'$C' "
++        scp -q "$C:$L" "$TDIR/multicast-${C##*@}.log"
++    done
++    echo
++    M=$(grep "/tmp/$FILE" "$TDIR"/multicast*.log | wc -l)
++    if [[ $M = $(( N * NUM )) ]] ; then
++        echo -e "\n  All $M multicast downloads registered → OK"
++    else
++        ERROR=1
++        echo "ERROR: Files missing:  $M != $(( N * NUM ))."
++    fi
++    ## check NUM in "$TDIR"/multicast*.log
++    grep --no-filename "/tmp/$FILE" "$TDIR"/multicast*.log | uniq | \
++        sed "s#/tmp/$FILE#$TDIR/$FILE#" > "$TDIR/MD5SUMS"
++    echo -n "  Check md5sums → "
++    md5sum -c "$TDIR/MD5SUMS" | sed "s#$TDIR/##"
++    M=$(grep --no-filename 'received OACK <mc = 1>' "$TDIR"/multicast*.log | wc -l)
++    N=$(grep 'Client transferred to' "$SERVER_LOG" | wc -l)
++    if [[ $M = $N ]] ; then
++        echo "  Multicast client transfers detected: $M → OK"
++    else
++        ERROR=1
++        echo "ERROR: Multicast client transfers are inconsistent:  $M != $N."
++    fi
++}
++
+ stop_and_clean(){
+     echo "========================================================"
+     stop_server
+@@ -477,11 +520,12 @@
+     echo
+     ## +3 is for "Test tsize option ..." and "Test PCRE mapped download ... "
+     ## +2 for diskspace tests:
++    local M=$(grep "/tmp/" "$TDIR"/multicast*.log | wc -l)
+     $INTERACTIVE && D=2
+     cat <<EOF
+ Expected:
+    number of errors:         $(( $(grep -c "\s\+check_error" "$0") + ${D:-0} ))
+-   number of files sent:     $(( $(grep -c "\s\+get_put" "$0") + ${#TFILE[@]} + NBSERVER + 3 ))
++   number of files sent:     $(( $(grep -c "\s\+get_put" "$0") + ${#TFILE[@]} + NBSERVER + 3 + $M ))
+    number of files received: $(( $(grep -c "\s\+get_put" "$0") + ${#TFILE[@]} ))
+ 
+ EOF
+@@ -490,7 +534,7 @@
+ 	echo "No cleanup, files from test are left in $TDIR"
+     else
+     	echo -n "Cleaning up test files and logs ... "
+-	rm -r "$TDIR" "$SERVER_LOG" ./??-out
++	rm -fr "$TDIR" "$SERVER_LOG" ./??-out
+         echo "done."
+     fi
+ }
+@@ -528,17 +572,23 @@
+ 	echo "Compile atftp with debug support for more timeout testing."
+ fi
+ 
+-#
+-# testing multicast
+-#
++if [[ -n "$MCASTCLNTS" ]] && [[ "$HOST" != "127.0.0.1" ]]  ; then
++    test_multicast
++else
++    cat <<EOF
+ 
+-#echo ""
+-#echo -n "Test multicast option  "
+-#for i in $(seq 10); do
+-#	echo -n "."
+-#	atftp --blksize=8 --multicast -d --get -r $TDIR/BIG -l out.$i.bin $HOST $PORT 2> /dev/null&
+-#done
+-#echo "OK"
++To test multicast (RFC 2090), you need to prepare some hosts
++in the local network.  Make sure they have atftp available and
++configure ssh pubkey login (without password).
++
++Then run $0 like:
++
++   MCASTCLNTS='user1@host1 … userN@hostN' HOST='192.168.2.100' $0
++
++In addition, network traffic may be checked with tcpdump or
++wireshark when running the command above.
++EOF
++fi
+ 
+ #
+ # testing mtftp

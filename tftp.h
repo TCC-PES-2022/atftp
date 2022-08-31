@@ -29,6 +29,7 @@ struct client_data {
 
      char local_file[VAL_SIZE]; /* the file we are reading or writing is not
                                    necessary the same on the server */
+     FILE *fp;                   /* file pointer to send/receive data */
      struct tftp_opt *tftp_options; /* hold requested options */
      struct tftp_opt *tftp_options_reply; /* hold server reply */
 

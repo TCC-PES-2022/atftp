@@ -31,7 +31,7 @@
 #define IPADDRLEN    24         /* For IPv4 and IPv6 address string */
 #define TIMEOUT       5         /* Client timeout */
 #define S_TIMEOUT     5         /* Server timout. */
-#define NB_OF_RETRY   5
+#define NB_OF_RETRY   1
 #define	MAXBLOCKS     ((1 << (32 - 9)) - 1)  /* Maximum blocks we will xfer */
 
 /* definition to use tftp_options structure */

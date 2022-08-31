@@ -28,7 +28,7 @@ typedef enum {
  * @return TFTP_ERROR otherwise.
  */
 TftpOperationResult cretate_tftp_handler(
-        TftpHandlerPtr handler
+        TftpHandlerPtr *handler
         );
 
 /**
@@ -39,20 +39,8 @@ TftpOperationResult cretate_tftp_handler(
  * @return TFTP_OK if success.
  * @return TFTP_ERROR otherwise.
  */
-TftpdOperationResult destroy_tftp_handler(
-        TftpdHandlerPtr handler
-        );
-
-/**
- * @brief Init TFTP with default values.
- *
- * @param[in] handler the pointer to the tftp handler.
- *
- * @return TFTP_OK if success.
- * @return TFTP_ERROR otherwise.
- */
-TftpdOperationResult init_tftp(
-        const TftpdHandlerPtr handler
+TftpOperationResult destroy_tftp_handler(
+        TftpHandlerPtr *handler
         );
 
 /**
@@ -65,11 +53,25 @@ TftpdOperationResult init_tftp(
  * @return TFTP_OK if success.
  * @return TFTP_ERROR otherwise.
  */
-TftpdOperationResult set_connection(
-        TftpdHandlerPtr handler,
+TftpOperationResult set_connection(
+        TftpHandlerPtr handler,
         const char* host,
         const int port
         );
+
+/**
+ * @brief Configure TFTP. Call this function before
+ * calling send_file() or fetch_file() to configure
+ * connection parameters.
+ *
+ * @param[in] handler the pointer to the tftp handler.
+ *
+ * @return TFTP_OK if success.
+ * @return TFTP_ERROR otherwise.
+ */
+TftpOperationResult config_tftp(
+        const TftpHandlerPtr handler
+);
 
 /**
  * @brief Send a file through TFTP.
@@ -82,9 +84,9 @@ TftpdOperationResult set_connection(
  * @return TFTP_OK if success.
  * @return TFTP_ERROR otherwise.
  */
-TftpdOperationResult send_file(
-        TftpdHandlerPtr handler,
-        char* filename,
+TftpOperationResult send_file(
+        TftpHandlerPtr handler,
+        const char* filename,
         FILE *fp
         );
 
@@ -98,9 +100,9 @@ TftpdOperationResult send_file(
  * @return TFTP_OK if success.
  * @return TFTP_ERROR otherwise.
  */
-TftpdOperationResult fetch_file(
-        TftpdHandlerPtr handler,
-        char* filename,
+TftpOperationResult fetch_file(
+        TftpHandlerPtr handler,
+        const char* filename,
         FILE *fp
         );
 

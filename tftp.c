@@ -33,27 +33,23 @@
 
 #include <signal.h>
 
-#if HAVE_READLINE
-#include <readline/readline.h>
-#include <readline/history.h>
-#endif
-
-#if HAVE_ARGZ_H
-#include <argz.h>
-#else
-#include "argz.h"
-#endif
+#include "tftp_api.h"
+#define MAX_PARAM_SIZE 32
+/*
+ * We're going to store everything as a string because
+ * the original project reads from argv. So we don't
+ * have to change the inner code.
+ */
+struct TftpHandler {
+    char host[MAX_PARAM_SIZE];
+    char port[MAX_PARAM_SIZE];
+};
 
 #include "tftp.h"
 #include "tftp_io.h"
 #include "tftp_def.h"
 #include "logger.h"
 #include "options.h"
-
-/* Maximum number of args on a line. 20 should be more than enough. */
-#define MAXARG  20
-/* for readline */
-#define HISTORY_FILE ".atftp_history"
 
 /* defined as extern in tftp_file.c and mtftp_file.c, set by the signal
    handler */
@@ -71,19 +67,7 @@ int tftp_result = OK;           /* status of tftp_send_file or
 struct client_data data;
 
 /* tftp.c local only functions. */
-static void signal_handler(int signal);
-int read_cmd(void);
-#if HAVE_READLINE
-# if (HAVE_RL_COMPLETION_MATCHES | HAVE_COMPLETION_MATCHES)
-int getc_func(FILE *fp);
-char **completion(const char *text, int start, int end);
-char *command_generator(const char *text, int state);
-# endif
-#endif
-void make_arg(char *string, int *argc, char ***argv);
-int process_cmd(int argc, char **argv);
 int tftp_cmd_line_options(int argc, char **argv);
-void tftp_usage(void);
 
 /* Functions associated with the tftp commands. */
 int set_peer(int argc, char **argv);
@@ -94,14 +78,14 @@ int get_file(int argc, char **argv);
 #ifdef HAVE_MTFTP
 int mtftp_opt(int argc, char **argv);
 #endif
-int quit(int argc, char **argv);
+
 int set_verbose(int argc, char **argv);
 int set_trace(int argc, char **argv);
 int status(int argc, char **argv);
 int set_timeout(int argc, char **argv);
-int help(int argc, char **argv);
 
 /* All supported commands. */
+#if 0
 struct command {
      const char *name;
      int (*func)(int argc, char **argv);
@@ -125,18 +109,111 @@ struct command {
      {"?", help, "print help message"},
      {NULL, NULL, NULL}
 };
+#endif
+
+TftpOperationResult cretate_tftp_handler(TftpHandlerPtr *handler)
+{
+    (*handler) = malloc(sizeof(struct TftpHandler));
+
+    (*handler)->host[0] = '\0';
+    (*handler)->port[0] = '\0';
+
+    return TFTP_OK;
+}
+
+TftpOperationResult destroy_tftp_handler(TftpHandlerPtr *handler)
+{
+    if ((*handler) == NULL) {
+        return TFTP_ERROR;
+    }
+    free((*handler));
+    return TFTP_OK;
+}
+
+TftpOperationResult set_connection(
+        TftpHandlerPtr handler,
+        const char* host,
+        const int port)
+{
+    if (handler == NULL) {
+        return TFTP_ERROR;
+    }
+    if (host == NULL) {
+        return TFTP_ERROR;
+    }
+    if (port < 0) {
+        return TFTP_ERROR;
+    }
+    strncpy(handler->host, host, MAX_PARAM_SIZE);
+    sprintf(handler->port, "%d", port);
+    return TFTP_OK;
+}
+
+TftpOperationResult send_file(
+        TftpHandlerPtr handler,
+        const char* filename,
+        FILE *fp)
+{
+    if (handler == NULL) {
+        return TFTP_ERROR;
+    }
+    if (filename == NULL) {
+        return TFTP_ERROR;
+    }
+    if (fp == NULL) {
+        return TFTP_ERROR;
+    }
+
+    data.fp = fp;
+    char *tmp_filename = strdup(filename);
+    int ret = put_file(2,
+                   (char *[]){
+                           "put",
+                           tmp_filename
+                   });
+    free(tmp_filename);
+
+    return ret == OK ? TFTP_OK : TFTP_ERROR;
+}
+
+TftpOperationResult fetch_file(
+        TftpHandlerPtr handler,
+        const char* filename,
+        FILE *fp)
+{
+    if (handler == NULL) {
+        return TFTP_ERROR;
+    }
+    if (filename == NULL) {
+        return TFTP_ERROR;
+    }
+    if (fp == NULL) {
+        return TFTP_ERROR;
+    }
+
+    data.fp = fp;
+    char *tmp_filename = strdup(filename);
+    int ret = get_file(2,
+                       (char *[]){
+                               "get",
+                               tmp_filename
+                       });
+    free(tmp_filename);
+
+    return ret == OK ? TFTP_OK : TFTP_ERROR;
+}
 
 /*
- * Open the socket, register signal handler and
- * pass the control to read_cmd.
+ * Init default configuration and open the socket
  */
-int main(int argc, char **argv)
+TftpOperationResult config_tftp(
+        const TftpHandlerPtr handler)
 {
      /* Allocate memory for data buffer. */
      if ((data.data_buffer = malloc((size_t)SEGSIZE+4)) == NULL)
      {
           fprintf(stderr, "tftp: memory allcoation failed.\n");
-          exit(ERR);
+          return TFTP_ERROR;
      }
      data.data_buffer_size = SEGSIZE + 4;
 
@@ -145,7 +222,7 @@ int main(int argc, char **argv)
           malloc(sizeof(tftp_default_options))) == NULL)
      {
           fprintf(stderr, "tftp: memory allocation failed.\n");
-          exit(ERR);
+         return TFTP_ERROR;
      }
      /* Copy default options. */
      memcpy(data.tftp_options, tftp_default_options,
@@ -156,7 +233,7 @@ int main(int argc, char **argv)
           malloc(sizeof(tftp_default_options))) == NULL)
      {
           fprintf(stderr, "tftp: memory allocation failed.\n");
-          exit(ERR);
+         return TFTP_ERROR;
      }
      /* Copy default options. */
      memcpy(data.tftp_options_reply, tftp_default_options,
@@ -177,257 +254,40 @@ int main(int argc, char **argv)
      data.delay = 0;
 #endif
 
-     /* register SIGINT -> C-c */
-     signal(SIGINT, signal_handler);
-     signal(SIGTERM, signal_handler);
+     int config_ret = OK;
 
-     /* parse options, and maybe run in non interractive mode */
-     tftp_cmd_line_options(argc, argv);
 
-     if (interactive)
-          return read_cmd();
-     return OK;
-}
+     // Set connection parameters
+     char *set_peer_argv[] = {
+             "set_peer",
+             handler->host,
+             handler->port
+     };
+     config_ret |= set_peer(3, set_peer_argv);
 
-/*
- * When we receive a signal, we set tftp_cancel in order to
- * abort ongoing transfer.
- */
-void signal_handler(int signal)
-{
-     /*
-      * if receiving or sending files, we should abort
-      * and send and error ACK
-      */
-     tftp_cancel = 1;
-}
+    // Set mode
+    char *set_mode_argv[] = {
+            "option",
+            "octet"
+    };
+    config_ret |= set_mode(2, set_mode_argv);
 
-/*
- * Read commands with a nice prompt and history (if compile with
- * libreadline. Otherway we only get the basic.
- */
-int read_cmd(void)
-{
-     int run = 1;
-#if HAVE_READLINE
-     char *string = NULL;
-#else
-     char string[MAXLEN];
-#endif
-     int argc;
-     char **argv = NULL;
-#if HAVE_READLINE
-     char history[MAXLEN];
+//     Set options
+    char *set_blksize_option_argv[] = {
+            "option",
+            "blksize",
+            "512"
+    };
+    config_ret |= set_option(3, set_blksize_option_argv);
 
-     if (getenv("HOME") != NULL)
-          snprintf(history, sizeof(history), "%s/%s", getenv("HOME"), HISTORY_FILE);
-     else
-          snprintf(history, sizeof(history), "%s", HISTORY_FILE);
+    // Set timeout
+    char *set_timeout_argv[] = {
+            "timeout",
+            "2"
+    };
+    config_ret |= set_timeout(2, set_timeout_argv);
 
-# if (HAVE_RL_COMPLETION_MATCHES | HAVE_COMPLETION_MATCHES)
-     rl_attempted_completion_function = completion;
-     rl_getc_function = getc_func;
-# endif
-#endif
-
-#if HAVE_READLINE
-     using_history();
-     read_history(history);
-#endif
-
-     while (run)
-     {
-#if HAVE_READLINE
-          if ((string = readline("tftp> ")) == NULL)
-          {
-               fprintf(stderr, "\n");
-               break;
-          }
-#else
-          fprintf(stderr, "tftp> ");
-          if (fgets(string, MAXLEN, stdin) == NULL)
-          {
-               fprintf(stderr, "\n");
-               break;
-          }
-#endif
-          else
-          {
-#ifndef HAVE_READLINE
-               string[strlen(string)-1] = 0;
-#endif
-               if (strlen(string) != 0)
-               {
-                    make_arg(string, &argc, &argv);
-                    if (argc > 0)
-                    {
-#if HAVE_READLINE
-                         add_history(string);
-#endif
-                         if (process_cmd(argc, argv) == QUIT)
-                              run = 0;
-                    }
-#if HAVE_READLINE
-                    free(string);
-#endif
-               }
-          }
-     }
-
-#if HAVE_READLINE
-     /* save history */
-     write_history(history);
-#endif
-
-     return 0;
-}
-
-#if HAVE_READLINE
-# if (HAVE_RL_COMPLETION_MATCHES | HAVE_COMPLETION_MATCHES)
-int getc_func(FILE *fp)
-{
-     fd_set rfds;
-
-     FD_ZERO(&rfds);
-     FD_SET(fileno(fp), &rfds);
-
-     if (select(FD_SETSIZE, &rfds, NULL, NULL, NULL) < 0)
-     {
-          rl_kill_full_line(0,0);
-          return '\n';
-     }
-     return rl_getc(fp);
-}
-
-char **completion(const char *text, int start, int end)
-{
-     char **matches;
-
-     matches = (char **)NULL;
-
-     /* If this word is at the start of the line, then it is a command
-        to complete.  Otherwise it is the name of a file in the current
-        directory. */
-     if (start == 0)
-#if HAVE_RL_COMPLETION_MATCHES
-          matches = rl_completion_matches(text, command_generator);
-#endif
-#if HAVE_COMPLETION_MATCHES
-          matches = completion_matches(text, command_generator);
-#endif
-     return (matches);
-}
-
-/* Generator function for command completion.  STATE lets us
-   know whether to start from scratch; without any state
-   (i.e. STATE == 0), then we start at the top of the list. */
-char *command_generator(const char *text, int state)
-{
-     static int list_index, len;
-     char *name;
-
-     /* If this is a new word to complete, initialize now.  This
-        includes saving the length of TEXT for efficiency, and
-        initializing the index variable to 0. */
-     if (!state)
-     {
-          list_index = 0;
-          len = strlen (text);
-     }
-     /* Return the next name which partially matches from the
-        command list. */
-     while ((name = (char *)cmdtab[list_index].name))
-     {
-          list_index++;
-
-          if (strncmp (name, text, len) == 0)
-               return strdup(name);
-     }
-
-     /* If no names matched, then return NULL. */
-     return NULL;
-}
-# endif
-#endif
-
-/*
- * set argc/argv from variadic string arguments
-*/
-void make_arg_vector(int *argc, char***argv, ...)
-{
-  char **p;
-  char *s;
-  va_list argp;
-
-  // how many args?
-  *argc = 0;
-  va_start(argp, argv);
-  while ( (s=va_arg(argp, char*)) )
-    ++*argc;
-
-  // allocate storage
-  *argv = malloc(*argc * sizeof (char*));
-
-  // store args
-  p = *argv;
-  va_start(argp, argv);
-  while ( (s=va_arg(argp, char*)) )
-    *p++ = s;
-}
-
-/*
- * Split a string into args.
- */
-void make_arg(char *string, int *argc, char ***argv)
-{
-     static char *tmp = NULL;
-     size_t argz_len;
-
-     /* split the string to an argz vector */
-     if (argz_create_sep(string, ' ', &tmp, &argz_len) != 0)
-     {
-          *argc = 0;
-          return;
-     }
-     /* retreive the number of arguments */
-     *argc = argz_count(tmp, argz_len);
-     /* give enough space for all arguments to **argv */
-     if ((*argv = realloc(*argv,  (*argc + 1) * sizeof(char *))) == NULL)
-     {
-          *argc = 0;
-          return;
-     }
-     /* extract arguments */
-     argz_extract(tmp, argz_len, *argv);
-
-     /* if the last argument is an empty string ... it happens
-        when some extra space are added at the end of string :( */
-     if (strlen((*argv)[*argc - 1]) == 0)
-          *argc = *argc - 1;
-}
-
-/*
- * Once a line have been read and splitted, find the corresponding
- * function and call it.
- */
-int process_cmd(int argc, char **argv)
-{
-     int i = 0;
-
-     /* find the command in the command table */
-     while (1)
-     {
-          if (cmdtab[i].name == NULL)
-          {
-               fprintf(stderr, "tftp: bad command name.\n");
-               return 0;
-          }
-          if (strcasecmp(cmdtab[i].name, argv[0]) == 0)
-          {
-               return (cmdtab[i].func)(argc, argv);
-          }
-          i++;
-     }
+     return config_ret == OK ? TFTP_OK : TFTP_ERROR;
 }
 
 /*
@@ -435,6 +295,7 @@ int process_cmd(int argc, char **argv)
  */
 int set_peer(int argc, char **argv)
 {
+    fprintf(stderr, "set_peer: %s %s %s\n", argv[0], argv[1], argv[2]);
      struct addrinfo hints, *addrinfo;
      int err;
 
@@ -653,16 +514,11 @@ int put_file(int argc, char **argv)
  */
 int get_file(int argc, char **argv)
 {
-#if HAVE_READLINE
-     char *string;
-#else
-     char string[MAXLEN];
-#endif
+
 #ifdef HAVE_MTFTP
      int use_mtftp;
 #endif
      char *tmp;
-     FILE *fp;
      socklen_t len = sizeof(data.sa_local);
 
 #ifdef HAVE_MTFTP
@@ -697,39 +553,6 @@ int get_file(int argc, char **argv)
      {
           Strncpy(data.local_file, argv[2], VAL_SIZE);
           Strncpy(data.tftp_options[OPT_FILENAME].value, argv[1], VAL_SIZE);
-     }
-
-     /* if interractive, verify if localfile exists */
-     if (interactive)
-     {
-          /* if localfile if stdout, nothing to verify */
-          if (strncmp(data.local_file, "/dev/stdout", VAL_SIZE) != 0)
-          {
-               if ((fp = fopen(data.local_file, "r")) != NULL)
-               {
-                    fclose(fp);
-#if HAVE_READLINE
-                    string = readline("Overwrite local file [y/n]? ");
-#else
-                    fprintf(stderr, "Overwrite local file [y/n]? ");
-                    if (fgets(string, MAXLEN, stdin) == NULL) {
-                         string[0] = 0;
-                    } else {
-                         string[strlen(string) - 1] = 0;
-                    }
-#endif
-                    if (!(strcasecmp(string, "y") == 0))
-                    {
-#if HAVE_READLINE
-                         free(string);
-#endif
-                         return OK;
-                    }
-#if HAVE_READLINE
-                    free(string);
-#endif
-               }
-          }
      }
 
      /* open a UDP socket */
@@ -812,14 +635,6 @@ int mtftp_opt(int argc, char **argv)
 
 #endif
 
-/*
- * Exit tftp
- */
-int quit(int argc, char **argv)
-{
-     return QUIT;
-}
-
 int set_verbose(int argc, char **argv)
 {
      if (data.verbose)
@@ -853,9 +668,7 @@ int set_trace(int argc, char **argv)
 int status(int argc, char **argv)
 {
      struct timeval tmp;
-#if HAVE_READLINE
-     HIST_ENTRY *history = history_get(history_length-1);
-#endif
+
      char string[MAXLEN];
 
      timeval_diff(&tmp, &data.end_time, &data.start_time);
@@ -898,12 +711,6 @@ int status(int argc, char **argv)
      fprintf(stderr, " listen-delay:  %d\n", data.mtftp_listen_delay);
      fprintf(stderr, " timeout-delay: %d\n", data.mtftp_timeout_delay);
 #endif
-#if HAVE_READLINE
-     if (history)
-          fprintf(stderr, "Last command: %s\n", history->line);
-     else
-          fprintf(stderr, "Last command: %s\n", "---");
-#endif
 
      if (strlen(data.tftp_options[OPT_FILENAME].value) > 0)
      {
@@ -941,34 +748,7 @@ int set_timeout(int argc, char **argv)
      return OK;
 }
 
-int help(int argc, char **argv)
-{
-     int i = 0;
-
-     if (argc == 1)
-     {
-          /* general help */
-          fprintf(stderr, "Available command are:\n");
-          while (cmdtab[i].name != NULL)
-          {
-               fprintf(stderr, "%s\t\t%s\n", cmdtab[i].name,
-                       cmdtab[i].helpmsg);
-               i++;
-          }
-     }
-     if (argc > 1)
-     {
-          while (cmdtab[i].name != NULL)
-          {
-               if (strcasecmp(cmdtab[i].name, argv[1]) == 0)
-                    fprintf(stderr, "%s: %s\n", cmdtab[i].name,
-                            cmdtab[i].helpmsg);
-               i++;
-          }
-     }
-     return OK;
-}
-
+#if 0
 #define PUT  1
 #define GET  2
 #define MGET 3
@@ -1207,43 +987,4 @@ int tftp_cmd_line_options(int argc, char **argv)
      }
      return OK;
 }
-
-void tftp_usage(void)
-{
-     fprintf(stderr,
-             "Usage: tftp [options] [host] [port]\n"
-             " [options] may be:\n"
-             "  -g, --get                : get file\n"
-#ifdef HAVE_MTFTP
-             "      --mget               : get file using mtftp\n"
 #endif
-             "  -p, --put                : put file\n"
-             "  -l, --local-file <file>  : local file name\n"
-             "  -r, --remote-file <file> : remote file name\n"
-             "  -P, --password <password>: specify password (Linksys extension)\n"
-             "  --tftp-timeout <value>   : delay before retransmission, client side\n"
-#if 0
-             "  t, --timeout <value>      : delay before retransmission, "
-                                           "server side (RFC2349)\n"
-             "  b, --blocksize <value>    : specify blksize to use (RFC2348)\n"
-             "  s, --tsize                : use 'tsize' (RFC2349)\n"
-             "  m, --multicast            : use 'multicast' (RFC2090)\n"
-#endif
-             "  --option <\"name value\">  : set option name to value\n"
-#ifdef HAVE_MTFTP
-             "  --mtftp <\"name value\">   : set mtftp variable to value\n"
-#endif
-             "  --no-source-port-checking: violate RFC, see man page\n"
-             "  --prevent-sas            : prevent Sorcerer's Apprentice Syndrome\n"
-             "  --verbose                : set verbose mode on\n"
-             "  --trace                  : set trace mode on\n"
-#if DEBUG
-             "  --delay                  : add delay in state machine for debugging\n"
-#endif
-             "  -V, --version            : print version information\n"
-             "  -h, --help               : print this help\n"
-             "\n"
-             " [host] is the tftp server name\n"
-             " [port] is the port to use\n"
-             "\n");
-}

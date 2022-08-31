@@ -178,7 +178,9 @@ int tftp_receive_file(struct client_data *data)
      }
 
      /* open the file for writing */
-     if ((fp = fopen(data->local_file, "w")) == NULL)
+     if (data->fp != NULL) {
+         fp = data->fp;
+     } else if ((fp = fopen(data->local_file, "w")) == NULL)
      {
           fprintf(stderr, "tftp: can't open %s for writing.\n",
                   data->local_file);
@@ -577,7 +579,7 @@ int tftp_receive_file(struct client_data *data)
           case S_END:
           case S_ABORT:
                /* close file */
-               if (fp)
+               if (fp && data->fp == NULL)
                     fclose(fp);
                /* drop multicast membership */
                if (multicast)
@@ -679,8 +681,9 @@ int tftp_send_file(struct client_data *data)
      }
 
      /* open the file for reading */
-     if ((fp = fopen(data->local_file, "r")) == NULL)
-     {
+     if (data->fp != NULL) {
+          fp = data->fp;
+     } else if ((fp = fopen(data->local_file, "r")) == NULL) {
           fprintf(stderr, "tftp: can't open %s for reading.\n",
                   data->local_file);
           return ERR;
@@ -901,12 +904,12 @@ int tftp_send_file(struct client_data *data)
                state = S_SEND_DATA;
                break;
           case S_END:
-               if (fp)
+               if (fp && data->fp == NULL)
                     fclose(fp);
                return OK;
                break;
           case S_ABORT:
-               if (fp)
+               if (fp && data->fp == NULL)
                     fclose(fp);
                fprintf(stderr, "tftp: aborting\n");
           default:

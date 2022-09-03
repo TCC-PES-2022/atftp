@@ -1,4 +1,13 @@
-﻿    Jean-Pierre Lefebvre <helix@step.polymtl.ca>
+﻿A simplified library version based on atftp project. Check tftp_api.h and tftpd_api.h for details.
+
+    Kollins G. Lima <kgl2@cin.ufpe.br>
+    September 03rd, 2022
+
+    -----------------
+    ORIGINAL README
+    -----------------
+
+    Jean-Pierre Lefebvre <helix@step.polymtl.ca>
     August 20th, 2000
     -----------------
 

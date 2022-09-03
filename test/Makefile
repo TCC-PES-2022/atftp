@@ -40,26 +40,35 @@ CFLAGS += -Wmissing-field-initializers
 CFLAGS += -Wno-unknown-pragmas
 CFLAGS += -Wstrict-prototypes
 CFLAGS += -Wundef
-CFLAGS += -Wold-style-definition -g -ggdb
+CFLAGS += -Wold-style-definition
+CFLAGS += -g -ggdb
 #CFLAGS += -Wno-misleading-indentation
 
-TARGET_BASE=tftp
-TARGET = $(TARGET_BASE)$(TARGET_EXTENSION)
-SRC_FILES=$(UNITY_ROOT)/src/unity.c atftp/TestTftp.c atftp/test_runners/Tftp_Runner.c
+TARGET1_BASE=tftp
+TARGET1 = $(TARGET1_BASE)$(TARGET_EXTENSION)
+TARGET2_BASE=tftpd
+TARGET2 = $(TARGET2_BASE)$(TARGET_EXTENSION)
+SRC_FILES1=$(UNITY_ROOT)/src/unity.c atftp/TestTftp.c atftp/test_runners/Tftp_Runner.c
+SRC_FILES2=$(UNITY_ROOT)/src/unity.c atftp/TestTftpd.c atftp/test_runners/Tftpd_Runner.c
 INC_DIRS=-Isrc -I$(UNITY_ROOT)/src -I..
 SYMBOLS=
-LIBS= -L.. -ltftp -lpthread
+LIBS1= -L.. -ltftp -lpthread
+LIBS2= -L.. -ltftpd -lpthread
 
 all: clean default
 
-default: $(SRC_FILES)
-	$(C_COMPILER) $(CFLAGS) $(INC_DIRS) $(SYMBOLS) $(SRC_FILES) -o $(TARGET) $(LIBS)
+default: $(SRC_FILES1) $(SRC_FILES2)
+	$(C_COMPILER) $(CFLAGS) $(INC_DIRS) $(SYMBOLS) $(SRC_FILES1) -o $(TARGET1) $(LIBS1)
+	$(C_COMPILER) $(CFLAGS) $(INC_DIRS) $(SYMBOLS) $(SRC_FILES2) -o $(TARGET2) $(LIBS2)
 
 atftp/test_runners/Tftp_Runner.c: atftp/TestTftp.c
 	ruby $(UNITY_ROOT)/auto/generate_test_runner.rb atftp/TestTftp.c  atftp/test_runners/Tftp_Runner.c
 
+atftp/test_runners/Tftpd_Runner.c: atftp/TestTftpd.c
+	ruby $(UNITY_ROOT)/auto/generate_test_runner.rb atftp/TestTftpd.c  atftp/test_runners/Tftpd_Runner.c
+
 clean:
-	$(CLEANUP) $(TARGET) test_runners/*
+	$(CLEANUP) $(TARGET1) $(TARGET2) test_runners/* *.txt
 
 ci: CFLAGS += -Werror
 ci: default

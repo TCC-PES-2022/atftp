@@ -22,6 +22,7 @@
 #include <arpa/inet.h>
 #include <sys/types.h>
 #include "tftp_io.h"
+#include "tftpd_api.h"
 
 /*
  * Per thread data. There is a thread for each client or group
@@ -41,6 +42,21 @@ struct thread_data {
      int trace;
 
      int sockfd;
+
+     /* callback for opening file */
+     void *open_file_ctx;
+     open_file_callback open_file_cb;
+     /* callback for closing file */
+     void *close_file_ctx;
+     close_file_callback close_file_cb;
+     /* callback for section started */
+     void *section_started_ctx;
+     section_started section_started_cb;
+     /* callback for section finished */
+     void *section_finished_ctx;
+     section_finished section_finished_cb;
+
+    int *tftpd_cancel;
 
      /* multicast stuff */
      short mc_port;             /* multicast port */

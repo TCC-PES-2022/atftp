@@ -55,7 +55,7 @@ int tftpd_mtftp_unique(struct mtftp_data *data, char *filename, char *ip, char *
 void *tftpd_mtftp_send_file(void *arg);
 
 /* read only except for the main thread */
-extern int tftpd_cancel;
+//extern int tftpd_cancel;
 
 /* 
  * This function parse the configuration file and create data structure
@@ -375,14 +375,14 @@ void *tftpd_mtftp_server(void *arg)
           pthread_exit(NULL);
      }
 
-     while (!tftpd_cancel)
+     while (!data->tftpd_cancel)
      {
           FD_ZERO(&rfds);
           FD_SET(sockfd, &rfds);
 
           select(sockfd + 1, &rfds, NULL, NULL, NULL);
 
-          if (FD_ISSET(sockfd, &rfds) && (!tftpd_cancel))
+          if (FD_ISSET(sockfd, &rfds) && (!data->tftpd_cancel))
           {
                /* read the data packet and verify it's a RRQ and a thread exist for
                   that file name */
@@ -535,7 +535,7 @@ void *tftpd_mtftp_send_file(void *arg)
         just proceed */     
      while (1)
      {
-          if (tftpd_cancel)
+          if (data->tftpd_cancel)
           {
                logger(LOG_DEBUG, "thread cancelled");
                tftp_send_error(sockfd, sa, EUNDEF, data->data_buffer, data->data_buffer_size);

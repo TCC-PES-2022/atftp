@@ -31,13 +31,17 @@
 #include "logger.h"
 
 #define MAXLEN 128
+#define SIMPLE_LOG  //Enable a simplified log version
 
-static int log_syslog_is_open = 0;
 static int log_priority = 0;
+static int log_syslog_is_open = 0;
+static char *log_ident;
+static FILE *log_fp = NULL;
+
+#ifndef SIMPLE_LOG
 static char *log_filename = NULL;
 static int log_fd;
-static FILE *log_fp = NULL;
-static char *log_ident;
+#endif
 
 /*
  * Open a file for logging. If filename is NULL, then use
@@ -51,6 +55,7 @@ void open_logger(char *ident, char *filename, int priority)
 
      log_priority = priority;
 
+#ifndef SIMPLE_LOG
      if (ident)
           log_ident = strdup(ident);
      else
@@ -84,6 +89,7 @@ void open_logger(char *ident, char *filename, int priority)
           else
                log_fp = fdopen(log_fd, "a");
      }
+#endif
 }
 
 /*
@@ -133,6 +139,8 @@ void logger(int severity, const char *fmt, ...)
 void close_logger(void)
 {
      log_priority = 0;
+
+#ifndef SIMPLE_LOG
      if (log_syslog_is_open)
           closelog();
      log_syslog_is_open = 0;
@@ -144,4 +152,5 @@ void close_logger(void)
      log_filename = NULL;
      if (log_ident)
           free(log_ident);
+#endif
 }

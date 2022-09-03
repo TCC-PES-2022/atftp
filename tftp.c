@@ -111,7 +111,7 @@ struct command {
 };
 #endif
 
-TftpOperationResult cretate_tftp_handler(TftpHandlerPtr *handler)
+TftpOperationResult create_tftp_handler(TftpHandlerPtr *handler)
 {
     (*handler) = malloc(sizeof(struct TftpHandler));
 

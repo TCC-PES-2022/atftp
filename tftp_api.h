@@ -27,7 +27,7 @@ typedef enum {
  * @return TFTP_OK if success.
  * @return TFTP_ERROR otherwise.
  */
-TftpOperationResult cretate_tftp_handler(
+TftpOperationResult create_tftp_handler(
         TftpHandlerPtr *handler
         );
 

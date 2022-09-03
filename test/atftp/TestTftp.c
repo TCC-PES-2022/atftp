@@ -12,13 +12,21 @@
 TftpHandlerPtr handler = NULL;
 char test_string[BUF_SIZE] = "HELLO TFTP TEST";
 char host[BUF_SIZE] = "127.0.0.1";
-int port = 1234;
+int port = 60907;
 char server_dir[BUF_SIZE] = "/tmp/";
-char server_port[BUF_SIZE] = "1234";
+char server_port[BUF_SIZE] = "60907";
+
+int print_instructions = 1;
 
 void setUp(void)
 {
-    cretate_tftp_handler(&handler);
+    if (print_instructions) {
+        fprintf(stdout, "Please start the tftpd server on port %d\n", port);
+        fprintf(stdout, "[Enter to continue]");
+        getchar();
+        print_instructions = 0;
+    }
+    create_tftp_handler(&handler);
 }
 
 void tearDown(void)

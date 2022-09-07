@@ -1,6 +1,10 @@
 #ifndef TFTP_TFTPD_API_H
 #define TFTP_TFTPD_API_H
 
+#ifdef __cplusplus
+extern "C"{
+#endif
+
 #include <pthread.h>
 #include <stdio.h>
 
@@ -307,5 +311,9 @@ TftpdOperationResult start_listening(
 TftpdOperationResult stop_listening(
         const TftpdHandlerPtr handler
         );
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif //TFTP_TFTPD_API_H

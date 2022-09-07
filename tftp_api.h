@@ -1,6 +1,10 @@
 #ifndef TFTP_TFTP_API_H
 #define TFTP_TFTP_API_H
 
+#ifdef __cplusplus
+extern "C"{
+#endif
+
 #include <stdio.h>
 
 /**
@@ -107,5 +111,9 @@ TftpOperationResult fetch_file(
         const char* filename,
         FILE *fp
         );
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif //TFTP_TFTP_API_H

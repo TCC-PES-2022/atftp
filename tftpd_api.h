@@ -52,11 +52,11 @@ typedef enum {
  * @brief Callback for new section. This callback is called when a
  * client requests an operation to be performed.
  *
- * @param[in] handler the section handler.
+ * @param[in] section_handler the section handler.
  * @param[in] context the user context.
  *
- * @return TFTP_OK if success.
- * @return TFTP_ERROR otherwise.
+ * @return TFTPD_OK if success.
+ * @return TFTPD_ERROR otherwise.
  */
 typedef TftpdOperationResult (*section_started) (
         const TftpdSectionHandlerPtr section_handler,
@@ -67,11 +67,11 @@ typedef TftpdOperationResult (*section_started) (
 * @brief Callback for end section. This callback is called when a
  * client operation is finished.
  *
- * @param[in] handler the section handler.
+ * @param[in] section_handler the section handler.
  * @param[in] context the user context.
  *
- * @return TFTP_OK if success.
- * @return TFTP_ERROR otherwise.
+ * @return TFTPD_OK if success.
+ * @return TFTPD_ERROR otherwise.
  */
 typedef TftpdOperationResult (*section_finished) (
         const TftpdSectionHandlerPtr section_handler,
@@ -95,8 +95,8 @@ typedef TftpdOperationResult (*section_finished) (
  * @param[in] mode the mode to open the file in.
  * @param[in] context the user context.
  *
- * @return TFTP_OK if success.
- * @return TFTP_ERROR otherwise.
+ * @return TFTPD_OK if success.
+ * @return TFTPD_ERROR otherwise.
  */
 typedef TftpdOperationResult (*open_file_callback) (
         FILE **fd,
@@ -113,8 +113,8 @@ typedef TftpdOperationResult (*open_file_callback) (
  * @param[in] fd the file pointer to close.
  * @param[in] context the user context.
  *
- * @return TFTP_OK if success.
- * @return TFTP_ERROR otherwise.
+ * @return TFTPD_OK if success.
+ * @return TFTPD_ERROR otherwise.
  */
 typedef TftpdOperationResult (*close_file_callback) (
         FILE *fd,
@@ -129,7 +129,7 @@ typedef TftpdOperationResult (*close_file_callback) (
 
 /**
  * @brief Init TFTPD handler with default values.
- * The option struct must be freed with destroy_tftpd_options()
+ * The option struct must be freed with destroy_transfer_handler()
  * when the application is done with it.
  *
  * @param[out] handler the pointer to the tftpd handler.
@@ -142,7 +142,7 @@ TftpdOperationResult create_tftpd_handler(
         );
 
 /**
- * @brief Destroy TFTPD options struct.
+ * @brief Destroy TFTPD handler struct.
  *
  * @param[in] handler the pointer to the tftpd handler.
  *

@@ -184,7 +184,7 @@ TftpdOperationResult set_port(
  * @return TFTPD_OK if success.
  * @return TFTPD_ERROR otherwise.
  */
-TftpdOperationResult set_timeout(
+TftpdOperationResult set_server_timeout(
         const TftpdHandlerPtr handler,
         const int timeout
 );

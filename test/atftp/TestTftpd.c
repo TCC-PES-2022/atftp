@@ -120,7 +120,7 @@ void test_SetPort_ShouldReturnTFTPDOK(void)
 
 void test_SetTimeout_ShouldReturnTFTPDOK(void)
 {
-    TftpdOperationResult result = set_timeout(handler, timeout);
+    TftpdOperationResult result = set_server_timeout(handler, timeout);
     TEST_ASSERT_EQUAL(TFTPD_OK, result);
 }
 
@@ -153,7 +153,7 @@ void test_StartListeningTimeout_ShouldReturnTFTPDOK(void)
     if (set_port(handler, port) != TFTPD_OK) {
         TEST_FAIL_MESSAGE("Failed to set port");
     }
-    if (set_timeout(handler, timeout) != TFTPD_OK) {
+    if (set_server_timeout(handler, timeout) != TFTPD_OK) {
         TEST_FAIL_MESSAGE("Failed to set timeout");
     }
     TftpdOperationResult result = start_listening(handler);
@@ -165,8 +165,8 @@ void test_StartStopListening_ShouldReturnTFTPDOK(void)
     if (set_port(handler, port) != TFTPD_OK) {
         TEST_FAIL_MESSAGE("set_port failed");
     }
-    if (set_timeout(handler, timeout) != TFTPD_OK) {
-        TEST_FAIL_MESSAGE("set_timeout failed");
+    if (set_server_timeout(handler, timeout) != TFTPD_OK) {
+        TEST_FAIL_MESSAGE("set_server_timeout failed");
     }
 
     TestServer server;
@@ -200,8 +200,8 @@ void test_ReceiveFileToDisk_ShouldReturnTFTPDOK(void)
     if (set_port(handler, port) != TFTPD_OK) {
         TEST_FAIL_MESSAGE("set_port failed");
     }
-    if (set_timeout(handler, timeout) != TFTPD_OK) {
-        TEST_FAIL_MESSAGE("set_timeout failed");
+    if (set_server_timeout(handler, timeout) != TFTPD_OK) {
+        TEST_FAIL_MESSAGE("set_server_timeout failed");
     }
 
     TestServer server_test;
@@ -273,8 +273,8 @@ void test_ReceiveFileToMemory_ShouldReturnTFTPDOK(void)
     if (set_port(handler, port) != TFTPD_OK) {
         TEST_FAIL_MESSAGE("set_port failed");
     }
-    if (set_timeout(handler, timeout) != TFTPD_OK) {
-        TEST_FAIL_MESSAGE("set_timeout failed");
+    if (set_server_timeout(handler, timeout) != TFTPD_OK) {
+        TEST_FAIL_MESSAGE("set_server_timeout failed");
     }
 
     TestServer server_test;
@@ -338,8 +338,8 @@ void test_SendFileFromDisk_ShouldReturnTFTPDOK(void)
     if (set_port(handler, port) != TFTPD_OK) {
         TEST_FAIL_MESSAGE("set_port failed");
     }
-    if (set_timeout(handler, timeout) != TFTPD_OK) {
-        TEST_FAIL_MESSAGE("set_timeout failed");
+    if (set_server_timeout(handler, timeout) != TFTPD_OK) {
+        TEST_FAIL_MESSAGE("set_server_timeout failed");
     }
 
     TestServer server_test;
@@ -415,8 +415,8 @@ void test_SendFileFromMemory_ShouldReturnTFTPDOK(void)
     if (set_port(handler, port) != TFTPD_OK) {
         TEST_FAIL_MESSAGE("set_port failed");
     }
-    if (set_timeout(handler, timeout) != TFTPD_OK) {
-        TEST_FAIL_MESSAGE("set_timeout failed");
+    if (set_server_timeout(handler, timeout) != TFTPD_OK) {
+        TEST_FAIL_MESSAGE("set_server_timeout failed");
     }
 
     if(register_section_started_callback(handler, section_started_cbk, &server_test) != TFTPD_OK) {

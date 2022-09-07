@@ -1,74 +1,108 @@
-# ==========================================
-#   Unity Project - A Test Framework for C
-#   Copyright (c) 2007 Mike Karlesky, Mark VanderVoord, Greg Williams
-#   [Released under MIT License. Please refer to license.txt for details]
-# ==========================================
+include config.mk
 
-#We try to detect the OS we are running on, and adjust commands as needed
-ifeq ($(OS),Windows_NT)
-  ifeq ($(shell uname -s),) # not in a bash-like shell
-	CLEANUP = del /F /Q
-	MKDIR = mkdir
-  else # in a bash-like shell, like msys
-	CLEANUP = rm -f
-	MKDIR = mkdir -p
-  endif
-	TARGET_EXTENSION=.exe
-else
-	CLEANUP = rm -f
-	MKDIR = mkdir -p
-	TARGET_EXTENSION=.out
-endif
+# path macros
+BIN_PATH := bin
+SRC_PATH := atftp
+REPORT_PATH := report
 
-C_COMPILER=gcc
-ifeq ($(shell uname -s), Darwin)
-C_COMPILER=clang
-endif
+CLIENT_DEPS := libtftp.so
+SERVER_DEPS := libtftpd.so
 
-UNITY_ROOT=./Unity
+# compile macros
+TARGET_NAME_CLIENT := tftp_client
+TARGET_CLIENT := $(BIN_PATH)/$(TARGET_NAME_CLIENT)
 
-#CFLAGS=-std=c89
-CFLAGS += -Wall
-CFLAGS += -Wextra
-CFLAGS += -Wpointer-arith
-CFLAGS += -Wcast-align
-CFLAGS += -Wwrite-strings
-CFLAGS += -Wswitch-default
-CFLAGS += -Wunreachable-code
-CFLAGS += -Winit-self
-CFLAGS += -Wmissing-field-initializers
-CFLAGS += -Wno-unknown-pragmas
-CFLAGS += -Wstrict-prototypes
-CFLAGS += -Wundef
-CFLAGS += -Wold-style-definition
-CFLAGS += -g -ggdb
-#CFLAGS += -Wno-misleading-indentation
+TARGET_NAME_SERVER := tftp_server
+TARGET_SERVER := $(BIN_PATH)/$(TARGET_NAME_SERVER)
 
-TARGET1_BASE=tftp
-TARGET1 = $(TARGET1_BASE)$(TARGET_EXTENSION)
-TARGET2_BASE=tftpd
-TARGET2 = $(TARGET2_BASE)$(TARGET_EXTENSION)
-SRC_FILES1=$(UNITY_ROOT)/src/unity.c atftp/TestTftp.c atftp/test_runners/Tftp_Runner.c
-SRC_FILES2=$(UNITY_ROOT)/src/unity.c atftp/TestTftpd.c atftp/test_runners/Tftpd_Runner.c
-INC_DIRS=-Isrc -I$(UNITY_ROOT)/src -I..
-SYMBOLS=
-LIBS1= -L.. -ltftp -lpthread
-LIBS2= -L.. -ltftpd -lpthread
+# src files & obj files
+SRC_CLIENT := $(UNITY_ROOT)/src/unity.c $(SRC_PATH)/TestTftp.c $(SRC_PATH)/Tftp_Runner.c
+OBJ_CLIENT := $(addsuffix .o, $(basename $(SRC_CLIENT)))
 
-all: clean default
+SRC_SERVER := $(UNITY_ROOT)/src/unity.c $(SRC_PATH)/TestTftpd.c $(SRC_PATH)/Tftpd_Runner.c
+OBJ_SERVER := $(addsuffix .o, $(basename $(SRC_SERVER)))
 
-default: $(SRC_FILES1) $(SRC_FILES2)
-	$(C_COMPILER) $(CFLAGS) $(INC_DIRS) $(SYMBOLS) $(SRC_FILES1) -o $(TARGET1) $(LIBS1)
-	$(C_COMPILER) $(CFLAGS) $(INC_DIRS) $(SYMBOLS) $(SRC_FILES2) -o $(TARGET2) $(LIBS2)
+LIBS_CLIENT := $(LDLIBS) -ltftp
+LIBS_SERVER := $(LDLIBS) -ltftpd
 
-atftp/test_runners/Tftp_Runner.c: atftp/TestTftp.c
-	ruby $(UNITY_ROOT)/auto/generate_test_runner.rb atftp/TestTftp.c  atftp/test_runners/Tftp_Runner.c
+# clean files list
+DISTCLEAN_LIST := $(OBJ_CLIENT) \
+				  $(OBJ_SERVER) \
+				  *.so
 
-atftp/test_runners/Tftpd_Runner.c: atftp/TestTftpd.c
-	ruby $(UNITY_ROOT)/auto/generate_test_runner.rb atftp/TestTftpd.c  atftp/test_runners/Tftpd_Runner.c
+CLEAN_LIST := $(TARGET_CLIENT) 	\
+			  $(TARGET_SERVER) 	\
+			  *.txt 			\
+			  *.gcov			\
+			  *.gcno			\
+			  *.gcda			\
+			  $(SRC_PATH)/*.gcov \
+			  $(SRC_PATH)/*.gcno \
+			  $(SRC_PATH)/*.gcda \
+			  $(DISTCLEAN_LIST)
 
+# default rule
+default: all
+
+# non-phony targets
+$(TARGET_CLIENT): $(CLIENT_DEPS) $(OBJ_CLIENT)
+	$(CC) $(LINKFLAGS) -o $@ $(OBJ_CLIENT) $(CFLAGS) $(INCFLAGS) $(LDFLAGS) $(LIBS_CLIENT)
+
+$(TARGET_SERVER): $(CLIENT_DEPS) $(OBJ_SERVER)
+	$(CC) $(LINKFLAGS) -o $@ $(OBJ_SERVER) $(CFLAGS) $(INCFLAGS) $(LDFLAGS) $(LIBS_SERVER)
+
+$(CLIENT_DEPS):
+	cd .. && $(MAKE) test
+
+$(SERVER_DEPS):
+	cd .. && $(MAKE) test
+
+%.o: %.c*
+	$(CC) $(COBJFLAGS) -o $@ $< $(INCFLAGS)
+
+# TODO: for some reason, the server runner is being deleted after build.
+# don't worry, build will still work, but it's annoying.
+%_Runner.o: %_Runner.c
+	$(CC) $(COBJFLAGS) -o $@ $< $(INCFLAGS)
+
+%_Runner.c: Test%.c
+	ruby $(UNITY_ROOT)/auto/generate_test_runner.rb $< $@
+
+# phony rules
+.PHONY: makedir
+makedir:
+	@mkdir -p $(BIN_PATH)
+
+.PHONY: all
+all: makedir $(TARGET_CLIENT) $(TARGET_SERVER)
+
+.PHONY: client
+client: makedir $(TARGET_CLIENT)
+
+.PHONY: server
+server: makedir $(TARGET_SERVER)
+
+.PHONY: runclient
+runclient:
+	LD_LIBRARY_PATH=. ./$(TARGET_CLIENT)
+
+.PHONY: runserver
+runserver:
+	LD_LIBRARY_PATH=.; ./$(TARGET_SERVER)
+
+.PHONY: report
+report:
+	@mkdir -p $(REPORT_PATH)
+	find .. -name "*.gcov" -exec gcov {} --object-directory ../obj \;
+	lcov --capture --directory ../obj --output-file $(REPORT_PATH)/coverage.info
+	genhtml $(REPORT_PATH)/coverage.info --output-directory $(REPORT_PATH)
+
+.PHONY: clean
 clean:
-	$(CLEANUP) $(TARGET1) $(TARGET2) test_runners/* *.txt
+	@echo CLEAN $(CLEAN_LIST)
+	@rm -f $(CLEAN_LIST)
 
-ci: CFLAGS += -Werror
-ci: default
+.PHONY: distclean
+distclean:
+	@echo CLEAN $(DISTCLEAN_LIST)
+	@rm -f $(DISTCLEAN_LIST)

@@ -167,9 +167,9 @@ void tftpd_usage(void);
 
 TftpdOperationResult create_tftpd_handler(TftpdHandlerPtr *handler)
 {
-    (*handler) = malloc(sizeof(struct TftpdHandler));
+    (*handler) = (TftpdHandlerPtr)malloc(sizeof(struct TftpdHandler));
 
-    (*handler)->tftpd_port = 59;
+    (*handler)->tftpd_port = 69;
     (*handler)->tftpd_timeout = 300;
     (*handler)->open_file_cb = NULL;
     (*handler)->close_file_cb = NULL;

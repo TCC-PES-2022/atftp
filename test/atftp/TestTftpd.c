@@ -106,7 +106,9 @@ TftpdOperationResult close_file_cbk (
 {
     if (fd != NULL) {
         fclose(fd);
+        return TFTPD_OK;
     }
+    return TFTPD_ERROR;
 }
 
 
@@ -118,7 +120,7 @@ void test_SetPort_ShouldReturnTFTPDOK(void)
 
 void test_SetTimeout_ShouldReturnTFTPDOK(void)
 {
-    TftpdOperationResult result = set_timeout(handler, 3);
+    TftpdOperationResult result = set_timeout(handler, timeout);
     TEST_ASSERT_EQUAL(TFTPD_OK, result);
 }
 
@@ -148,8 +150,12 @@ void test_RegisterCloseFileCallback_ShouldReturnTFTPDOK(void)
 
 void test_StartListeningTimeout_ShouldReturnTFTPDOK(void)
 {
-    set_port(handler, port);
-    set_timeout(handler, timeout);
+    if (set_port(handler, port) != TFTPD_OK) {
+        TEST_FAIL_MESSAGE("Failed to set port");
+    }
+    if (set_timeout(handler, timeout) != TFTPD_OK) {
+        TEST_FAIL_MESSAGE("Failed to set timeout");
+    }
     TftpdOperationResult result = start_listening(handler);
     TEST_ASSERT_EQUAL(TFTPD_OK, result);
 }

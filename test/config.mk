@@ -21,5 +21,5 @@ CFLAGS 		+= -Wno-unused-parameter
 CFLAGS 		+= -fprofile-arcs -ftest-coverage --coverage
 COBJFLAGS 	:= $(CFLAGS) -c
 LDFLAGS  	:= -L.
-LDLIBS   	:= -lpthread
+LDLIBS   	:= -lpthread -lgcov
 INCFLAGS   	:= -I$(UNITY_ROOT)/src -I..

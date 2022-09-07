@@ -90,6 +90,7 @@ install: all
 	cp -f $(BIN_PATH)/*.so $(INSTALL_PATH)/lib
 	cp -f *_api*.h $(INSTALL_PATH)/include
 
+# TODO: remove only what we've installed
 .PHONY: uninstall
 uninstall:
 	rm -rf $(INSTALL_PATH)/lib $(INSTALL_PATH)/include
@@ -101,5 +102,6 @@ clean:
 
 .PHONY: distclean
 distclean:
-	@echo CLEAN $(CLEAN_LIST)
+	@echo CLEAN $(DISTCLEAN_LIST)
+	@rm -f $(DISTCLEAN_LIST)
 	@rm -rf $(BIN_PATH) $(OBJ_PATH) $(DBG_PATH)

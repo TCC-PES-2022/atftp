@@ -88,7 +88,7 @@ runclient:
 
 .PHONY: runserver
 runserver:
-	LD_LIBRARY_PATH=.; ./$(TARGET_SERVER)
+	LD_LIBRARY_PATH=. ./$(TARGET_SERVER)
 
 .PHONY: report
 report:

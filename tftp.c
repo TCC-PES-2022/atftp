@@ -295,7 +295,6 @@ TftpOperationResult config_tftp(
  */
 int set_peer(int argc, char **argv)
 {
-    fprintf(stderr, "set_peer: %s %s %s\n", argv[0], argv[1], argv[2]);
      struct addrinfo hints, *addrinfo;
      int err;
 

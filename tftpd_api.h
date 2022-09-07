@@ -2,6 +2,7 @@
 #define TFTP_TFTPD_API_H
 
 #include <pthread.h>
+#include <stdio.h>
 
 /**
  * @brief Struct to hold the tftpd options.

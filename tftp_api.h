@@ -1,6 +1,8 @@
 #ifndef TFTP_TFTP_API_H
 #define TFTP_TFTP_API_H
 
+#include <stdio.h>
+
 /**
  * @brief Struct to hold the tftp options.
  */

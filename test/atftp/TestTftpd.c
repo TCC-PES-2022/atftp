@@ -9,6 +9,7 @@
 #include <semaphore.h>
 #include <time.h>
 #include <stdio.h>
+#include <arpa/inet.h>
 
 #define BUF_SIZE 100
 
@@ -17,11 +18,13 @@ char test_string[BUF_SIZE] = "HELLO TFTP TEST";
 int port = 6905;
 int timeout = 5;
 char server_dir[BUF_SIZE] = "/tmp/";
+#define SOCKADDR_PRINT_ADDR_LEN INET6_ADDRSTRLEN
 
 typedef struct {
     TftpdHandlerPtr handler;
     TftpdOperationResult result;
     SectionId section_id;
+    char client_ip[SOCKADDR_PRINT_ADDR_LEN];
     TftpdSectionStatus section_status;
     sem_t section_sem;
     FILE *fp;
@@ -52,11 +55,14 @@ TftpdOperationResult section_started_cbk (
         void *context)
 {
     SectionId id;
+    char ip[SOCKADDR_PRINT_ADDR_LEN];
     get_section_id(section_handler, &id);
-    fprintf(stdout, "SECTION STARTED FOR: %lu\n", id);
+    get_client_ip(section_handler, &ip);
+    fprintf(stdout, "SECTION STARTED FOR: %lu - %s\n", id, ip);
     if (context != NULL) {
         TestServer *server = (TestServer *)context;
         server->section_id = id;
+        strcpy(server->client_ip, ip);
     }
     return TFTPD_OK;
 }
@@ -66,15 +72,18 @@ TftpdOperationResult section_finished_cbk (
         void *context)
 {
     SectionId id;
+    char ip[SOCKADDR_PRINT_ADDR_LEN];
     get_section_id(section_handler, &id);
-    fprintf(stdout, "SECTION FINISHED FOR: %lu\n", id);
+    get_client_ip(section_handler, &ip);
+    fprintf(stdout, "SECTION FINISHED FOR: %lu - %s\n", id, ip);
+
 
     TftpdSectionStatus status;
     get_section_status(section_handler, &status);
 
     if (context != NULL) {
         TestServer *server = (TestServer *)context;
-        if (id == server->section_id) {
+        if (id == server->section_id && strcmp(server->client_ip, ip) == 0) {
             server->section_status = status;
         }
         sem_post(&server->section_sem);

@@ -268,6 +268,21 @@ TftpdOperationResult get_section_id(
 );
 
 /**
+ * @brief Get client IP. This function will not allocate memory for the
+ * client IP.
+ *
+ * @param[in] section_handler the pointer to the section handler.
+ * @param[out] client_ip the client IP.
+ *
+ * @return TFTPD_OK if success.
+ * @return TFTPD_ERROR otherwise.
+ */
+TftpdOperationResult get_client_ip(
+        const TftpdSectionHandlerPtr section_handler,
+        char *client_ip
+);
+
+/**
  * @brief Get section status. Call this function from the section_finished
  * callback to check if the section was successful.
  *

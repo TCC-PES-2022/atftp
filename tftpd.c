@@ -75,6 +75,7 @@ struct TftpdHandler {
 
 struct TftpdSectionHandler {
     SectionId section_id;
+    char client_ip[SOCKADDR_PRINT_ADDR_LEN];
     TftpdSectionStatus status;
 };
 
@@ -288,6 +289,17 @@ TftpdOperationResult get_section_id(
         return TFTPD_ERROR;
     }
     *id = section_handler->section_id;
+    return TFTPD_OK;
+}
+
+TftpdOperationResult get_client_ip(
+        const TftpdSectionHandlerPtr section_handler,
+        char *ip)
+{
+    if (section_handler == NULL) {
+        return TFTPD_ERROR;
+    }
+    memcpy(ip, section_handler->client_ip, sizeof(section_handler->client_ip));
     return TFTPD_OK;
 }
 
@@ -790,13 +802,6 @@ void *tftpd_receive_request(void *arg)
      data->tid = pthread_self();
      pthread_detach(data->tid);
 
-     struct TftpdSectionHandler section_handler;
-     section_handler.section_id = data->tid;
-     section_handler.status = TFTPD_SECTION_UNDEFINED;
-
-     if(data->section_started_cb != NULL)
-        data->section_started_cb(&section_handler, data->section_started_ctx);
-
      /* Read the first packet from stdin. */
      data_size = data->data_buffer_size;
      retval = tftp_get_packet(data->sockfd, -1, NULL, &data->client_info->client, NULL,
@@ -806,6 +811,16 @@ void *tftpd_receive_request(void *arg)
           logger(LOG_NOTICE, "Invalid request in 1st packet");
           abort = 1;
      }
+
+    struct TftpdSectionHandler section_handler;
+    section_handler.section_id = data->tid;
+    section_handler.status = TFTPD_SECTION_UNDEFINED;
+    sockaddr_print_addr(&data->client_info->client,
+                        section_handler.client_ip,
+                        sizeof(section_handler.client_ip));
+
+    if(data->section_started_cb != NULL)
+        data->section_started_cb(&section_handler, data->section_started_ctx);
 
      /* now unlock stdin */
      pthread_mutex_unlock(&stdin_mutex);

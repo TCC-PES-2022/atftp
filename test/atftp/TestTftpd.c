@@ -57,7 +57,7 @@ TftpdOperationResult section_started_cbk (
     SectionId id;
     char ip[SOCKADDR_PRINT_ADDR_LEN];
     get_section_id(section_handler, &id);
-    get_client_ip(section_handler, &ip);
+    get_client_ip(section_handler, ip);
     fprintf(stdout, "SECTION STARTED FOR: %lu - %s\n", id, ip);
     if (context != NULL) {
         TestServer *server = (TestServer *)context;
@@ -74,7 +74,7 @@ TftpdOperationResult section_finished_cbk (
     SectionId id;
     char ip[SOCKADDR_PRINT_ADDR_LEN];
     get_section_id(section_handler, &id);
-    get_client_ip(section_handler, &ip);
+    get_client_ip(section_handler, ip);
     fprintf(stdout, "SECTION FINISHED FOR: %lu - %s\n", id, ip);
 
 

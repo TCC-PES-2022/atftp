@@ -818,6 +818,7 @@ void *tftpd_receive_request(void *arg)
     sockaddr_print_addr(&data->client_info->client,
                         section_handler.client_ip,
                         sizeof(section_handler.client_ip));
+    data->section_handler_ptr = &section_handler;
 
     if(data->section_started_cb != NULL)
         data->section_started_cb(&section_handler, data->section_started_ctx);

@@ -92,6 +92,7 @@ TftpdOperationResult section_finished_cbk (
 }
 
 TftpdOperationResult open_file_cbk (
+        const TftpdSectionHandlerPtr section_handler,
         FILE **fd, char *filename, char* mode, void *context)
 {
     fprintf(stdout, "OPEN FILE REQUEST: %s, %s\n", filename, mode);
@@ -110,6 +111,7 @@ TftpdOperationResult open_file_cbk (
 }
 
 TftpdOperationResult close_file_cbk (
+        const TftpdSectionHandlerPtr section_handler,
         FILE *fd,
         void *context)
 {

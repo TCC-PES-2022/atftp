@@ -348,7 +348,7 @@ int tftpd_receive_file(struct thread_data *data)
                        if (data->open_file_cb == NULL) {
                            fp = fopen(filename, "w");
                        } else {
-                           data->open_file_cb(&fp, filename, "w", data->open_file_ctx);
+                           data->open_file_cb(data->section_handler_ptr, &fp, filename, "w", data->open_file_ctx);
                        }
                        if (fp == NULL)
                        {
@@ -394,7 +394,7 @@ int tftpd_receive_file(struct thread_data *data)
                    if (data->close_file_cb == NULL) {
                        fclose(fp);
                    } else {
-                       data->close_file_cb(fp, data->close_file_ctx);
+                       data->close_file_cb(data->section_handler_ptr, fp, data->close_file_ctx);
                    }
                }
                return OK;
@@ -403,7 +403,7 @@ int tftpd_receive_file(struct thread_data *data)
                   if (data->close_file_cb == NULL) {
                       fclose(fp);
                   } else {
-                      data->close_file_cb(fp, data->close_file_ctx);
+                      data->close_file_cb(data->section_handler_ptr, fp, data->close_file_ctx);
                   }
               }
                return ERR;
@@ -412,7 +412,7 @@ int tftpd_receive_file(struct thread_data *data)
                   if (data->close_file_cb == NULL) {
                       fclose(fp);
                   } else {
-                      data->close_file_cb(fp, data->close_file_ctx);
+                      data->close_file_cb(data->section_handler_ptr, fp, data->close_file_ctx);
                   }
               }
                logger(LOG_ERR, "%s: %d: tftpd_file.c: huh?",
@@ -497,7 +497,7 @@ int tftpd_send_file(struct thread_data *data)
      if (data->open_file_cb == NULL) {
          fp = fopen(filename, "r");
      } else {
-         data->open_file_cb(&fp, filename, "r", data->open_file_ctx);
+         data->open_file_cb(data->section_handler_ptr, &fp, filename, "r", data->open_file_ctx);
      }
 
 #ifdef HAVE_PCRE
@@ -532,7 +532,7 @@ int tftpd_send_file(struct thread_data *data)
                     if (data->open_file_cb == NULL) {
                          fp = fopen(filename, "r");
                      } else {
-                         data->open_file_cb(&fp, filename, "r", data->open_file_ctx);
+                         data->open_file_cb(data->section_handler_ptr, &fp, filename, "r", data->open_file_ctx);
                      }
                }
           }
@@ -569,7 +569,7 @@ int tftpd_send_file(struct thread_data *data)
                            tftp_errmsg[EOPTNEG]);
 
                if (data->close_file_cb != NULL) {
-                   data->close_file_cb(fp, data->close_file_ctx);
+                   data->close_file_cb(data->section_handler_ptr, fp, data->close_file_ctx);
                 } else {
                    fclose(fp);
                 }
@@ -604,7 +604,7 @@ int tftpd_send_file(struct thread_data *data)
                            tftp_errmsg[EOPTNEG]);
 
               if (data->close_file_cb != NULL) {
-                  data->close_file_cb(fp, data->close_file_ctx);
+                  data->close_file_cb(data->section_handler_ptr, fp, data->close_file_ctx);
               } else {
                   fclose(fp);
               }
@@ -618,7 +618,7 @@ int tftpd_send_file(struct thread_data *data)
           {
                logger(LOG_ERR, "memory allocation failure");
               if (data->close_file_cb != NULL) {
-                  data->close_file_cb(fp, data->close_file_ctx);
+                  data->close_file_cb(data->section_handler_ptr, fp, data->close_file_ctx);
               } else {
                   fclose(fp);
               }
@@ -633,7 +633,7 @@ int tftpd_send_file(struct thread_data *data)
                     logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", ENOSPACE,
                            tftp_errmsg[ENOSPACE]);
               if (data->close_file_cb != NULL) {
-                  data->close_file_cb(fp, data->close_file_ctx);
+                  data->close_file_cb(data->section_handler_ptr, fp, data->close_file_ctx);
               } else {
                   fclose(fp);
               }
@@ -653,7 +653,7 @@ int tftpd_send_file(struct thread_data *data)
                logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", EUNDEF,
                       tftp_errmsg[EUNDEF]);
          if (data->close_file_cb != NULL) {
-             data->close_file_cb(fp, data->close_file_ctx);
+             data->close_file_cb(data->section_handler_ptr, fp, data->close_file_ctx);
          } else {
              fclose(fp);
          }
@@ -674,7 +674,7 @@ int tftpd_send_file(struct thread_data *data)
 		    logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", EUNDEF,
 			    tftp_errmsg[EUNDEF]);
           if (data->close_file_cb != NULL) {
-              data->close_file_cb(fp, data->close_file_ctx);
+              data->close_file_cb(data->section_handler_ptr, fp, data->close_file_ctx);
           } else {
               fclose(fp);
           }
@@ -720,7 +720,7 @@ int tftpd_send_file(struct thread_data *data)
                /* We are done */
                logger(LOG_INFO, "Client transferred to %p", thread);
               if (data->close_file_cb != NULL) {
-                  data->close_file_cb(fp, data->close_file_ctx);
+                  data->close_file_cb(data->section_handler_ptr, fp, data->close_file_ctx);
               } else {
                   fclose(fp);
               }
@@ -735,7 +735,7 @@ int tftpd_send_file(struct thread_data *data)
                {
                     logger(LOG_ERR, "No multicast address/port available");
                    if (data->close_file_cb != NULL) {
-                       data->close_file_cb(fp, data->close_file_ctx);
+                       data->close_file_cb(data->section_handler_ptr, fp, data->close_file_ctx);
                    } else {
                        fclose(fp);
                    }
@@ -753,7 +753,7 @@ int tftpd_send_file(struct thread_data *data)
                {
                     logger(LOG_ERR, "bad address %s\n",data->mc_addr);
                    if (data->close_file_cb != NULL) {
-                       data->close_file_cb(fp, data->close_file_ctx);
+                       data->close_file_cb(data->section_handler_ptr, fp, data->close_file_ctx);
                    } else {
                        fclose(fp);
                    }
@@ -769,7 +769,7 @@ int tftpd_send_file(struct thread_data *data)
                            sockaddr_print_addr(&data->sa_mcast,
                                                addr_str, sizeof(addr_str)));
                    if (data->close_file_cb != NULL) {
-                       data->close_file_cb(fp, data->close_file_ctx);
+                       data->close_file_cb(data->section_handler_ptr, fp, data->close_file_ctx);
                    } else {
                        fclose(fp);
                    }
@@ -1198,7 +1198,7 @@ int tftpd_send_file(struct thread_data *data)
                     {
                          logger(LOG_INFO, "No more client, end of transfers");
                         if (data->close_file_cb != NULL) {
-                            data->close_file_cb(fp, data->close_file_ctx);
+                            data->close_file_cb(data->section_handler_ptr, fp, data->close_file_ctx);
                         } else {
                             fclose(fp);
                         }
@@ -1209,7 +1209,7 @@ int tftpd_send_file(struct thread_data *data)
                {
                     logger(LOG_DEBUG, "End of transfer");
                    if (data->close_file_cb != NULL) {
-                       data->close_file_cb(fp, data->close_file_ctx);
+                       data->close_file_cb(data->section_handler_ptr, fp, data->close_file_ctx);
                    } else {
                        fclose(fp);
                    }
@@ -1219,14 +1219,14 @@ int tftpd_send_file(struct thread_data *data)
           case S_ABORT:
                logger(LOG_DEBUG, "Aborting transfer");
                   if (data->close_file_cb != NULL) {
-                      data->close_file_cb(fp, data->close_file_ctx);
+                      data->close_file_cb(data->section_handler_ptr, fp, data->close_file_ctx);
                   } else {
                       fclose(fp);
                   }
                return ERR;
           default:
               if (data->close_file_cb != NULL) {
-                  data->close_file_cb(fp, data->close_file_ctx);
+                  data->close_file_cb(data->section_handler_ptr, fp, data->close_file_ctx);
               } else {
                   fclose(fp);
               }

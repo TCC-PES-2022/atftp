@@ -41,6 +41,8 @@ struct thread_data {
                                    on first timeout from the current client. */
      int trace;
 
+    TftpdSectionHandlerPtr section_handler_ptr;
+
      int sockfd;
 
      /* callback for opening file */

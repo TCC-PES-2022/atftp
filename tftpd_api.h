@@ -95,6 +95,7 @@ typedef TftpdOperationResult (*section_finished) (
  * If you open the file, you must close it. Use the
  * close_file_callback for that.
  *
+ * @param[in] section_handler the section handler.
  * @param[out] fd the file pointer to open.
  * @param[in] filename the name of the file to open.
  * @param[in] mode the mode to open the file in.
@@ -104,6 +105,7 @@ typedef TftpdOperationResult (*section_finished) (
  * @return TFTPD_ERROR otherwise.
  */
 typedef TftpdOperationResult (*open_file_callback) (
+        const TftpdSectionHandlerPtr section_handler,
         FILE **fd,
         char *filename,
         char* mode,
@@ -115,6 +117,7 @@ typedef TftpdOperationResult (*open_file_callback) (
  * the server needs to close a file. If you register
  * open_file_callback, register this callback too.
  *
+ * @param[in] section_handler the section handler.
  * @param[in] fd the file pointer to close.
  * @param[in] context the user context.
  *
@@ -122,6 +125,7 @@ typedef TftpdOperationResult (*open_file_callback) (
  * @return TFTPD_ERROR otherwise.
  */
 typedef TftpdOperationResult (*close_file_callback) (
+        const TftpdSectionHandlerPtr section_handler,
         FILE *fd,
         void *context
 );

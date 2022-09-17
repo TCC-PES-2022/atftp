@@ -33,6 +33,7 @@
 #include <string.h>
 #include <pwd.h>
 #include <grp.h>
+#include <fcntl.h>
 #ifdef HAVE_WRAP
 #include <tcpd.h>
 #endif
@@ -72,6 +73,7 @@ struct TftpdHandler {
                                    cancellation point are not used because
                                    thread id are not tracked. */
     pthread_t main_thread_id;
+    int stop_pipe[2];
 };
 
 struct TftpdSectionHandler {
@@ -162,7 +164,6 @@ pthread_mutex_t stdin_mutex = PTHREAD_MUTEX_INITIALIZER;
  * Function defined in this file
  */
 void *tftpd_receive_request(void *);
-void signal_handler(int signal);
 void tftpd_log_options(struct TftpdHandler *handler);
 int tftpd_pid_file(char *file, int action);
 void tftpd_usage(void);
@@ -182,6 +183,8 @@ TftpdOperationResult create_tftpd_handler(TftpdHandlerPtr *handler)
     (*handler)->section_started_context = NULL;
     (*handler)->section_finished_context = NULL;
     (*handler)->tftpd_cancel = 0;
+    pipe((*handler)->stop_pipe);
+    fcntl((*handler)->stop_pipe[1], F_SETFL, O_NONBLOCK);
 
     return TFTPD_OK;
 }
@@ -198,6 +201,8 @@ TftpdOperationResult destroy_tftpd_handler(TftpdHandlerPtr *handler)
     (*handler)->close_file_context = NULL;
     (*handler)->section_started_context = NULL;
     (*handler)->section_finished_context = NULL;
+    close((*handler)->stop_pipe[0]);
+    close((*handler)->stop_pipe[1]);
     free((*handler));
     (*handler) = NULL;
     return TFTPD_OK;
@@ -325,7 +330,7 @@ TftpdOperationResult stop_listening(
     handler->tftpd_cancel = 1;
 
     //Send signal to thread to force return from select.
-    pthread_kill(handler->main_thread_id, SIGUSR1);
+    write(handler->stop_pipe[1], "\0", 1);
     return TFTPD_OK;
 }
 
@@ -538,9 +543,6 @@ TftpdOperationResult start_listening(const TftpdHandlerPtr handler)
      /* save main thread ID for proper signal handling */
      handler->main_thread_id = pthread_self();
 
-    /* Register signal handler. */
-    signal(SIGUSR1, signal_handler);
-
      /* print summary of options */
      tftpd_log_options(handler);
 
@@ -582,6 +584,7 @@ TftpdOperationResult start_listening(const TftpdHandlerPtr handler)
      {
           FD_ZERO(&rfds);
           FD_SET(sockfd, &rfds);
+          FD_SET(handler->stop_pipe[0], &rfds);
           tv.tv_sec = handler->tftpd_timeout;
           tv.tv_usec = 0;
 
@@ -779,46 +782,6 @@ TftpdOperationResult start_listening(const TftpdHandlerPtr handler)
      logger(LOG_NOTICE, "Main thread exiting");
      close_logger();
      return TFTPD_OK;
-}
-
-/*
- * If we receive signals, we must exit in a clean way. This means
- * sending an ERROR packet to all clients to terminate the connection.
- */
-void signal_handler(int signal)
-{
-    /* Any thread may receive the signal, always make sure the main thread receive it
-       and cancel other threads itself. However, if tftpd_cancel already set, just
-       ignore the signal since the master thread as already got the signal. */
-//    if (pthread_self() != main_thread_id)
-//    {
-//        if (tftpd_cancel == 0)
-//        {
-//            logger(LOG_ERR, "Forwarding signal to main thread");
-//            pthread_kill(main_thread_id, signal);
-//        }
-//        return;
-//    }
-
-    /* Only signals for the main thread get there */
-    switch (signal)
-    {
-//        case SIGINT:
-//            logger(LOG_ERR, "SIGINT received, stopping threads and exiting.");
-//            tftpd_cancel = 1;
-//            break;
-//        case SIGTERM:
-//            logger(LOG_ERR, "SIGTERM received, stopping threads and exiting.");
-//            tftpd_cancel = 1;
-//            break;
-        case SIGUSR1:
-            logger(LOG_ERR, "SIGUSR1 received, stopping threads and exiting.");
-            //tftpd_cancel = 1 was already set on stop_listening
-            break;
-        default:
-            logger(LOG_WARNING, "Signal %d received, ignoring.", signal);
-            break;
-    }
 }
 
 /*

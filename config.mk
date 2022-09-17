@@ -7,7 +7,7 @@ DEST 	:= /opt/fls
 INSTALL_PATH := $(DEST)
 
 CC 			?=
-CFLAGS 		:= -Wall -Werror
+CFLAGS 		:= -Wall -Werror -pthread
 DBGFLAGS 	:= -g -ggdb
 TESTFLAGS 	:= -fprofile-arcs -ftest-coverage --coverage -lgcov
 LINKFLAGS 	:= -shared

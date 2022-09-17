@@ -74,6 +74,13 @@ struct TftpdHandler {
                                    thread id are not tracked. */
     pthread_t main_thread_id;
     int stop_pipe[2];
+
+    /*
+     * "logging level" is the maximum error level that will get logged.
+     *  This can be increased with the -v switch.
+     */
+    int logging_level;
+    char *log_file;
 };
 
 struct TftpdSectionHandler {
@@ -109,14 +116,6 @@ char *pidfile = NULL;           /* File to write own's pid */
 int mcast_ttl = 1;
 char mcast_addr[MAXLEN] = "239.255.0.0-255";
 char mcast_port[MAXLEN] = "1758";
-
-/*
- * "logging level" is the maximum error level that will get logged.
- *  This can be increased with the -v switch.
- */
-int logging_level = LOG_NOTICE;
-//char *log_file = NULL;
-char *log_file = "-"; /* Dash send output to stdout */
 
 /* logging level as requested by libwrap */
 #ifdef HAVE_WRAP
@@ -183,6 +182,8 @@ TftpdOperationResult create_tftpd_handler(TftpdHandlerPtr *handler)
     (*handler)->section_started_context = NULL;
     (*handler)->section_finished_context = NULL;
     (*handler)->tftpd_cancel = 0;
+    (*handler)->logging_level = LOG_DEBUG;
+    (*handler)->log_file = NULL;
     pipe((*handler)->stop_pipe);
     fcntl((*handler)->stop_pipe[1], F_SETFL, O_NONBLOCK);
 
@@ -201,6 +202,10 @@ TftpdOperationResult destroy_tftpd_handler(TftpdHandlerPtr *handler)
     (*handler)->close_file_context = NULL;
     (*handler)->section_started_context = NULL;
     (*handler)->section_finished_context = NULL;
+    if ((*handler)->log_file != NULL) {
+        free((*handler)->log_file);
+        (*handler)->log_file = NULL;
+    }
     close((*handler)->stop_pipe[0]);
     close((*handler)->stop_pipe[1]);
     free((*handler));
@@ -374,7 +379,8 @@ TftpdOperationResult start_listening(const TftpdHandlerPtr handler)
       * /dev/stderr or /dev/stdout will work if the server is started in
       * daemon mode.
       */
-     open_logger("atftpd", log_file, logging_level);
+     handler->log_file = strdup("-"); /* default to stdout */
+     open_logger("atftpd", handler->log_file, handler->logging_level);
      logger(LOG_NOTICE, "Advanced Trivial FTP server started (%s)", VERSION);
 
 #ifdef HAVE_PCRE
@@ -529,7 +535,7 @@ TftpdOperationResult start_listening(const TftpdHandlerPtr handler)
           }
 
           /* Reopen log file now that we changed user */
-          open_logger("atftpd", log_file, logging_level);
+          open_logger("atftpd", handler->log_file, handler->logging_level);
      }
 
 #if defined(SOL_IP) && defined(IP_PKTINFO)
@@ -767,9 +773,7 @@ TftpdOperationResult start_listening(const TftpdHandlerPtr handler)
      if (pcre_top)
           tftpd_pcre_close(pcre_top);
 #endif
-     /* some cleaning */
-//     if (log_file)
-//          free(log_file);
+
 #ifdef HAVE_PCRE
      if (pcre_file)
           free(pcre_file);
@@ -1300,12 +1304,13 @@ void tftpd_log_options(struct TftpdHandler *handler)
      }
      else
           logger(LOG_INFO, "  started by inetd");
-     logger(LOG_INFO, "  logging level: %d", logging_level);
+     logger(LOG_INFO, "  logging level: %d", handler->logging_level);
      if (trace)
           logger(LOG_INFO, "     trace enabled");
      logger(LOG_INFO, "  directory: %s", directory);
      logger(LOG_INFO, "  user: %s.%s", user_name, group_name);
-     logger(LOG_INFO, "  log file: %s", (log_file==NULL) ? "syslog":log_file);
+     logger(LOG_INFO, "  log file: %s", (handler->log_file==NULL) ?
+                                            "syslog":handler->log_file);
      if (pidfile)
           logger(LOG_INFO, "  pid file: %s", pidfile);
      if (listen_local == 1)

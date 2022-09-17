@@ -70,6 +70,8 @@ void start_tftp_client(char *operation,
         execvp(args[0], args);
         fprintf(stdout, "*** ERROR STARTING TFTP CLIENT ***\n");
         exit(1);
+    } else if (pid_client[pid_client_idx] < 0) {
+        fprintf(stdout, "*** ERROR FORKING TFTP CLIENT ***\n");
     }
     pid_client_idx++;
 }

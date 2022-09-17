@@ -20,7 +20,6 @@ int port = 60907;
 char server_dir[BUF_SIZE] = "/tmp/";
 char server_port[BUF_SIZE] = "60907";
 
-
 int executed_tests = 0;                     //TODO: Mutex-me for thread safety
 pid_t pid_server;
 
@@ -43,6 +42,9 @@ void start_tftp_server()
         execvp(args[0], args);
         fprintf(stdout, "*** ERROR STARTING TFTP SERVER ***\n");
         exit(1);
+    } else if (pid_server < 0) {
+        // Error forking
+        fprintf(stdout, "*** ERROR FORKING TFTP SERVER ***\n");
     }
 }
 

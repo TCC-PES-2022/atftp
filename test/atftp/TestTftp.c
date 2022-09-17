@@ -6,7 +6,9 @@
 #include <signal.h>
 #include <string.h>
 #include <pthread.h>
+#include <stdlib.h>
 
+#define NUM_TESTS 6
 #define BUF_SIZE 1024
 
 TftpHandlerPtr handler = NULL;
@@ -16,15 +18,36 @@ int port = 60907;
 char server_dir[BUF_SIZE] = "/tmp/";
 char server_port[BUF_SIZE] = "60907";
 
-int print_instructions = 1;
+
+int executed_tests = 0;                     //TODO: Mutex-me for thread safety
+pid_t pid_server;
+
+void start_tftp_server()
+{
+    pid_server = fork();
+    if (pid_server == 0) {
+        // Child process
+        char *args[] = {"./atftp/bin/atftpd",
+                        "--verbose=7",
+                        "--trace",
+                        "--port",
+                        server_port,
+                        "--daemon",
+                        "--no-fork",
+                        "--logfile",
+                        "-",
+                        server_dir,
+                        NULL};
+        execvp(args[0], args);
+        fprintf(stdout, "*** ERROR STARTING TFTP SERVER ***\n");
+        exit(1);
+    }
+}
 
 void setUp(void)
 {
-    if (print_instructions) {
-        fprintf(stdout, "Please start the tftpd server on port %d\n", port);
-        fprintf(stdout, "[Enter to continue]");
-        getchar();
-        print_instructions = 0;
+    if (!executed_tests) {
+        start_tftp_server();
     }
     create_tftp_handler(&handler);
 }
@@ -33,6 +56,12 @@ void tearDown(void)
 {
     destroy_tftp_handler(&handler);
     handler = NULL;
+    executed_tests++;
+    if (executed_tests == NUM_TESTS)
+    {
+        kill(pid_server, SIGTERM);
+        waitpid(pid_server, NULL, 0);
+    }
 }
 
 void test_SetConnection_ShouldReturnTFTPOK(void)

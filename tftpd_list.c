@@ -341,7 +341,8 @@ void tftpd_list_kill_threads(void)
 
      while (current != NULL)
      {
-          pthread_kill(current->tid, SIGTERM);
+//          pthread_kill(current->tid, SIGTERM);
+          pthread_cancel(current->tid);
           current = current->next;
      }
 

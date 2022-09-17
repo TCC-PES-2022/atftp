@@ -87,6 +87,8 @@ struct TftpdSectionHandler {
     SectionId section_id;
     char client_ip[SOCKADDR_PRINT_ADDR_LEN];
     TftpdSectionStatus status;
+    int abort;                   /* 1 if we need to abort because the maximum
+                                   number of threads have been reached*/
 };
 
 /*
@@ -788,6 +790,41 @@ TftpdOperationResult start_listening(const TftpdHandlerPtr handler)
      return TFTPD_OK;
 }
 
+static void tftpd_receive_request_cleanup(void *arg)
+{
+    struct thread_data *data = (struct thread_data *)arg;
+
+    /* update stats */
+    stats_thread_usage_locked();
+
+    /* Remove the thread_data structure from the list, if it as been
+       added. */
+    if (!data->section_handler_ptr->abort)
+        tftpd_list_remove(data);
+
+    /* Free memory. */
+    if (data->data_buffer)
+        free(data->data_buffer);
+
+    free(data->tftp_options);
+
+    /* if the thread had reserverd a multicast IP/Port, deallocate it */
+    if (data->mc_port != 0)
+        tftpd_mcast_free_tid(data->mc_addr, data->mc_port);
+
+    /* this function take care of freeing allocated memory by other threads */
+    tftpd_clientlist_free(data);
+
+    if (data->section_finished_cb != NULL)
+        data->section_finished_cb(data->section_handler_ptr,
+                                  data->section_finished_ctx);
+
+    /* free the thread structure */
+    free(data);
+
+    logger(LOG_INFO, "Server thread exiting");
+}
+
 /*
  * This function handles the initial connection with a client. It reads
  * the request from stdin and then release the stdin_mutex, so the main
@@ -798,14 +835,17 @@ TftpdOperationResult start_listening(const TftpdHandlerPtr handler)
  */
 void *tftpd_receive_request(void *arg)
 {
-     struct thread_data *data = (struct thread_data *)arg;
+    pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+    pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+
+    struct thread_data *data = (struct thread_data *)arg;
+    pthread_cleanup_push(tftpd_receive_request_cleanup, data);
 
      int retval;                /* hold return value for testing */
      int data_size;             /* returned size by recvfrom */
      char string[MAXLEN];       /* hold the string we pass to the logger */
      int num_of_threads;
-     int abort = 0;             /* 1 if we need to abort because the maximum
-                                   number of threads have been reached*/
+
      struct sockaddr_storage to; /* destination of client's packet */
      socklen_t len = sizeof(to);
 
@@ -821,18 +861,20 @@ void *tftpd_receive_request(void *arg)
      retval = tftp_get_packet(data->sockfd, -1, NULL, &data->client_info->client, NULL,
                               &to, data->timeout, &data_size,
                               data->data_buffer);
-     if (retval == ERR) {
-          logger(LOG_NOTICE, "Invalid request in 1st packet");
-          abort = 1;
-     }
 
     struct TftpdSectionHandler section_handler;
     section_handler.section_id = data->tid;
     section_handler.status = TFTPD_SECTION_UNDEFINED;
+    section_handler.abort = 0;
     sockaddr_print_addr(&data->client_info->client,
                         section_handler.client_ip,
                         sizeof(section_handler.client_ip));
     data->section_handler_ptr = &section_handler;
+
+    if (retval == ERR) {
+        logger(LOG_NOTICE, "Invalid request in 1st packet");
+        section_handler.abort = 1;
+    }
 
     if(data->section_started_cb != NULL)
         data->section_started_cb(&section_handler, data->section_started_ctx);
@@ -845,16 +887,16 @@ void *tftpd_receive_request(void *arg)
      {
           logger(LOG_INFO, "Maximum number of threads reached: %d",
                  num_of_threads);
-          abort = 1;
+          section_handler.abort = 1;
      }
 
 #ifdef HAVE_WRAP
-     if (!abort && !sockaddr_family_supported(&data->client_info->client))
+     if (!section_handler.abort && !sockaddr_family_supported(&data->client_info->client))
      {
           logger(LOG_ERR, "Connection from unsupported network address family refused");
-          abort = 1;
+          section_handler.abort = 1;
      }
-     if (!abort)
+     if (!section_handler.abort)
      {
           /* Verify the client has access. We don't look for the name but
              rely only on the IP address for that. */
@@ -864,18 +906,19 @@ void *tftpd_receive_request(void *arg)
                         STRING_UNKNOWN) == 0)
           {
                logger(LOG_ERR, "Connection refused from %s", addr_str);
-               abort = 1;
+               section_handler.abort = 1;
           }
      }
 #endif
 
      /* Add this new thread structure to the list. */
-     if (!abort)
-          stats_new_thread(tftpd_list_add(data));
+     if (!section_handler.abort) {
+         stats_new_thread(tftpd_list_add(data));
+     }
 
-     /* if the maximum number of thread is reached, too bad we abort. */
-     if (abort)
-          stats_abort_locked();
+     /* if the maximum number of thread is reached, too bad we section_handler.abort. */
+     if (section_handler.abort)
+         stats_abort_locked();
      else
      {
           /* open a socket for client communication */
@@ -1021,34 +1064,7 @@ void *tftpd_receive_request(void *arg)
           close(data->sockfd);
      }
 
-     /* update stats */
-     stats_thread_usage_locked();
-
-     /* Remove the thread_data structure from the list, if it as been
-        added. */
-     if (!abort)
-          tftpd_list_remove(data);
-
-     /* Free memory. */
-     if (data->data_buffer)
-          free(data->data_buffer);
-
-     free(data->tftp_options);
-
-     /* if the thread had reserverd a multicast IP/Port, deallocate it */
-     if (data->mc_port != 0)
-          tftpd_mcast_free_tid(data->mc_addr, data->mc_port);
-
-     /* this function take care of freeing allocated memory by other threads */
-     tftpd_clientlist_free(data);
-
-     if (data->section_finished_cb != NULL)
-          data->section_finished_cb(&section_handler, data->section_finished_ctx);
-
-     /* free the thread structure */
-     free(data);
-
-     logger(LOG_INFO, "Server thread exiting");
+     pthread_cleanup_pop(data);
      pthread_exit(NULL);
 }
 

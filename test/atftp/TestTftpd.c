@@ -10,13 +10,23 @@
 #include <time.h>
 #include <stdio.h>
 #include <arpa/inet.h>
+#include <stdlib.h>
 
 #define BUF_SIZE 100
+#define NUM_TESTS 12
+
+#define PUT_FILE "-p"
+#define GET_FILE "-g"
+
+#define TIMEOUT 5
+#define PORT    60905
+
+int executed_tests = 0;                     //TODO: Mutex-me for thread safety
+int pid_client_idx = 0;
+pid_t pid_client[NUM_TESTS];
 
 TftpdHandlerPtr handler = NULL;
 char test_string[BUF_SIZE] = "HELLO TFTP TEST";
-int port = 6905;
-int timeout = 5;
 char server_dir[BUF_SIZE] = "/tmp/";
 #define SOCKADDR_PRINT_ADDR_LEN INET6_ADDRSTRLEN
 
@@ -32,6 +42,34 @@ typedef struct {
     char memory_buffer[BUF_SIZE];
 } TestServer;
 
+void start_tftp_client(char *operation,
+                       char *local_file,
+                       char *remote_file,
+                       int port)
+{
+    pid_client[pid_client_idx] = fork();
+    if (pid_client[pid_client_idx] == 0) {
+        // Child process
+        char port_str[BUF_SIZE];
+        sprintf(port_str, "%d", port);
+        char *args[] = {"./atftp/bin/atftp",
+                        "--verbose",
+                        "--trace",
+                        operation,
+                        "-l",
+                        local_file,
+                        "-r",
+                        remote_file,
+                        "127.0.0.1",
+                        port_str,
+                        NULL};
+        execvp(args[0], args);
+        fprintf(stdout, "*** ERROR STARTING TFTP CLIENT ***\n");
+        exit(1);
+    }
+    pid_client_idx++;
+}
+
 void setUp(void)
 {
     create_tftpd_handler(&handler);
@@ -41,6 +79,14 @@ void tearDown(void)
 {
     destroy_tftpd_handler(&handler);
     handler = NULL;
+    executed_tests++;
+    if (executed_tests == NUM_TESTS)
+    {
+        for (int i = 0; i < pid_client_idx; i++) {
+            kill(pid_client[i], SIGTERM);
+            waitpid(pid_client[i], NULL, 0);
+        }
+    }
 }
 
 void *start_listening_thread(void *arg)
@@ -125,13 +171,14 @@ TftpdOperationResult close_file_cbk (
 
 void test_SetPort_ShouldReturnTFTPDOK(void)
 {
-    TftpdOperationResult result = set_port(handler, port);
+    int test_port = PORT + executed_tests;
+    TftpdOperationResult result = set_port(handler, test_port);
     TEST_ASSERT_EQUAL(TFTPD_OK, result);
 }
 
 void test_SetTimeout_ShouldReturnTFTPDOK(void)
 {
-    TftpdOperationResult result = set_server_timeout(handler, timeout);
+    TftpdOperationResult result = set_server_timeout(handler, TIMEOUT);
     TEST_ASSERT_EQUAL(TFTPD_OK, result);
 }
 
@@ -161,32 +208,15 @@ void test_RegisterCloseFileCallback_ShouldReturnTFTPDOK(void)
 
 void test_StartListeningTimeout_ShouldReturnTFTPDOK(void)
 {
-    if (set_port(handler, port) != TFTPD_OK) {
+    int test_port = PORT + executed_tests;
+    if (set_port(handler, test_port) != TFTPD_OK) {
         TEST_FAIL_MESSAGE("Failed to set port");
     }
-    if (set_server_timeout(handler, timeout) != TFTPD_OK) {
+    if (set_server_timeout(handler, TIMEOUT) != TFTPD_OK) {
         TEST_FAIL_MESSAGE("Failed to set timeout");
     }
     TftpdOperationResult result = start_listening(handler);
     TEST_ASSERT_EQUAL(TFTPD_OK, result);
-}
-
-void test_StartStopListening_ShouldReturnTFTPDOK(void)
-{
-    if (set_port(handler, port) != TFTPD_OK) {
-        TEST_FAIL_MESSAGE("set_port failed");
-    }
-    if (set_server_timeout(handler, timeout) != TFTPD_OK) {
-        TEST_FAIL_MESSAGE("set_server_timeout failed");
-    }
-
-    TestServer server;
-    server.handler = handler;
-    pthread_t thread;
-    pthread_create(&thread, NULL, start_listening_thread, &server);
-    stop_listening(handler);
-    pthread_join(thread, NULL);
-    TEST_ASSERT_EQUAL(TFTPD_OK, server.result);
 }
 
 void test_ReceiveFileToDisk_ShouldReturnTFTPDOK(void)
@@ -201,17 +231,12 @@ void test_ReceiveFileToDisk_ShouldReturnTFTPDOK(void)
     fprintf(fp, "%s", test_string);
     fclose(fp);
 
-    // Wait for tester to setup the client for test
-    fprintf(stdout, "Prepare client to send file %s on port %d\n", test_file1, port);
-    fprintf(stdout, "Send with remote name %s\n", test_file2);
-    fprintf(stdout, "[Enter to continue]");
-    getchar();
-
     // Start server configuration
-    if (set_port(handler, port) != TFTPD_OK) {
+    int test_port = PORT + executed_tests;
+    if (set_port(handler, test_port) != TFTPD_OK) {
         TEST_FAIL_MESSAGE("set_port failed");
     }
-    if (set_server_timeout(handler, timeout) != TFTPD_OK) {
+    if (set_server_timeout(handler, TIMEOUT) != TFTPD_OK) {
         TEST_FAIL_MESSAGE("set_server_timeout failed");
     }
 
@@ -236,13 +261,16 @@ void test_ReceiveFileToDisk_ShouldReturnTFTPDOK(void)
     // Start server
     pthread_t thread_server;
     pthread_create(&thread_server, NULL, start_listening_thread, &server_test);
+    sleep(1);
+
+    start_tftp_client(PUT_FILE, test_file1, test_file2, test_port);
 
     // Wait for server to receive file
     struct timespec ts;
     if (clock_gettime(CLOCK_REALTIME, &ts) == -1) {
         TEST_FAIL_MESSAGE("clock_gettime failed");
     }
-    ts.tv_sec += timeout*2;
+    ts.tv_sec += TIMEOUT*2;
     sem_timedwait(&server_test.section_sem, &ts);
     sem_destroy(&server_test.section_sem);
 
@@ -275,16 +303,12 @@ void test_ReceiveFileToMemory_ShouldReturnTFTPDOK(void)
     fprintf(fp, "%s", test_string);
     fclose(fp);
 
-    // Wait for tester to setup the client for test
-    fprintf(stdout, "Prepare client to send file %s on port %d\n", test_file1, port);
-    fprintf(stdout, "[Enter to continue]");
-    getchar();
-
     // Start server configuration
-    if (set_port(handler, port) != TFTPD_OK) {
+    int test_port = PORT + executed_tests;
+    if (set_port(handler, test_port) != TFTPD_OK) {
         TEST_FAIL_MESSAGE("set_port failed");
     }
-    if (set_server_timeout(handler, timeout) != TFTPD_OK) {
+    if (set_server_timeout(handler, TIMEOUT) != TFTPD_OK) {
         TEST_FAIL_MESSAGE("set_server_timeout failed");
     }
 
@@ -309,13 +333,16 @@ void test_ReceiveFileToMemory_ShouldReturnTFTPDOK(void)
     // Start server
     pthread_t thread_server;
     pthread_create(&thread_server, NULL, start_listening_thread, &server_test);
+    sleep(1);
+
+    start_tftp_client(PUT_FILE, test_file1, test_file1, test_port);
 
     // Wait for server to receive file
     struct timespec ts;
     if (clock_gettime(CLOCK_REALTIME, &ts) == -1) {
         TEST_FAIL_MESSAGE("clock_gettime failed");
     }
-    ts.tv_sec += timeout*2;
+    ts.tv_sec += TIMEOUT*2;
     sem_timedwait(&server_test.section_sem, &ts);
     sem_destroy(&server_test.section_sem);
 
@@ -339,17 +366,12 @@ void test_SendFileFromDisk_ShouldReturnTFTPDOK(void)
     fprintf(fp, "%s", test_string);
     fclose(fp);
 
-    // Wait for tester to setup the client for test
-    fprintf(stdout, "Prepare client to receive file %s on port %d\n", test_file1, port);
-    fprintf(stdout, "Save it with local name %s\n", test_file2);
-    fprintf(stdout, "[Enter to continue]");
-    getchar();
-
     // Start server configuration
-    if (set_port(handler, port) != TFTPD_OK) {
+    int test_port = PORT + executed_tests;
+    if (set_port(handler, test_port) != TFTPD_OK) {
         TEST_FAIL_MESSAGE("set_port failed");
     }
-    if (set_server_timeout(handler, timeout) != TFTPD_OK) {
+    if (set_server_timeout(handler, TIMEOUT) != TFTPD_OK) {
         TEST_FAIL_MESSAGE("set_server_timeout failed");
     }
 
@@ -374,13 +396,16 @@ void test_SendFileFromDisk_ShouldReturnTFTPDOK(void)
     // Start server
     pthread_t thread_server;
     pthread_create(&thread_server, NULL, start_listening_thread, &server_test);
+    sleep(1);
+
+    start_tftp_client(GET_FILE, test_file2, test_file1, test_port);
 
     // Wait for server to receive file
     struct timespec ts;
     if (clock_gettime(CLOCK_REALTIME, &ts) == -1) {
         TEST_FAIL_MESSAGE("clock_gettime failed");
     }
-    ts.tv_sec += timeout*2;
+    ts.tv_sec += TIMEOUT*2;
     sem_timedwait(&server_test.section_sem, &ts);
     sem_destroy(&server_test.section_sem);
 
@@ -402,8 +427,6 @@ void test_SendFileFromDisk_ShouldReturnTFTPDOK(void)
     TEST_ASSERT_EQUAL_STRING(test_string, line);
 }
 
-//    TEST_ASSERT_EQUAL_STRING(test_string, server_test.memory_buffer);
-
 void test_SendFileFromMemory_ShouldReturnTFTPDOK(void)
 {
     // Create test files
@@ -417,16 +440,12 @@ void test_SendFileFromMemory_ShouldReturnTFTPDOK(void)
     fprintf(fp, "%s", test_string);
     fclose(fp);
 
-    // Wait for tester to setup the client for test
-    fprintf(stdout, "Prepare client to receive file %s on port %d\n", test_file1, port);
-    fprintf(stdout, "[Enter to continue]");
-    getchar();
-
     // Start server configuration
-    if (set_port(handler, port) != TFTPD_OK) {
+    int test_port = PORT + executed_tests;
+    if (set_port(handler, test_port) != TFTPD_OK) {
         TEST_FAIL_MESSAGE("set_port failed");
     }
-    if (set_server_timeout(handler, timeout) != TFTPD_OK) {
+    if (set_server_timeout(handler, TIMEOUT) != TFTPD_OK) {
         TEST_FAIL_MESSAGE("set_server_timeout failed");
     }
 
@@ -450,13 +469,16 @@ void test_SendFileFromMemory_ShouldReturnTFTPDOK(void)
     // Start server
     pthread_t thread_server;
     pthread_create(&thread_server, NULL, start_listening_thread, &server_test);
+    sleep(1);
+
+    start_tftp_client(GET_FILE, test_file1, test_file1, test_port);
 
     // Wait for server to receive file
     struct timespec ts;
     if (clock_gettime(CLOCK_REALTIME, &ts) == -1) {
         TEST_FAIL_MESSAGE("clock_gettime failed");
     }
-    ts.tv_sec += timeout*2;
+    ts.tv_sec += TIMEOUT*2;
     sem_timedwait(&server_test.section_sem, &ts);
     sem_destroy(&server_test.section_sem);
 

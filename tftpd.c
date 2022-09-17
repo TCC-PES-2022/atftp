@@ -113,7 +113,8 @@ char mcast_port[MAXLEN] = "1758";
  *  This can be increased with the -v switch.
  */
 int logging_level = LOG_NOTICE;
-char *log_file = NULL;
+//char *log_file = NULL;
+char *log_file = "-"; /* Dash send output to stdout */
 
 /* logging level as requested by libwrap */
 #ifdef HAVE_WRAP
@@ -368,7 +369,6 @@ TftpdOperationResult start_listening(const TftpdHandlerPtr handler)
       * /dev/stderr or /dev/stdout will work if the server is started in
       * daemon mode.
       */
-     log_file = strdup("-"); /* Dash send output to stdout */
      open_logger("atftpd", log_file, logging_level);
      logger(LOG_NOTICE, "Advanced Trivial FTP server started (%s)", VERSION);
 
@@ -765,8 +765,8 @@ TftpdOperationResult start_listening(const TftpdHandlerPtr handler)
           tftpd_pcre_close(pcre_top);
 #endif
      /* some cleaning */
-     if (log_file)
-          free(log_file);
+//     if (log_file)
+//          free(log_file);
 #ifdef HAVE_PCRE
      if (pcre_file)
           free(pcre_file);

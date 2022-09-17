@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include "unity.h"
 #include "tftpd_api.h"
 #include <unistd.h>
@@ -5,12 +6,12 @@
 #include <sys/wait.h>
 #include <signal.h>
 #include <string.h>
-#include <pthread.h>
 #include <semaphore.h>
 #include <time.h>
 #include <stdio.h>
 #include <arpa/inet.h>
 #include <stdlib.h>
+#include <pthread.h>
 
 #define BUF_SIZE 100
 #define NUM_TESTS 12
@@ -534,4 +535,60 @@ void test_StartStopListening_ShouldReturnTFTPDOK(void)
     TEST_ASSERT_EQUAL(TFTPD_OK, server.result);
 }
 
+void test_TwoServers_ShouldReturnTFTPDOK(void)
+{
+    int test_port1 = PORT + executed_tests;
+    int test_port2 = test_port1 + 1;
+
+    TftpdHandlerPtr handler1 = NULL;
+    TftpdHandlerPtr handler2 = NULL;
+
+    if (create_tftpd_handler(&handler1) != TFTPD_OK) {
+        TEST_FAIL_MESSAGE("create_tftpd_handler failed");
+    }
+
+    if (create_tftpd_handler(&handler2) != TFTPD_OK) {
+        TEST_FAIL_MESSAGE("create_tftpd_handler failed");
+    }
+
+    if (set_port(handler1, test_port1) != TFTPD_OK)
+    {
+        TEST_FAIL_MESSAGE("set_port failed");
+    }
+
+    if (set_port(handler2, test_port2) != TFTPD_OK)
+    {
+        TEST_FAIL_MESSAGE("set_port failed");
+    }
+
+    TestServer server1;
+    server1.handler = handler1;
+    pthread_t thread1;
+    pthread_create(&thread1, NULL, start_listening_thread, &server1);
+
+    TestServer server2;
+    server2.handler = handler2;
+    pthread_t thread2;
+    pthread_create(&thread2, NULL, start_listening_thread, &server2);
+
+    sleep(TIMEOUT);
+    stop_listening(handler1);
+    stop_listening(handler2);
+
+    struct timespec ts;
+    if (clock_gettime(CLOCK_REALTIME, &ts) == -1)
+    {
+        TEST_FAIL_MESSAGE("clock_gettime() failed");
+    }
+    ts.tv_sec += TIMEOUT;
+    if (pthread_timedjoin_np(thread1, NULL, &ts) != 0)
+    {
+        TEST_FAIL_MESSAGE("pthread_timedjoin_np() failed");
+    }
+    if (pthread_timedjoin_np(thread2, NULL, &ts) != 0)
+    {
+        TEST_FAIL_MESSAGE("pthread_timedjoin_np() failed");
+    }
+    TEST_ASSERT_EQUAL(TFTPD_OK, server1.result);
+    TEST_ASSERT_EQUAL(TFTPD_OK, server2.result);
 }

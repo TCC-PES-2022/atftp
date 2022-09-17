@@ -1,5 +1,6 @@
 #include "unity.h"
 #include "tftp_api.h"
+#include "tftp_def.h"
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -7,6 +8,7 @@
 #include <string.h>
 #include <pthread.h>
 #include <stdlib.h>
+#include <time.h>
 
 #define NUM_TESTS 6
 #define BUF_SIZE 1024
@@ -223,4 +225,58 @@ void test_GetFile_ToMemory_ShouldReturnTFTPOKIfFileWasSent(void)
 
     TEST_ASSERT_EQUAL(TFTP_OK, result);
     TEST_ASSERT_EQUAL_STRING(test_string, buffer);
+}
+
+void test_ConnectionTimeoutSend_ShouldReturnTFTPError(void)
+{
+    TftpOperationResult result = TFTP_OK;
+
+    set_connection(handler, host, 59);
+    config_tftp(handler);
+
+    //Create file to send
+    char test_file[BUF_SIZE] = "test_timeout_send.txt";
+    FILE *fp = fopen(test_file, "w");
+    if (!fp) {
+        TEST_FAIL_MESSAGE("Failed to create test file");
+    }
+    fprintf(fp, "%s", test_string);
+    fclose(fp);
+
+
+    fp = fopen(test_file, "r");
+    int tftp_operation_time = 0;
+    if (fp) {
+        time_t start = time(NULL);
+        result = send_file(handler, test_file, fp);
+        time_t end = time(NULL);
+        tftp_operation_time = difftime(end, start);
+        fclose(fp);
+    }
+
+    TEST_ASSERT_INT_WITHIN(1, TIMEOUT*(NB_OF_RETRY+1), tftp_operation_time);
+    TEST_ASSERT_EQUAL(TFTP_ERROR, result);
+}
+
+void test_ConnectionTimeoutFetch_ShouldReturnTFTPError(void)
+{
+    TftpOperationResult result = TFTP_OK;
+
+    set_connection(handler, host, 59);
+    config_tftp(handler);
+
+
+    char test_file[BUF_SIZE] = "test_timeout_fetch.txt";
+    FILE *fp = fopen(test_file, "w");
+    int tftp_operation_time = 0;
+    if (fp) {
+        time_t start = time(NULL);
+        result = fetch_file(handler, test_file, fp);
+        time_t end = time(NULL);
+        tftp_operation_time = difftime(end, start);
+        fclose(fp);
+    }
+
+    TEST_ASSERT_INT_WITHIN(1, TIMEOUT*(NB_OF_RETRY+1), tftp_operation_time);
+    TEST_ASSERT_EQUAL(TFTP_ERROR, result);
 }

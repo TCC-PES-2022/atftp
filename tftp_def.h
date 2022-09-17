@@ -29,8 +29,8 @@
 
 #define MAXLEN      256         /* For file names and such */
 #define IPADDRLEN    24         /* For IPv4 and IPv6 address string */
-#define TIMEOUT       5         /* Client timeout */
-#define S_TIMEOUT     5         /* Server timout. */
+#define TIMEOUT       2         /* Client timeout */
+#define S_TIMEOUT     2         /* Server timout. */
 #define NB_OF_RETRY   1
 #define	MAXBLOCKS     ((1 << (32 - 9)) - 1)  /* Maximum blocks we will xfer */
 

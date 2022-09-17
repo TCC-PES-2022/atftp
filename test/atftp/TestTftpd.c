@@ -1,6 +1,7 @@
 #define _GNU_SOURCE
 #include "unity.h"
 #include "tftpd_api.h"
+#include "tftp_def.h"
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -37,10 +38,12 @@ typedef struct {
     SectionId section_id;
     char client_ip[SOCKADDR_PRINT_ADDR_LEN];
     TftpdSectionStatus section_status;
-    sem_t section_sem;
+    sem_t section_finished_sem;
+    sem_t file_opened_sem;
     FILE *fp;
     int use_memory;
     char memory_buffer[BUF_SIZE];
+    int section_time;
 } TestServer;
 
 void start_tftp_client(char *operation,
@@ -110,6 +113,7 @@ TftpdOperationResult section_started_cbk (
         TestServer *server = (TestServer *)context;
         server->section_id = id;
         strcpy(server->client_ip, ip);
+        server->section_time = time(NULL);
     }
     return TFTPD_OK;
 }
@@ -133,7 +137,8 @@ TftpdOperationResult section_finished_cbk (
         if (id == server->section_id && strcmp(server->client_ip, ip) == 0) {
             server->section_status = status;
         }
-        sem_post(&server->section_sem);
+        server->section_time = time(NULL) - server->section_time;
+        sem_post(&server->section_finished_sem);
     }
     return TFTPD_OK;
 }
@@ -151,6 +156,7 @@ TftpdOperationResult open_file_cbk (
             *fd = fopen(filename, mode);
         }
         server->fp = *fd;
+        sem_post(&server->file_opened_sem);
     } else {
         *fd = fopen(filename, mode);
     }
@@ -257,7 +263,8 @@ void test_ReceiveFileToDisk_ShouldReturnTFTPDOK(void)
     server_test.handler = handler;
     server_test.section_status = TFTPD_SECTION_UNDEFINED;
     server_test.use_memory = 0;
-    sem_init(&server_test.section_sem, 0, 0);
+    sem_init(&server_test.section_finished_sem, 0, 0);
+    sem_init(&server_test.file_opened_sem, 0, 0);
 
     // Start server
     pthread_t thread_server;
@@ -272,8 +279,8 @@ void test_ReceiveFileToDisk_ShouldReturnTFTPDOK(void)
         TEST_FAIL_MESSAGE("clock_gettime failed");
     }
     ts.tv_sec += TIMEOUT*2;
-    sem_timedwait(&server_test.section_sem, &ts);
-    sem_destroy(&server_test.section_sem);
+    sem_timedwait(&server_test.section_finished_sem, &ts);
+    sem_destroy(&server_test.section_finished_sem);
 
     // Stop server
     stop_listening(handler);
@@ -329,7 +336,8 @@ void test_ReceiveFileToMemory_ShouldReturnTFTPDOK(void)
     server_test.handler = handler;
     server_test.section_status = TFTPD_SECTION_UNDEFINED;
     server_test.use_memory = 1;
-    sem_init(&server_test.section_sem, 0, 0);
+    sem_init(&server_test.section_finished_sem, 0, 0);
+    sem_init(&server_test.file_opened_sem, 0, 0);
 
     // Start server
     pthread_t thread_server;
@@ -344,8 +352,8 @@ void test_ReceiveFileToMemory_ShouldReturnTFTPDOK(void)
         TEST_FAIL_MESSAGE("clock_gettime failed");
     }
     ts.tv_sec += TIMEOUT*2;
-    sem_timedwait(&server_test.section_sem, &ts);
-    sem_destroy(&server_test.section_sem);
+    sem_timedwait(&server_test.section_finished_sem, &ts);
+    sem_destroy(&server_test.section_finished_sem);
 
     // Stop server
     stop_listening(handler);
@@ -392,7 +400,8 @@ void test_SendFileFromDisk_ShouldReturnTFTPDOK(void)
     server_test.handler = handler;
     server_test.section_status = TFTPD_SECTION_UNDEFINED;
     server_test.use_memory = 0;
-    sem_init(&server_test.section_sem, 0, 0);
+    sem_init(&server_test.section_finished_sem, 0, 0);
+    sem_init(&server_test.file_opened_sem, 0, 0);
 
     // Start server
     pthread_t thread_server;
@@ -407,8 +416,8 @@ void test_SendFileFromDisk_ShouldReturnTFTPDOK(void)
         TEST_FAIL_MESSAGE("clock_gettime failed");
     }
     ts.tv_sec += TIMEOUT*2;
-    sem_timedwait(&server_test.section_sem, &ts);
-    sem_destroy(&server_test.section_sem);
+    sem_timedwait(&server_test.section_finished_sem, &ts);
+    sem_destroy(&server_test.section_finished_sem);
 
     // Stop server
     stop_listening(handler);
@@ -465,7 +474,8 @@ void test_SendFileFromMemory_ShouldReturnTFTPDOK(void)
     server_test.handler = handler;
     server_test.section_status = TFTPD_SECTION_UNDEFINED;
     server_test.use_memory = 1;
-    sem_init(&server_test.section_sem, 0, 0);
+    sem_init(&server_test.section_finished_sem, 0, 0);
+    sem_init(&server_test.file_opened_sem, 0, 0);
 
     // Start server
     pthread_t thread_server;
@@ -480,8 +490,8 @@ void test_SendFileFromMemory_ShouldReturnTFTPDOK(void)
         TEST_FAIL_MESSAGE("clock_gettime failed");
     }
     ts.tv_sec += TIMEOUT*2;
-    sem_timedwait(&server_test.section_sem, &ts);
-    sem_destroy(&server_test.section_sem);
+    sem_timedwait(&server_test.section_finished_sem, &ts);
+    sem_destroy(&server_test.section_finished_sem);
 
     // Stop server
     stop_listening(handler);
@@ -500,6 +510,104 @@ void test_SendFileFromMemory_ShouldReturnTFTPDOK(void)
     TEST_ASSERT_EQUAL(TFTPD_SECTION_OK, server_test.section_status);
     TEST_ASSERT_EQUAL_STRING(test_string, line);
 }
+
+//TODO: test server timeout is not that trivial, maybe some other time...
+//void test_ReceiveFileTimeout_ShouldReturnTFTPDOK(void)
+//{
+//    // Create test files
+//    char test_file1[BUF_SIZE] = {"test_server_receive_timeout.txt"};
+//    FILE *fp = fopen(test_file1, "w");
+//    if (fp == NULL) {
+//        TEST_FAIL_MESSAGE("fopen failed");
+//    }
+//    for (int i = 0; i < 1024*1024; ++i) {
+//        fprintf(fp, "%s", test_string);
+//    }
+//    fclose(fp);
+//
+//    // Start server configuration
+//    int test_port = PORT + executed_tests;
+//    if (set_port(handler, test_port) != TFTPD_OK) {
+//        TEST_FAIL_MESSAGE("set_port failed");
+//    }
+//    if (set_server_timeout(handler, TIMEOUT) != TFTPD_OK) {
+//        TEST_FAIL_MESSAGE("set_server_timeout failed");
+//    }
+//
+//    TestServer server_test;
+//    if(register_section_started_callback(handler, section_started_cbk, &server_test) != TFTPD_OK) {
+//        TEST_FAIL_MESSAGE("register_section_started_callback failed");
+//    }
+//    if (register_section_finished_callback(handler, section_finished_cbk, &server_test) != TFTPD_OK) {
+//        TEST_FAIL_MESSAGE("register_section_finished_callback failed");
+//    }
+//    if (register_open_file_callback(handler, open_file_cbk, &server_test) != TFTPD_OK) {
+//        TEST_FAIL_MESSAGE("register_open_file_callback failed");
+//    }
+//    if (register_close_file_callback(handler, close_file_cbk, &server_test) != TFTPD_OK) {
+//        TEST_FAIL_MESSAGE("register_close_file_callback failed");
+//    }
+//    server_test.handler = handler;
+//    server_test.section_status = TFTPD_SECTION_UNDEFINED;
+//    server_test.use_memory = 0;
+//    sem_init(&server_test.section_finished_sem, 0, 0);
+//    sem_init(&server_test.file_opened_sem, 0, 0);
+//
+//    // Start server
+//    pthread_t thread_server;
+//    pthread_create(&thread_server, NULL, start_listening_thread, &server_test);
+//    sleep(1);
+//
+//    pid_t pid = fork();
+//    if (pid == 0) {
+//        // Child process
+//        char port_str[BUF_SIZE];
+//        sprintf(port_str, "%d", test_port);
+//        char *args[] = {"./atftp/bin/atftp",
+//                        "--verbose",
+//                        "--trace",
+//                        "-p",
+//                        "-l",
+//                        test_file1,
+//                        "-r",
+//                        test_file1,
+//                        "127.0.0.1",
+//                        port_str,
+//                        NULL};
+//        execvp(args[0], args);
+//        fprintf(stdout, "*** ERROR STARTING TFTP CLIENT ***\n");
+//        exit(1);
+//    } else if (pid < 0) {
+//        TEST_FAIL_MESSAGE("fork failed");
+//    }
+//
+//    // Wait file open
+//    struct timespec ts;
+//    if (clock_gettime(CLOCK_REALTIME, &ts) == -1) {
+//        TEST_FAIL_MESSAGE("clock_gettime failed");
+//    }
+//    ts.tv_sec += TIMEOUT*2;
+//    sem_timedwait(&server_test.file_opened_sem, &ts);
+//    sem_destroy(&server_test.section_finished_sem);
+//
+//    // Kill client
+//    kill(pid, SIGKILL);
+//    waitpid(pid, NULL, 0);
+//
+//    // Wait section finished
+//    if (clock_gettime(CLOCK_REALTIME, &ts) == -1) {
+//        TEST_FAIL_MESSAGE("clock_gettime failed");
+//    }
+//    ts.tv_sec += TIMEOUT*2;
+//    sem_timedwait(&server_test.section_finished_sem, &ts);
+//    sem_destroy(&server_test.section_finished_sem);
+//
+//    // Stop server
+//    stop_listening(handler);
+//    pthread_join(thread_server, NULL);
+//
+//    TEST_ASSERT_INT_WITHIN(1, S_TIMEOUT*(NB_OF_RETRY+1), server_test.section_time);
+//}
 
 void test_StartStopListening_ShouldReturnTFTPDOK(void)
 {

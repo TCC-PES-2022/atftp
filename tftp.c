@@ -256,7 +256,6 @@ TftpOperationResult config_tftp(
 
      int config_ret = OK;
 
-
      // Set connection parameters
      char *set_peer_argv[] = {
              "set_peer",
@@ -279,13 +278,6 @@ TftpOperationResult config_tftp(
             "512"
     };
     config_ret |= set_option(3, set_blksize_option_argv);
-
-    // Set timeout
-    char *set_timeout_argv[] = {
-            "timeout",
-            "2"
-    };
-    config_ret |= set_timeout(2, set_timeout_argv);
 
      return config_ret == OK ? TFTP_OK : TFTP_ERROR;
 }

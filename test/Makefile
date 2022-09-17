@@ -76,11 +76,17 @@ makedir:
 .PHONY: all
 all: makedir $(TARGET_CLIENT) $(TARGET_SERVER)
 
+.PHONY: debug
+debug: makedir $(TARGET_CLIENT) $(TARGET_SERVER)
+
 .PHONY: client
 client: makedir $(TARGET_CLIENT)
 
 .PHONY: server
 server: makedir $(TARGET_SERVER)
+
+.PHONY: runtests
+runtests: runclient runserver
 
 .PHONY: runclient
 runclient:

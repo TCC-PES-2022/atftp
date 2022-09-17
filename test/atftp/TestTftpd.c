@@ -499,3 +499,39 @@ void test_SendFileFromMemory_ShouldReturnTFTPDOK(void)
     TEST_ASSERT_EQUAL(TFTPD_SECTION_OK, server_test.section_status);
     TEST_ASSERT_EQUAL_STRING(test_string, line);
 }
+
+void test_StartStopListening_ShouldReturnTFTPDOK(void)
+{
+    int test_port = PORT + executed_tests;
+    if (set_port(handler, test_port) != TFTPD_OK)
+    {
+        TEST_FAIL_MESSAGE("set_port failed");
+    }
+
+    //Explicitly set the timeout to 0 to avoid exiting by timeout
+    if (set_server_timeout(handler, 0) != TFTPD_OK)
+    {
+        TEST_FAIL_MESSAGE("set_server_timeout failed");
+    }
+
+    TestServer server;
+    server.handler = handler;
+    pthread_t thread;
+    pthread_create(&thread, NULL, start_listening_thread, &server);
+    sleep(TIMEOUT);
+    stop_listening(handler);
+
+    struct timespec ts;
+    if (clock_gettime(CLOCK_REALTIME, &ts) == -1)
+    {
+        TEST_FAIL_MESSAGE("clock_gettime() failed");
+    }
+    ts.tv_sec += TIMEOUT;
+    if (pthread_timedjoin_np(thread, NULL, &ts) != 0)
+    {
+        TEST_FAIL_MESSAGE("pthread_timedjoin_np() failed");
+    }
+    TEST_ASSERT_EQUAL(TFTPD_OK, server.result);
+}
+
+}

@@ -22,6 +22,7 @@ CFLAGS 		+= -fprofile-arcs -ftest-coverage --coverage
 DBGFLAGS 	:= -g -ggdb
 COBJFLAGS 	:= $(CFLAGS) -c
 LDFLAGS  	:= -L.
-LDLIBS   	:= -lpthread -lgcov
+LDLIBS   	:= -lpthread -lgcov -pthread
 INCFLAGS   	:= -I$(UNITY_ROOT)/src -I..
+
 debug: COBJFLAGS 	+= $(DBGFLAGS)

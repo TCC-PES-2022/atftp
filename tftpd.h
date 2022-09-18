@@ -59,6 +59,7 @@ struct thread_data {
      section_finished section_finished_cb;
 
     int *tftpd_cancel;
+    pthread_mutex_t *stdin_mutex;
 
      /* multicast stuff */
      short mc_port;             /* multicast port */

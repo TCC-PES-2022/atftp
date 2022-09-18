@@ -81,6 +81,12 @@ struct TftpdHandler {
      */
     int logging_level;
     char *log_file;
+
+    /*
+     * We need a lock on stdin from the time we notice fresh data coming from
+     * stdin to the time the freshly created server thread as read it.
+     */
+    pthread_mutex_t stdin_mutex;
 };
 
 struct TftpdSectionHandler {
@@ -156,12 +162,6 @@ int rate = 0;
 #endif
 
 /*
- * We need a lock on stdin from the time we notice fresh data coming from
- * stdin to the time the freshly created server thread as read it.
- */
-pthread_mutex_t stdin_mutex = PTHREAD_MUTEX_INITIALIZER;
-
-/*
  * Function defined in this file
  */
 void *tftpd_receive_request(void *);
@@ -186,6 +186,7 @@ TftpdOperationResult create_tftpd_handler(TftpdHandlerPtr *handler)
     (*handler)->tftpd_cancel = 0;
     (*handler)->logging_level = LOG_DEBUG;
     (*handler)->log_file = NULL;
+    pthread_mutex_init(&(*handler)->stdin_mutex, NULL);
     pipe((*handler)->stop_pipe);
     fcntl((*handler)->stop_pipe[1], F_SETFL, O_NONBLOCK);
 
@@ -598,7 +599,7 @@ TftpdOperationResult start_listening(const TftpdHandlerPtr handler)
 
           /* We need to lock stdin, and release it when the thread
              is done reading the request. */
-          pthread_mutex_lock(&stdin_mutex);
+          pthread_mutex_lock(&handler->stdin_mutex);
 
 #ifdef RATE_CONTROL
           /* if we want to implement rate control, we sleep some time here
@@ -670,6 +671,7 @@ TftpdOperationResult start_listening(const TftpdHandlerPtr handler)
                new->section_finished_ctx = handler->section_finished_context;
                new->section_finished_cb = handler->section_finished_cb;
                new->tftpd_cancel = &(handler->tftpd_cancel);
+               new->stdin_mutex = &(handler->stdin_mutex);
 
                /* Allocate data buffer for tftp transfer. */
                if ((new->data_buffer = malloc((size_t)SEGSIZE + 4)) == NULL)
@@ -726,12 +728,12 @@ TftpdOperationResult start_listening(const TftpdHandlerPtr handler)
                     free(new->tftp_options);
                     free(new->client_info);
                     free(new);
-                    pthread_mutex_unlock(&stdin_mutex);
+                    pthread_mutex_unlock(&handler->stdin_mutex);
                }
           }
           else
           {
-               pthread_mutex_unlock(&stdin_mutex);
+               pthread_mutex_unlock(&handler->stdin_mutex);
 
                /* Either select return after timeout of we've been killed. In the first case
                   we wait for server thread to finish, in the other we kill them */
@@ -880,7 +882,7 @@ void *tftpd_receive_request(void *arg)
         data->section_started_cb(&section_handler, data->section_started_ctx);
 
      /* now unlock stdin */
-     pthread_mutex_unlock(&stdin_mutex);
+     pthread_mutex_unlock(data->stdin_mutex);
 
      /* Verify the number of threads */
      if ((num_of_threads = tftpd_list_num_of_thread()) >= tftpd_max_thread)

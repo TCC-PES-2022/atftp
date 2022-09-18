@@ -740,8 +740,16 @@ TftpdOperationResult start_listening(const TftpdHandlerPtr handler)
                if (handler->tftpd_cancel)
                     tftpd_list_kill_threads();
 
-               while (tftpd_list_num_of_thread() != 0)
-                    sleep(1);
+               /*
+                * TODO: Some times we get stuck here. For now, adding max wait time
+                * to avoid this.
+                */
+               int max_wait = 3;
+               while ((tftpd_list_num_of_thread() != 0)
+                        && (max_wait > 0)) {
+                   sleep(1);
+                   max_wait--;
+               }
 
                run = 0;
                if (tftpd_daemon || (handler->tftpd_timeout == 0))

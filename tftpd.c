@@ -54,6 +54,8 @@
 
 #undef RATE_CONTROL
 
+#undef HAVE_PCRE
+
 #include <stdlib.h>
 #include "tftpd_api.h"
 #define MAX_PARAM_SIZE 32

@@ -348,7 +348,7 @@ int tftpd_receive_file(struct thread_data *data)
                        if (data->open_file_cb == NULL) {
                            fp = fopen(filename, "w");
                        } else {
-                           data->open_file_cb(data->section_handler_ptr, &fp, filename, "w", data->open_file_ctx);
+                           data->open_file_cb(data->section_handler_ptr, &fp, filename, "w", NULL, data->open_file_ctx);
                        }
                        if (fp == NULL)
                        {
@@ -456,6 +456,7 @@ int tftpd_send_file(struct thread_data *data)
      int number_of_timeout = 0;
      int mcast_switch = data->mcast_switch_client;
      struct stat file_stat;
+     size_t file_size = 0;
      int convert = 0;           /* if true, do netascii conversion */
      struct thread_data *thread = NULL; /* used when looking for a multicast
                                            thread */
@@ -497,7 +498,8 @@ int tftpd_send_file(struct thread_data *data)
      if (data->open_file_cb == NULL) {
          fp = fopen(filename, "r");
      } else {
-         data->open_file_cb(data->section_handler_ptr, &fp, filename, "r", data->open_file_ctx);
+         data->open_file_cb(data->section_handler_ptr, &fp, filename, "r",
+                            &file_size, data->open_file_ctx);
      }
 
 #ifdef HAVE_PCRE
@@ -549,13 +551,17 @@ int tftpd_send_file(struct thread_data *data)
      }
 
      /* To return the size of the file with tsize argument */
-     fstat(fileno(fp), &file_stat);
+     if (file_size == 0) {
+         if (fstat(fileno(fp), &file_stat) == 0) {
+             file_size = file_stat.st_size;
+         }
+     }
 
      /* tsize option */
      if ((opt_get_tsize(data->tftp_options) > -1) && !convert)
      {
-          opt_set_tsize(file_stat.st_size, data->tftp_options);
-          logger(LOG_INFO, "tsize option -> %d", file_stat.st_size);
+          opt_set_tsize(file_size, data->tftp_options);
+          logger(LOG_INFO, "tsize option -> %d", file_size);
      }
 
      /* timeout option */
@@ -644,7 +650,7 @@ int tftpd_send_file(struct thread_data *data)
      }
 
      /* Verify that the file can be sent in MAXBLOCKS blocks of BLKSIZE octets */
-     if ((file_stat.st_size / (data->data_buffer_size - 4)) > MAXBLOCKS)
+     if ((file_size / (data->data_buffer_size - 4)) > MAXBLOCKS)
      {
           tftp_send_error(sockfd, sa, EUNDEF, data->data_buffer, data->data_buffer_size);
           logger(LOG_NOTICE, "Requested file too big, increase BLKSIZE");
@@ -665,7 +671,7 @@ int tftpd_send_file(struct thread_data *data)
          data->tftp_options[OPT_MULTICAST].enabled && !convert)
      {
 	  /* Verify that the file can be sent in 65536 blocks of BLKSIZE octets */
-	  if ((file_stat.st_size / (data->data_buffer_size - 4)) > 65536)
+	  if ((file_size / (data->data_buffer_size - 4)) > 65536)
 	  {
 		tftp_send_error(sockfd, sa, EUNDEF, data->data_buffer, data->data_buffer_size);
 		logger(LOG_NOTICE, "Requested file too big, increase BLKSIZE");

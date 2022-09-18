@@ -99,6 +99,9 @@ typedef TftpdOperationResult (*section_finished) (
  * @param[out] fd the file pointer to open.
  * @param[in] filename the name of the file to open.
  * @param[in] mode the mode to open the file in.
+ * @param[out] bufferSize if a fmemopen is used, this parameter must be set to the
+ *                  size of the buffer. If a normal fopen is used, this parameter
+ *                  must be set to 0.
  * @param[in] context the user context.
  *
  * @return TFTPD_OK if success.
@@ -109,6 +112,7 @@ typedef TftpdOperationResult (*open_file_callback) (
         FILE **fd,
         char *filename,
         char* mode,
+        size_t* bufferSize,
         void *context
         );
 

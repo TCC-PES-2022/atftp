@@ -41,6 +41,7 @@ typedef struct {
     sem_t section_finished_sem;
     sem_t file_opened_sem;
     FILE *fp;
+    size_t buffer_size;
     int use_memory;
     char memory_buffer[BUF_SIZE];
     int section_time;
@@ -147,15 +148,24 @@ TftpdOperationResult section_finished_cbk (
 
 TftpdOperationResult open_file_cbk (
         const TftpdSectionHandlerPtr section_handler,
-        FILE **fd, char *filename, char* mode, void *context)
+        FILE **fd, char *filename, char* mode,
+        size_t *buffer_size, void *context)
 {
     fprintf(stdout, "OPEN FILE REQUEST: %s, %s\n", filename, mode);
     if (context != NULL) {
         TestServer *server = (TestServer *)context;
         if (server->use_memory) {
             *fd = fmemopen(((TestServer *)context)->memory_buffer, BUF_SIZE, mode);
+            if (buffer_size != NULL) {
+                *buffer_size = BUF_SIZE;
+                server->buffer_size = *buffer_size;
+            }
         } else {
             *fd = fopen(filename, mode);
+            if (buffer_size != NULL) {
+                *buffer_size = 0;
+                server->buffer_size = *buffer_size;
+            }
         }
         server->fp = *fd;
         sem_post(&server->file_opened_sem);
@@ -511,6 +521,71 @@ void test_SendFileFromMemory_ShouldReturnTFTPDOK(void)
     TEST_ASSERT_EQUAL(TFTPD_OK, server_test.result);
     TEST_ASSERT_EQUAL(TFTPD_SECTION_OK, server_test.section_status);
     TEST_ASSERT_EQUAL_STRING(test_string, line);
+}
+
+void test_MemFileSizeTest_ShouldReturnTFTPDOK(void)
+{
+    // Create test files
+    char test_file1[BUF_SIZE] = {"mem_buffer_size_test.txt"};
+    TestServer server_test;
+    memset(server_test.memory_buffer, 0, BUF_SIZE);
+    FILE *fp = fmemopen(server_test.memory_buffer, BUF_SIZE, "w");
+    if (fp == NULL) {
+        TEST_FAIL_MESSAGE("fmemopen failed");
+    }
+    fprintf(fp, "%s", test_string);
+    fclose(fp);
+
+    // Start server configuration
+    int test_port = PORT + executed_tests;
+    if (set_port(handler, test_port) != TFTPD_OK) {
+        TEST_FAIL_MESSAGE("set_port failed");
+    }
+    if (set_server_timeout(handler, TIMEOUT) != TFTPD_OK) {
+        TEST_FAIL_MESSAGE("set_server_timeout failed");
+    }
+
+    if(register_section_started_callback(handler, section_started_cbk, &server_test) != TFTPD_OK) {
+        TEST_FAIL_MESSAGE("register_section_started_callback failed");
+    }
+    if (register_section_finished_callback(handler, section_finished_cbk, &server_test) != TFTPD_OK) {
+        TEST_FAIL_MESSAGE("register_section_finished_callback failed");
+    }
+    if (register_open_file_callback(handler, open_file_cbk, &server_test) != TFTPD_OK) {
+        TEST_FAIL_MESSAGE("register_open_file_callback failed");
+    }
+    if (register_close_file_callback(handler, close_file_cbk, &server_test) != TFTPD_OK) {
+        TEST_FAIL_MESSAGE("register_close_file_callback failed");
+    }
+    server_test.handler = handler;
+    server_test.section_status = TFTPD_SECTION_UNDEFINED;
+    server_test.use_memory = 1;
+    sem_init(&server_test.section_finished_sem, 0, 0);
+    sem_init(&server_test.file_opened_sem, 0, 0);
+
+    // Start server
+    pthread_t thread_server;
+    pthread_create(&thread_server, NULL, start_listening_thread, &server_test);
+    sleep(1);
+
+    start_tftp_client(GET_FILE, test_file1, test_file1, test_port);
+
+    // Wait for server to receive file
+    struct timespec ts;
+    if (clock_gettime(CLOCK_REALTIME, &ts) == -1) {
+        TEST_FAIL_MESSAGE("clock_gettime failed");
+    }
+    ts.tv_sec += TIMEOUT*2;
+    sem_timedwait(&server_test.section_finished_sem, &ts);
+    sem_destroy(&server_test.section_finished_sem);
+
+    // Stop server
+    stop_listening(handler);
+    pthread_join(thread_server, NULL);
+
+    TEST_ASSERT_EQUAL(TFTPD_OK, server_test.result);
+    TEST_ASSERT_EQUAL(TFTPD_SECTION_OK, server_test.section_status);
+    TEST_ASSERT_EQUAL(server_test.buffer_size, BUF_SIZE);
 }
 
 //TODO: test server timeout is not that trivial, maybe some other time...

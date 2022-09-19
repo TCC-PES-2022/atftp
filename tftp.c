@@ -33,6 +33,12 @@
 
 #include <signal.h>
 
+#include "tftp.h"
+#include "tftp_io.h"
+#include "tftp_def.h"
+#include "logger.h"
+#include "options.h"
+
 #include "tftp_api.h"
 #define MAX_PARAM_SIZE 32
 /*
@@ -43,13 +49,12 @@
 struct TftpHandler {
     char host[MAX_PARAM_SIZE];
     char port[MAX_PARAM_SIZE];
-};
 
-#include "tftp.h"
-#include "tftp_io.h"
-#include "tftp_def.h"
-#include "logger.h"
-#include "options.h"
+    /* Structure to hold some information that must be passed to
+     * functions.
+     */
+    struct client_data data;
+};
 
 /* defined as extern in tftp_file.c and mtftp_file.c, set by the signal
    handler */
@@ -61,28 +66,23 @@ int interactive = 1;            /* if false, we run in batch mode */
 int tftp_result = OK;           /* status of tftp_send_file or
                                    tftp_receive_file, used for status() */
 
-/* Structure to hold some information that must be passed to
- * functions.
- */
-struct client_data data;
-
 /* tftp.c local only functions. */
 int tftp_cmd_line_options(int argc, char **argv);
 
 /* Functions associated with the tftp commands. */
-int set_peer(int argc, char **argv);
-int set_mode(int argc, char **argv);
-int set_option(int argc, char **argv);
-int put_file(int argc, char **argv);
-int get_file(int argc, char **argv);
+int set_peer(int argc, char **argv, TftpHandlerPtr);
+int set_mode(int argc, char **argv, TftpHandlerPtr);
+int set_option(int argc, char **argv, TftpHandlerPtr);
+int put_file(int argc, char **argv, TftpHandlerPtr);
+int get_file(int argc, char **argv, TftpHandlerPtr);
 #ifdef HAVE_MTFTP
-int mtftp_opt(int argc, char **argv);
+int mtftp_opt(int argc, char **argv, TftpHandlerPtr);
 #endif
 
-int set_verbose(int argc, char **argv);
-int set_trace(int argc, char **argv);
-int status(int argc, char **argv);
-int set_timeout(int argc, char **argv);
+int set_verbose(int argc, char **argv, TftpHandlerPtr);
+int set_trace(int argc, char **argv, TftpHandlerPtr);
+int status(int argc, char **argv, TftpHandlerPtr);
+int set_timeout(int argc, char **argv, TftpHandlerPtr);
 
 /* All supported commands. */
 #if 0
@@ -118,11 +118,27 @@ TftpOperationResult create_tftp_handler(TftpHandlerPtr *handler)
     (*handler)->host[0] = '\0';
     (*handler)->port[0] = '\0';
 
+    (*handler)->data.data_buffer = NULL;
+    (*handler)->data.tftp_options = NULL;
+    (*handler)->data.tftp_options_reply = NULL;
+
     return TFTP_OK;
 }
 
 TftpOperationResult destroy_tftp_handler(TftpHandlerPtr *handler)
 {
+    if ((*handler)->data.data_buffer != NULL) {
+        free((*handler)->data.data_buffer);
+    }
+
+    if ((*handler)->data.tftp_options != NULL) {
+        free((*handler)->data.tftp_options);
+    }
+
+    if ((*handler)->data.tftp_options_reply != NULL) {
+        free((*handler)->data.tftp_options_reply);
+    }
+
     if ((*handler) == NULL) {
         return TFTP_ERROR;
     }
@@ -164,13 +180,13 @@ TftpOperationResult send_file(
         return TFTP_ERROR;
     }
 
-    data.fp = fp;
+    handler->data.fp = fp;
     char *tmp_filename = strdup(filename);
     int ret = put_file(2,
                    (char *[]){
                            "put",
                            tmp_filename
-                   });
+                   }, handler);
     free(tmp_filename);
 
     return ret == OK ? TFTP_OK : TFTP_ERROR;
@@ -191,13 +207,13 @@ TftpOperationResult fetch_file(
         return TFTP_ERROR;
     }
 
-    data.fp = fp;
+    handler->data.fp = fp;
     char *tmp_filename = strdup(filename);
     int ret = get_file(2,
                        (char *[]){
                                "get",
                                tmp_filename
-                       });
+                       }, handler);
     free(tmp_filename);
 
     return ret == OK ? TFTP_OK : TFTP_ERROR;
@@ -210,48 +226,48 @@ TftpOperationResult config_tftp(
         const TftpHandlerPtr handler)
 {
      /* Allocate memory for data buffer. */
-     if ((data.data_buffer = malloc((size_t)SEGSIZE+4)) == NULL)
+     if ((handler->data.data_buffer = malloc((size_t)SEGSIZE+4)) == NULL)
      {
           fprintf(stderr, "tftp: memory allcoation failed.\n");
           return TFTP_ERROR;
      }
-     data.data_buffer_size = SEGSIZE + 4;
+     handler->data.data_buffer_size = SEGSIZE + 4;
 
      /* Allocate memory for tftp option structure. */
-     if ((data.tftp_options =
+     if ((handler->data.tftp_options =
           malloc(sizeof(tftp_default_options))) == NULL)
      {
           fprintf(stderr, "tftp: memory allocation failed.\n");
          return TFTP_ERROR;
      }
      /* Copy default options. */
-     memcpy(data.tftp_options, tftp_default_options,
+     memcpy(handler->data.tftp_options, tftp_default_options,
             sizeof(tftp_default_options));
 
      /* Allocate memory for tftp option reply from server. */
-     if ((data.tftp_options_reply =
+     if ((handler->data.tftp_options_reply =
           malloc(sizeof(tftp_default_options))) == NULL)
      {
           fprintf(stderr, "tftp: memory allocation failed.\n");
          return TFTP_ERROR;
      }
      /* Copy default options. */
-     memcpy(data.tftp_options_reply, tftp_default_options,
+     memcpy(handler->data.tftp_options_reply, tftp_default_options,
             sizeof(tftp_default_options));
 
      /* default options  */
 #ifdef HAVE_MTFTP
-     data.mtftp_client_port = 76;
-     Strncpy(data.mtftp_mcast_ip, "0.0.0.0", MAXLEN);
-     data.mtftp_listen_delay = 2;
-     data.mtftp_timeout_delay = 2;
+     handler->data.mtftp_client_port = 76;
+     Strncpy(handler->data.mtftp_mcast_ip, "0.0.0.0", MAXLEN);
+     handler->data.mtftp_listen_delay = 2;
+     handler->data.mtftp_timeout_delay = 2;
 #endif
-     data.timeout = TIMEOUT;
-     data.checkport = 1;
-     data.trace = 0;
-     data.verbose = 0;
+     handler->data.timeout = TIMEOUT;
+     handler->data.checkport = 1;
+     handler->data.trace = 1;
+     handler->data.verbose = 0;
 #ifdef DEBUG
-     data.delay = 0;
+     handler->data.delay = 0;
 #endif
 
      int config_ret = OK;
@@ -262,14 +278,14 @@ TftpOperationResult config_tftp(
              handler->host,
              handler->port
      };
-     config_ret |= set_peer(3, set_peer_argv);
+     config_ret |= set_peer(3, set_peer_argv, handler);
 
     // Set mode
     char *set_mode_argv[] = {
             "option",
             "octet"
     };
-    config_ret |= set_mode(2, set_mode_argv);
+    config_ret |= set_mode(2, set_mode_argv, handler);
 
 //     Set options
     char *set_blksize_option_argv[] = {
@@ -277,7 +293,7 @@ TftpOperationResult config_tftp(
             "blksize",
             "512"
     };
-    config_ret |= set_option(3, set_blksize_option_argv);
+    config_ret |= set_option(3, set_blksize_option_argv, handler);
 
      return config_ret == OK ? TFTP_OK : TFTP_ERROR;
 }
@@ -285,7 +301,7 @@ TftpOperationResult config_tftp(
 /*
  * Update sa_peer structure, hostname and port number adequately
  */
-int set_peer(int argc, char **argv)
+int set_peer(int argc, char **argv, TftpHandlerPtr handler)
 {
      struct addrinfo hints, *addrinfo;
      int err;
@@ -305,12 +321,12 @@ int set_peer(int argc, char **argv)
                        &hints, &addrinfo);
      /* if valid, update s_inn structure */
      if (err == 0)
-          err = sockaddr_set_addrinfo(&data.sa_peer, addrinfo);
+          err = sockaddr_set_addrinfo(&handler->data.sa_peer, addrinfo);
      if (err == 0)
      {
-          Strncpy(data.hostname, addrinfo->ai_canonname,
-                  sizeof(data.hostname));
-          data.hostname[sizeof(data.hostname)-1] = 0;
+          Strncpy(handler->data.hostname, addrinfo->ai_canonname,
+                  sizeof(handler->data.hostname));
+          handler->data.hostname[sizeof(handler->data.hostname)-1] = 0;
           freeaddrinfo(addrinfo);
      }
      else
@@ -326,20 +342,20 @@ int set_peer(int argc, char **argv)
           {
                fprintf(stderr, "tftp: unknown host %s.\n", argv[1]);
           }
-          data.connected = 0;
+          handler->data.connected = 0;
           return ERR;
      }
      /* copy port number to data structure */
-     data.port = sockaddr_get_port(&data.sa_peer);
+     handler->data.port = sockaddr_get_port(&handler->data.sa_peer);
 
-     data.connected = 1;
+     handler->data.connected = 1;
      return OK;
 }
 
 /*
  * Set the mode to netascii or octet
  */
-int set_mode(int argc, char **argv)
+int set_mode(int argc, char **argv, TftpHandlerPtr handler)
 {
      if (argc > 2)
      {
@@ -349,14 +365,14 @@ int set_mode(int argc, char **argv)
      if (argc == 1)
      {
           fprintf(stderr, "Current mode is %s.\n",
-                  data.tftp_options[OPT_MODE].value);
+                  handler->data.tftp_options[OPT_MODE].value);
           return OK;
      }
      if (strcasecmp("netascii", argv[1]) == 0)
-          Strncpy(data.tftp_options[OPT_MODE].value, "netascii",
+          Strncpy(handler->data.tftp_options[OPT_MODE].value, "netascii",
                   VAL_SIZE);
      else if (strcasecmp("octet", argv[1]) == 0)
-          Strncpy(data.tftp_options[OPT_MODE].value, "octet",
+          Strncpy(handler->data.tftp_options[OPT_MODE].value, "octet",
                   VAL_SIZE);
      else
      {
@@ -370,7 +386,7 @@ int set_mode(int argc, char **argv)
 /*
  * Set an option
  */
-int set_option(int argc, char **argv)
+int set_option(int argc, char **argv, TftpHandlerPtr handler)
 {
      char value[VAL_SIZE];
 
@@ -379,25 +395,25 @@ int set_option(int argc, char **argv)
      {
           fprintf(stderr, "Usage: option <option name> [option value]\n");
           fprintf(stderr, "       option disable <option name>\n");
-          if (data.tftp_options[OPT_TSIZE].specified)
+          if (handler->data.tftp_options[OPT_TSIZE].specified)
                fprintf(stderr, "  tsize:     enabled\n");
           else
                fprintf(stderr, "  tsize:     disabled\n");
-          if (data.tftp_options[OPT_BLKSIZE].specified)
+          if (handler->data.tftp_options[OPT_BLKSIZE].specified)
                fprintf(stderr, "  blksize:   %s\n",
-                       data.tftp_options[OPT_BLKSIZE].value);
+                       handler->data.tftp_options[OPT_BLKSIZE].value);
           else
                fprintf(stderr, "  blksize:   disabled\n");
-          if (data.tftp_options[OPT_TIMEOUT].specified)
+          if (handler->data.tftp_options[OPT_TIMEOUT].specified)
                fprintf(stderr, "  timeout:   %s\n",
-                       data.tftp_options[OPT_TIMEOUT].value);
+                       handler->data.tftp_options[OPT_TIMEOUT].value);
           else
                fprintf(stderr, "  timeout:   disabled\n");
-          if (data.tftp_options[OPT_MULTICAST].specified)
+          if (handler->data.tftp_options[OPT_MULTICAST].specified)
                fprintf(stderr, "  multicast: enabled\n");
           else
                fprintf(stderr, "  multicast: disabled\n");
-          if (data.tftp_options[OPT_PASSWORD].specified)
+          if (handler->data.tftp_options[OPT_PASSWORD].specified)
                fprintf(stderr, "   password: enabled\n");
           else
                fprintf(stderr, "   password: disabled\n");
@@ -412,12 +428,12 @@ int set_option(int argc, char **argv)
                return ERR;
           }
           /* disable it */
-          if (opt_disable_options(data.tftp_options, argv[2]) == ERR)
+          if (opt_disable_options(handler->data.tftp_options, argv[2]) == ERR)
           {
                fprintf(stderr, "no option named %s\n", argv[2]);
                return ERR;
           }
-          if (opt_get_options(data.tftp_options, argv[1], value) == ERR)
+          if (opt_get_options(handler->data.tftp_options, argv[1], value) == ERR)
                fprintf(stderr, "Option %s disabled\n", argv[2]);
           else
                fprintf(stderr, "Option %s = %s\n", argv[1], value);
@@ -427,7 +443,7 @@ int set_option(int argc, char **argv)
      /* ok, we are setting an argument */
      if (argc == 2)
      {
-          if (opt_set_options(data.tftp_options, argv[1], NULL) == ERR)
+          if (opt_set_options(handler->data.tftp_options, argv[1], NULL) == ERR)
           {
                fprintf(stderr, "no option named %s\n", argv[1]);
                return ERR;
@@ -435,14 +451,14 @@ int set_option(int argc, char **argv)
      }
      if (argc == 3)
      {
-          if (opt_set_options(data.tftp_options, argv[1], argv[2]) == ERR)
+          if (opt_set_options(handler->data.tftp_options, argv[1], argv[2]) == ERR)
           {
                fprintf(stderr, "no option named %s\n", argv[1]);
                return ERR;
           }
      }
      /* print the new value for that option */
-     if (opt_get_options(data.tftp_options, argv[1], value) == ERR)
+     if (opt_get_options(handler->data.tftp_options, argv[1], value) == ERR)
           fprintf(stderr, "Option %s disabled\n", argv[1]);
      else
           fprintf(stderr, "Option %s = %s\n", argv[1], value);
@@ -452,50 +468,50 @@ int set_option(int argc, char **argv)
 /*
  * Put a file to the server.
  */
-int put_file(int argc, char **argv)
+int put_file(int argc, char **argv, TftpHandlerPtr handler)
 {
-     socklen_t len = sizeof(data.sa_local);
+     socklen_t len = sizeof(handler->data.sa_local);
 
      if ((argc < 2) || (argc > 3))
      {
           fprintf(stderr, "Usage: put local_file [remote_file]\n");
           return ERR;
      }
-     if (!data.connected)
+     if (!handler->data.connected)
      {
           fprintf(stderr, "Not connected.\n");
           return ERR;
      }
      if (argc == 2)
      {
-          Strncpy(data.local_file, argv[1], VAL_SIZE);
-          Strncpy(data.tftp_options[OPT_FILENAME].value, argv[1], VAL_SIZE);
+          Strncpy(handler->data.local_file, argv[1], VAL_SIZE);
+          Strncpy(handler->data.tftp_options[OPT_FILENAME].value, argv[1], VAL_SIZE);
      }
      else
      {
-          Strncpy(data.local_file, argv[1], VAL_SIZE);
-          Strncpy(data.tftp_options[OPT_FILENAME].value, argv[2], VAL_SIZE);
+          Strncpy(handler->data.local_file, argv[1], VAL_SIZE);
+          Strncpy(handler->data.tftp_options[OPT_FILENAME].value, argv[2], VAL_SIZE);
      }
 
      /* open a UDP socket */
-     data.sockfd = socket(data.sa_peer.ss_family, SOCK_DGRAM, 0);
-     if (data.sockfd < 0) {
+     handler->data.sockfd = socket(handler->data.sa_peer.ss_family, SOCK_DGRAM, 0);
+     if (handler->data.sockfd < 0) {
           perror("tftp: ");
           exit(ERR);
      }
-     memset(&data.sa_local, 0, sizeof(data.sa_local));
-     bind(data.sockfd, (struct sockaddr *)&data.sa_local,
-          sizeof(data.sa_local));
-     getsockname(data.sockfd, (struct sockaddr *)&data.sa_local, &len);
+     memset(&handler->data.sa_local, 0, sizeof(handler->data.sa_local));
+     bind(handler->data.sockfd, (struct sockaddr *)&handler->data.sa_local,
+          sizeof(handler->data.sa_local));
+     getsockname(handler->data.sockfd, (struct sockaddr *)&handler->data.sa_local, &len);
 
      /* do the transfer */
-     gettimeofday(&data.start_time, NULL);
-     tftp_result = tftp_send_file(&data);
-     gettimeofday(&data.end_time, NULL);
+     gettimeofday(&handler->data.start_time, NULL);
+     tftp_result = tftp_send_file(&handler->data);
+     gettimeofday(&handler->data.end_time, NULL);
 
      /* close the socket */
-     fsync(data.sockfd);
-     close(data.sockfd);
+     fsync(handler->data.sockfd);
+     close(handler->data.sockfd);
 
      return tftp_result;
 }
@@ -503,14 +519,14 @@ int put_file(int argc, char **argv)
 /*
  * Receive a file from the server.
  */
-int get_file(int argc, char **argv)
+int get_file(int argc, char **argv, TftpHandlerPtr handler)
 {
 
 #ifdef HAVE_MTFTP
      int use_mtftp;
 #endif
      char *tmp;
-     socklen_t len = sizeof(data.sa_local);
+     socklen_t len = sizeof(handler->data.sa_local);
 
 #ifdef HAVE_MTFTP
      if (strcmp(argv[0], "mget") == 0)
@@ -524,53 +540,53 @@ int get_file(int argc, char **argv)
           fprintf(stderr, "Usage: %s remote_file [local_file]\n", argv[0]);
           return ERR;
      }
-     if (!data.connected)
+     if (!handler->data.connected)
      {
           fprintf(stderr, "Not connected.\n");
           return ERR;
      }
      if (argc == 2)
      {
-          Strncpy(data.tftp_options[OPT_FILENAME].value,
+          Strncpy(handler->data.tftp_options[OPT_FILENAME].value,
                   argv[1], VAL_SIZE);
           tmp = strrchr(argv[1], '/');
           if (tmp < argv[1])
                tmp = argv[1];
           else
                tmp++;
-          Strncpy(data.local_file, tmp, VAL_SIZE);
+          Strncpy(handler->data.local_file, tmp, VAL_SIZE);
      }
      else
      {
-          Strncpy(data.local_file, argv[2], VAL_SIZE);
-          Strncpy(data.tftp_options[OPT_FILENAME].value, argv[1], VAL_SIZE);
+          Strncpy(handler->data.local_file, argv[2], VAL_SIZE);
+          Strncpy(handler->data.tftp_options[OPT_FILENAME].value, argv[1], VAL_SIZE);
      }
 
      /* open a UDP socket */
-     data.sockfd = socket(data.sa_peer.ss_family, SOCK_DGRAM, 0);
-     if (data.sockfd < 0) {
+     handler->data.sockfd = socket(handler->data.sa_peer.ss_family, SOCK_DGRAM, 0);
+     if (handler->data.sockfd < 0) {
           perror("tftp: ");
           exit(ERR);
      }
-     memset(&data.sa_local, 0, sizeof(data.sa_local));
-     bind(data.sockfd, (struct sockaddr *)&data.sa_local,
-          sizeof(data.sa_local));
-     getsockname(data.sockfd, (struct sockaddr *)&data.sa_local, &len);
+     memset(&handler->data.sa_local, 0, sizeof(handler->data.sa_local));
+     bind(handler->data.sockfd, (struct sockaddr *)&handler->data.sa_local,
+          sizeof(handler->data.sa_local));
+     getsockname(handler->data.sockfd, (struct sockaddr *)&handler->data.sa_local, &len);
 
      /* do the transfer */
-     gettimeofday(&data.start_time, NULL);
+     gettimeofday(&handler->data.start_time, NULL);
 #ifdef HAVE_MTFTP
      if (use_mtftp)
-          tftp_result = tftp_mtftp_receive_file(&data);
+          tftp_result = tftp_mtftp_receive_file(&handler->data);
      else
 #endif
-          tftp_result = tftp_receive_file(&data);
+          tftp_result = tftp_receive_file(&handler->data);
 
-     gettimeofday(&data.end_time, NULL);
+     gettimeofday(&handler->data.end_time, NULL);
 
      /* close the socket */
-     fsync(data.sockfd);
-     close(data.sockfd);
+     fsync(handler->data.sockfd);
+     close(handler->data.sockfd);
 
      return tftp_result;
 }
@@ -579,41 +595,41 @@ int get_file(int argc, char **argv)
 /*
  * Set ot get mtftp variable value
  */
-int mtftp_opt(int argc, char **argv)
+int mtftp_opt(int argc, char **argv, TftpHandlerPtr handler)
 {
      if (argc != 3)
      {
           fprintf(stderr, "Usage: mtftp <option name> <option value>\n");
           /* print current value of variables */
-          fprintf(stderr, "  client-port:   %d\n", data.mtftp_client_port);
-          fprintf(stderr, "  mcast-ip:      %s\n", data.mtftp_mcast_ip);
-          fprintf(stderr, "  listen-delay:  %d\n", data.mtftp_listen_delay);
-          fprintf(stderr, "  timeout-delay: %d\n", data.mtftp_timeout_delay);
+          fprintf(stderr, "  client-port:   %d\n", handler->data.mtftp_client_port);
+          fprintf(stderr, "  mcast-ip:      %s\n", handler->data.mtftp_mcast_ip);
+          fprintf(stderr, "  listen-delay:  %d\n", handler->data.mtftp_listen_delay);
+          fprintf(stderr, "  timeout-delay: %d\n", handler->data.mtftp_timeout_delay);
      }
      else
      {
           if (strcmp(argv[1], "client-port") == 0)
           {
-               data.mtftp_client_port = atoi(argv[2]);
+               handler->data.mtftp_client_port = atoi(argv[2]);
                fprintf(stderr, "mtftp client-port = %d\n",
-                       data.mtftp_client_port);
+                       handler->data.mtftp_client_port);
           }
           else if (strcmp(argv[1], "mcast-ip") == 0)
           {
-               Strncpy(data.mtftp_mcast_ip, argv[2], MAXLEN);
-               fprintf(stderr, "mtftp mcast-ip = %s\n", data.mtftp_mcast_ip);
+               Strncpy(handler->data.mtftp_mcast_ip, argv[2], MAXLEN);
+               fprintf(stderr, "mtftp mcast-ip = %s\n", handler->data.mtftp_mcast_ip);
           }
           else if (strcmp(argv[1], "listen-delay") == 0)
           {
-               data.mtftp_listen_delay = atoi(argv[2]);
+               handler->data.mtftp_listen_delay = atoi(argv[2]);
                fprintf(stderr, "mtftp listen-delay = %d\n",
-                       data.mtftp_listen_delay);
+                       handler->data.mtftp_listen_delay);
           }
           else if (strcmp(argv[1], "timeout-delay") == 0)
           {
-               data.mtftp_timeout_delay = atoi(argv[2]);
+               handler->data.mtftp_timeout_delay = atoi(argv[2]);
                fprintf(stderr, "mtftp timeout-delay = %d\n",
-                       data.mtftp_timeout_delay);
+                       handler->data.mtftp_timeout_delay);
           }
           else
           {
@@ -626,95 +642,95 @@ int mtftp_opt(int argc, char **argv)
 
 #endif
 
-int set_verbose(int argc, char **argv)
+int set_verbose(int argc, char **argv, TftpHandlerPtr handler)
 {
-     if (data.verbose)
+     if (handler->data.verbose)
      {
-          data.verbose = 0;
+          handler->data.verbose = 0;
           fprintf(stderr, "Verbose mode off.\n");
      }
      else
      {
-          data.verbose = 1;
+          handler->data.verbose = 1;
           fprintf(stderr, "Verbose mode on.\n");
      }
      return OK;
 }
 
-int set_trace(int argc, char **argv)
+int set_trace(int argc, char **argv, TftpHandlerPtr handler)
 {
-     if (data.trace)
+     if (handler->data.trace)
      {
-          data.trace = 0;
+          handler->data.trace = 0;
           fprintf(stderr, "Trace mode off.\n");
      }
      else
      {
-          data.trace = 1;
+          handler->data.trace = 1;
           fprintf(stderr, "Trace mode on.\n");
      }
      return OK;
 }
 
-int status(int argc, char **argv)
+int status(int argc, char **argv, TftpHandlerPtr handler)
 {
      struct timeval tmp;
 
      char string[MAXLEN];
 
-     timeval_diff(&tmp, &data.end_time, &data.start_time);
+     timeval_diff(&tmp, &handler->data.end_time, &handler->data.start_time);
 
-     if (!data.connected)
+     if (!handler->data.connected)
           fprintf(stderr, "Not connected\n");
      else
-          fprintf(stderr, "Connected:  %s port %d\n", data.hostname,
-                  data.port);
-     fprintf(stderr, "Mode:       %s\n", data.tftp_options[OPT_MODE].value);
-     if (data.verbose)
+          fprintf(stderr, "Connected:  %s port %d\n", handler->data.hostname,
+                  handler->data.port);
+     fprintf(stderr, "Mode:       %s\n", handler->data.tftp_options[OPT_MODE].value);
+     if (handler->data.verbose)
           fprintf(stderr, "Verbose:    on\n");
      else
           fprintf(stderr, "Verbose:    off\n");
-     if (data.trace)
+     if (handler->data.trace)
           fprintf(stderr, "Trace:      on\n");
      else
           fprintf(stderr, "Trace:      off\n");
      fprintf(stderr, "Options\n");
-     if (data.tftp_options[OPT_TSIZE].specified)
+     if (handler->data.tftp_options[OPT_TSIZE].specified)
           fprintf(stderr, " tsize:     enabled\n");
      else
           fprintf(stderr, " tsize:     disabled\n");
-     if (data.tftp_options[OPT_BLKSIZE].specified)
+     if (handler->data.tftp_options[OPT_BLKSIZE].specified)
           fprintf(stderr, " blksize:   enabled\n");
      else
           fprintf(stderr, " blksize:   disabled\n");
-     if (data.tftp_options[OPT_TIMEOUT].specified)
+     if (handler->data.tftp_options[OPT_TIMEOUT].specified)
           fprintf(stderr, " timeout:   enabled\n");
      else
           fprintf(stderr, " timeout:   disabled\n");
-     if (data.tftp_options[OPT_MULTICAST].specified)
+     if (handler->data.tftp_options[OPT_MULTICAST].specified)
           fprintf(stderr, " multicast: enabled\n");
      else
           fprintf(stderr, " multicast: disabled\n");
 #ifdef HAVE_MTFTP
      fprintf(stderr, "mtftp variables\n");
-     fprintf(stderr, " client-port:   %d\n", data.mtftp_client_port);
-     fprintf(stderr, " mcast-ip:      %s\n", data.mtftp_mcast_ip);
-     fprintf(stderr, " listen-delay:  %d\n", data.mtftp_listen_delay);
-     fprintf(stderr, " timeout-delay: %d\n", data.mtftp_timeout_delay);
+     fprintf(stderr, " client-port:   %d\n", handler->data.mtftp_client_port);
+     fprintf(stderr, " mcast-ip:      %s\n", handler->data.mtftp_mcast_ip);
+     fprintf(stderr, " listen-delay:  %d\n", handler->data.mtftp_listen_delay);
+     fprintf(stderr, " timeout-delay: %d\n", handler->data.mtftp_timeout_delay);
 #endif
 
-     if (strlen(data.tftp_options[OPT_FILENAME].value) > 0)
+     if (strlen(handler->data.tftp_options[OPT_FILENAME].value) > 0)
      {
           fprintf(stderr, "Last file: %s\n",
-                  data.tftp_options[OPT_FILENAME].value);
+                  handler->data.tftp_options[OPT_FILENAME].value);
           if (tftp_result == OK)
           {
-               print_eng((double)data.file_size, string, sizeof(string), "%3.3f%cB");
+               print_eng((double)handler->data.file_size, string, sizeof(string), "%3.3f%cB");
                fprintf(stderr, "  Bytes transferred:  %s\n", string);
                fprintf(stderr, "  Time of transfer: %8.3fs\n",
                        (double)(tmp.tv_sec + tmp.tv_usec * 1e-6));
                fprintf(stderr, "  Throughput:        ");
-               print_eng((data.file_size /
+               print_eng((handler->data.file_size /
                           (double)(tmp.tv_sec + tmp.tv_usec * 1e-6)),
                          string, sizeof(string), "%3.3f%cB/s\n");
                fprintf(stderr, "%s", string);
@@ -725,12 +741,12 @@ int status(int argc, char **argv)
      return OK;
 }
 
-int set_timeout(int argc, char **argv)
+int set_timeout(int argc, char **argv, TftpHandlerPtr handler)
 {
      if (argc == 1)
-          fprintf(stderr, "Timeout set to %d seconds.\n", data.timeout);
+          fprintf(stderr, "Timeout set to %d seconds.\n", handler->data.timeout);
      if (argc == 2)
-          data.timeout = atoi(argv[1]);
+          handler->data.timeout = atoi(argv[1]);
      if (argc > 2)
      {
           fprintf(stderr, "Usage: timeout [value]\n");
@@ -889,7 +905,7 @@ int tftp_cmd_line_options(int argc, char **argv)
                break;
 #endif
           case '0':
-               data.checkport = 0;
+               handler->data.checkport = 0;
                break;
           case 'X':
                tftp_prevent_sas = 1;
@@ -906,7 +922,7 @@ int tftp_cmd_line_options(int argc, char **argv)
                break;
 #if DEBUG
           case 'D':
-               data.delay = atoi(optarg);
+               handler->data.delay = atoi(optarg);
                break;
 #endif
           case 'V':

@@ -10,11 +10,15 @@
 #include <stdlib.h>
 #include <time.h>
 
-#define NUM_TESTS 6
+#define NUM_TESTS 7
 #define BUF_SIZE 1024
+
+#define NUM_ITERATIONS_MULTIPLE_CLIENT_TEST 100
 
 TftpHandlerPtr handler = NULL;
 char test_string[BUF_SIZE] = "HELLO TFTP TEST";
+char test_string_multi1[BUF_SIZE] = "HELLO TFTP TEST MULTI 1";
+char test_string_multi2[BUF_SIZE] = "HELLO TFTP TEST MULTI 2";
 char host[BUF_SIZE] = "127.0.0.1";
 int port = 60907;
 char server_dir[BUF_SIZE] = "/tmp/";
@@ -227,6 +231,105 @@ void test_GetFile_ToMemory_ShouldReturnTFTPOKIfFileWasSent(void)
 
     TEST_ASSERT_EQUAL(TFTP_OK, result);
     TEST_ASSERT_EQUAL_STRING(test_string, buffer);
+}
+
+
+
+typedef struct {
+    char test_file_name[BUF_SIZE];
+    char test_file_content[BUF_SIZE];
+    int content_match;
+    TftpHandlerPtr handler;
+} ClientCtx;
+
+void *client_thread(void *arg)
+{
+    ClientCtx *ctx = (ClientCtx *)arg;
+    int i = 0;
+    for (i = 0; i < NUM_ITERATIONS_MULTIPLE_CLIENT_TEST
+                && ctx->content_match; ++i)
+    {
+        ctx->content_match = 0;
+        char buffer[BUF_SIZE];
+        memset(buffer, 0, BUF_SIZE);
+        FILE *fp = fmemopen(buffer, BUF_SIZE, "w");
+        if (fp) {
+            fetch_file(ctx->handler, ctx->test_file_name, fp);
+            fclose(fp);
+        }
+        ctx->content_match = (strcmp(ctx->test_file_content, buffer) == 0);
+    }
+    pthread_exit(NULL);
+}
+
+void test_MultipleClients_ShouldReturnTFTPOK(void) {
+    TftpOperationResult result = TFTP_ERROR;
+
+    ClientCtx ctx1;
+    ClientCtx ctx2;
+
+    create_tftp_handler(&ctx1.handler);
+    create_tftp_handler(&ctx2.handler);
+
+    set_connection(ctx1.handler, host, port);
+    set_connection(ctx2.handler, host, port);
+
+    config_tftp(ctx1.handler);
+    config_tftp(ctx2.handler);
+
+    //Create files
+    char test_file1[BUF_SIZE] = "multiple_clients_client1.txt";
+    FILE *fp1 = fopen(test_file1, "w");
+    if (!fp1) {
+        TEST_FAIL_MESSAGE("Failed to create test file");
+    }
+    fprintf(fp1, "%s", test_string_multi1);
+    fclose(fp1);
+
+    char test_file2[BUF_SIZE] = "multiple_clients_client2.txt";
+    FILE *fp2 = fopen(test_file2, "w");
+    if (!fp2) {
+        TEST_FAIL_MESSAGE("Failed to create test file");
+    }
+    fprintf(fp2, "%s", test_string_multi2);
+    fclose(fp2);
+
+    //Send files
+    fp1 = fopen(test_file1, "r");
+    if (fp1) {
+        send_file(ctx1.handler, test_file1, fp1);
+        fclose(fp1);
+    }
+
+    fp2 = fopen(test_file2, "r");
+    if (fp2) {
+        send_file(ctx2.handler, test_file2, fp2);
+        fclose(fp2);
+    }
+
+    //Create threads
+    pthread_t client1;
+    pthread_t client2;
+
+    strcpy(ctx1.test_file_name, test_file1);
+    strcpy(ctx1.test_file_content, test_string_multi1);
+    ctx1.content_match = 1;
+
+    strcpy(ctx2.test_file_name, test_file2);
+    strcpy(ctx2.test_file_content, test_string_multi2);
+    ctx2.content_match = 1;
+
+    pthread_create(&client1, NULL, client_thread, &ctx1);
+    pthread_create(&client2, NULL, client_thread, &ctx2);
+
+    pthread_join(client1, NULL);
+    pthread_join(client2, NULL);
+
+    destroy_tftp_handler(&ctx1.handler);
+    destroy_tftp_handler(&ctx2.handler);
+
+    TEST_ASSERT_EQUAL(1, ctx1.content_match);
+    TEST_ASSERT_EQUAL(1, ctx2.content_match);
 }
 
 void test_ConnectionTimeoutSend_ShouldReturnTFTPError(void)

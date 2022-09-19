@@ -39,6 +39,8 @@
 #include "logger.h"
 #include "options.h"
 
+#undef HAVE_MTFTP
+
 #include "tftp_api.h"
 #define MAX_PARAM_SIZE 32
 /*

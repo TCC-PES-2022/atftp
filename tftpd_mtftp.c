@@ -420,7 +420,8 @@ void *tftpd_mtftp_server(void *arg)
                     logger(LOG_WARNING, "unsupported request <%d> from %s",
                            retval,
                            sockaddr_print_addr(&sa, addr_str, sizeof(addr_str)));
-                    tftp_send_error(sockfd, &sa, EBADOP, data->data_buffer, data->data_buffer_size);
+                    tftp_send_error(sockfd, &sa, EBADOP, data->data_buffer,
+                                    data->data_buffer_size, NULL);
                     if (data->trace)
                          logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", EBADOP,
                                 tftp_errmsg[EBADOP]);
@@ -538,7 +539,8 @@ void *tftpd_mtftp_send_file(void *arg)
           if (data->tftpd_cancel)
           {
                logger(LOG_DEBUG, "thread cancelled");
-               tftp_send_error(sockfd, sa, EUNDEF, data->data_buffer, data->data_buffer_size);
+               tftp_send_error(sockfd, sa, EUNDEF, data->data_buffer,
+                               data->data_buffer_size, NULL);
                if (data->mtftp_data->trace)
                     logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", EUNDEF,
                            tftp_errmsg[EUNDEF]);

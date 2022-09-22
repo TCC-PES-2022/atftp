@@ -95,6 +95,7 @@ struct TftpdSectionHandler {
     SectionId section_id;
     char client_ip[SOCKADDR_PRINT_ADDR_LEN];
     TftpdSectionStatus status;
+    char *error_msg;
     int abort;                   /* 1 if we need to abort because the maximum
                                    number of threads have been reached*/
 };
@@ -328,6 +329,29 @@ TftpdOperationResult get_section_status(
         return TFTPD_ERROR;
     }
     *status = section_handler->status;
+    return TFTPD_OK;
+}
+
+TftpdOperationResult set_error_msg(
+        const TftpdSectionHandlerPtr section_handler,
+        const char *error_msg)
+{
+    if (section_handler == NULL) {
+        return TFTPD_ERROR;
+    }
+    section_handler->error_msg = strdup(error_msg);
+    return TFTPD_OK;
+}
+
+TftpdOperationResult get_error_msg(
+        const TftpdSectionHandlerPtr section_handler,
+        char **error_msg)
+{
+    if (section_handler == NULL) {
+        return TFTPD_ERROR;
+    }
+
+    (*error_msg) = strdup(section_handler->error_msg);
     return TFTPD_OK;
 }
 
@@ -818,6 +842,9 @@ static void tftpd_receive_request_cleanup(void *arg)
     if (data->data_buffer)
         free(data->data_buffer);
 
+    if (data->section_handler_ptr->error_msg)
+        free(data->section_handler_ptr->error_msg);
+
     free(data->tftp_options);
 
     /* if the thread had reserverd a multicast IP/Port, deallocate it */
@@ -878,6 +905,7 @@ void *tftpd_receive_request(void *arg)
     section_handler.section_id = data->tid;
     section_handler.status = TFTPD_SECTION_UNDEFINED;
     section_handler.abort = 0;
+    section_handler.error_msg = NULL;
     sockaddr_print_addr(&data->client_info->client,
                         section_handler.client_ip,
                         sizeof(section_handler.client_ip));
@@ -1041,7 +1069,8 @@ void *tftpd_receive_request(void *arg)
           case ERR:
                logger(LOG_ERR, "Error from tftp_get_packet");
                tftp_send_error(data->sockfd, &data->client_info->client,
-                               EUNDEF, data->data_buffer, data->data_buffer_size);
+                               EUNDEF, data->data_buffer, data->data_buffer_size,
+                               NULL);
                section_handler.status = TFTPD_SECTION_ERROR;
                if (data->trace)
                     logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", EUNDEF,
@@ -1061,7 +1090,8 @@ void *tftpd_receive_request(void *arg)
                       sockaddr_print_addr(&data->client_info->client,
                                           addr_str, sizeof(addr_str)));
                tftp_send_error(data->sockfd, &data->client_info->client,
-                               EBADOP, data->data_buffer, data->data_buffer_size);
+                               EBADOP, data->data_buffer, data->data_buffer_size,
+                               NULL);
                if (data->trace)
                     logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", EBADOP,
                            tftp_errmsg[EBADOP]);

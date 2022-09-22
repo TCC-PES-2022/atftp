@@ -306,6 +306,34 @@ TftpdOperationResult get_section_status(
 );
 
 /**
+ * @brief Set custom error message to be sent in TFTP response.
+ *
+ * @param[in] section_handler the pointer to the section handler.
+ * @param[in] error_message the error message to send.
+ *
+ * @return TFTPD_OK if success.
+ * @return TFTPD_ERROR otherwise.
+ */
+TftpdOperationResult set_error_msg(
+        const TftpdSectionHandlerPtr section_handler,
+        const char *error_msg
+);
+
+/**
+ * @brief Get custom error message to be sent in TFTP response.
+ *
+ * @param[in] section_handler the pointer to the section handler.
+ * @param[out] error_message the error message to send.
+ *
+ * @return TFTPD_OK if success.
+ * @return TFTPD_ERROR otherwise.
+ */
+TftpdOperationResult get_error_msg(
+        const TftpdSectionHandlerPtr section_handler,
+        char **error_msg
+);
+
+/**
  * @brief Start the TFTPD. This is a blocking function.
  * In order to stop be able to stop the server, call this function
  * from another thread and then use the stop_listening() function.

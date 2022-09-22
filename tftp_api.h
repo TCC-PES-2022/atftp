@@ -23,6 +23,35 @@ typedef enum {
     TFTP_ERROR
 } TftpOperationResult;
 
+/*
+*******************************************************************************
+                                   CALLBACKS
+*******************************************************************************
+*/
+
+/**
+ * @brief TFTP error callback. This callback is called when the client
+ * receives an error from the server.
+ *
+ * @param[in]   error_code      Error code.
+ * @param[in]   error_msg       Error message.
+ * @param[in]   context         Context passed to the callback.
+ *
+ * @return TFTP_OK if success.
+ * @return TFTP_ERROR otherwise.
+ */
+typedef TftpOperationResult (*tftp_error_callback) (
+        short error_code,
+        const char *error_message,
+        void *context
+);
+
+/*
+*******************************************************************************
+                                   FUNCTIONS
+*******************************************************************************
+*/
+
 /**
  * @brief Init TFTP options with default values.
  * The option struct must be freed with destroy_tftp_options()
@@ -48,6 +77,22 @@ TftpOperationResult create_tftp_handler(
 TftpOperationResult destroy_tftp_handler(
         TftpHandlerPtr *handler
         );
+
+/**
+ * @brief Register TFTP error callback
+ *
+ * @param[in] handler the pointer to the tftpd handler.
+ * @param[in] callback the callback to register.
+ * @param[in] context the user context.
+ *
+ * @return TFTP_OK if success.
+ * @return TFTP_ERROR otherwise.
+ */
+TftpOperationResult register_tftp_error_callback(
+        const TftpHandlerPtr handler,
+        tftp_error_callback callback,
+        void *context
+);
 
 /**
  * @brief Set host and port for TFTP connection

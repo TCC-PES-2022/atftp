@@ -138,7 +138,8 @@ int tftpd_receive_file(struct thread_data *data)
              MAXLEN);
      if (tftpd_rules_check(filename) != OK)
      {
-          tftp_send_error(sockfd, sa, EACCESS, data->data_buffer, data->data_buffer_size);
+          tftp_send_error(sockfd, sa, EACCESS, data->data_buffer,
+                          data->data_buffer_size, NULL);
           if (data->trace)
                logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", EACCESS,
                       tftp_errmsg[EACCESS]);
@@ -157,7 +158,8 @@ int tftpd_receive_file(struct thread_data *data)
      {
           if ((result < 1) || (result > 255))
           {
-               tftp_send_error(sockfd, sa, EOPTNEG, data->data_buffer, data->data_buffer_size);
+               tftp_send_error(sockfd, sa, EOPTNEG, data->data_buffer,
+                               data->data_buffer_size, NULL);
                if (data->trace)
                     logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", EOPTNEG,
                            tftp_errmsg[EOPTNEG]);
@@ -186,7 +188,8 @@ int tftpd_receive_file(struct thread_data *data)
           {
                logger(LOG_NOTICE, "options <%s> require roughly a blksize of %d for the OACK.",
                       string, strlen(string)-2);
-               tftp_send_error(sockfd, sa, EOPTNEG, data->data_buffer, data->data_buffer_size);
+               tftp_send_error(sockfd, sa, EOPTNEG, data->data_buffer,
+                               data->data_buffer_size, NULL);
                if (data->trace)
                     logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", EOPTNEG,
                            tftp_errmsg[EOPTNEG]);
@@ -205,7 +208,8 @@ int tftpd_receive_file(struct thread_data *data)
 
           if (data->data_buffer == NULL)
           {
-               tftp_send_error(sockfd, sa, ENOSPACE, data->data_buffer, data->data_buffer_size);
+               tftp_send_error(sockfd, sa, ENOSPACE, data->data_buffer,
+                               data->data_buffer_size, NULL);
                if (data->trace)
                     logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", ENOSPACE,
                            tftp_errmsg[ENOSPACE]);
@@ -221,7 +225,8 @@ int tftpd_receive_file(struct thread_data *data)
           if (*(data->tftpd_cancel))
           {
                logger(LOG_DEBUG, "thread cancelled");
-               tftp_send_error(sockfd, sa, EUNDEF, data->data_buffer, data->data_buffer_size);
+               tftp_send_error(sockfd, sa, EUNDEF, data->data_buffer,
+                               data->data_buffer_size, NULL);
                if (data->trace)
                     logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", EUNDEF,
                            tftp_errmsg[EUNDEF]);
@@ -352,9 +357,20 @@ int tftpd_receive_file(struct thread_data *data)
                        }
                        if (fp == NULL)
                        {
+                                char *custom_error_msg = NULL;
+                                get_error_msg(data->section_handler_ptr, &custom_error_msg);
+
                                /* Can't create the file. */
                                logger(LOG_INFO, "Can't open %s for writing", filename);
-                               tftp_send_error(sockfd, sa, EACCESS, data->data_buffer, data->data_buffer_size);
+                               tftp_send_error(sockfd, sa, EACCESS,
+                                               data->data_buffer,
+                                               data->data_buffer_size,
+                                               custom_error_msg);
+
+                               if (custom_error_msg != NULL) {
+                                   free(custom_error_msg);
+                               }
+
                                if (data->trace)
                                        logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", EACCESS,
                                                        tftp_errmsg[EACCESS]);
@@ -376,7 +392,7 @@ int tftpd_receive_file(struct thread_data *data)
                     logger(LOG_ERR, "%s: %d: error writing to file %s",
                            __FILE__, __LINE__, filename);
                     tftp_send_error(sockfd, sa, ENOSPACE, data->data_buffer,
-                                    data->data_buffer_size);
+                                    data->data_buffer_size, NULL);
                     if (data->trace)
                          logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>",
                                 ENOSPACE, tftp_errmsg[ENOSPACE]);
@@ -487,7 +503,8 @@ int tftpd_send_file(struct thread_data *data)
              MAXLEN);
      if (tftpd_rules_check(filename) != OK)
      {
-          tftp_send_error(sockfd, sa, EACCESS, data->data_buffer, data->data_buffer_size);
+          tftp_send_error(sockfd, sa, EACCESS, data->data_buffer,
+                          data->data_buffer_size, NULL);
           if (data->trace)
                logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", EACCESS,
                       tftp_errmsg[EACCESS]);
@@ -522,7 +539,7 @@ int tftpd_send_file(struct thread_data *data)
                     if (tftpd_rules_check(filename) != OK)
                     {
                          tftp_send_error(sockfd, sa, EACCESS, data->data_buffer,
-                                         data->data_buffer_size);
+                                         data->data_buffer_size, NULL);
                          if (data->trace)
                               logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", EACCESS,
                                      tftp_errmsg[EACCESS]);
@@ -542,7 +559,17 @@ int tftpd_send_file(struct thread_data *data)
 #endif
      if (fp == NULL)
      {
-          tftp_send_error(sockfd, sa, ENOTFOUND, data->data_buffer, data->data_buffer_size);
+         char *custom_error_msg = NULL;
+         get_error_msg(data->section_handler_ptr, &custom_error_msg);
+
+          tftp_send_error(sockfd, sa, ENOTFOUND, data->data_buffer,
+                          data->data_buffer_size,
+                          custom_error_msg);
+
+          if (custom_error_msg != NULL) {
+              free(custom_error_msg);
+          }
+
           logger(LOG_INFO, "File %s not found", filename);
           if (data->trace)
                logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", ENOTFOUND,
@@ -569,7 +596,8 @@ int tftpd_send_file(struct thread_data *data)
      {
           if ((result < 1) || (result > 255))
           {
-               tftp_send_error(sockfd, sa, EOPTNEG, data->data_buffer, data->data_buffer_size);
+               tftp_send_error(sockfd, sa, EOPTNEG, data->data_buffer,
+                               data->data_buffer_size, NULL);
                if (data->trace)
                     logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", EOPTNEG,
                            tftp_errmsg[EOPTNEG]);
@@ -604,7 +632,8 @@ int tftpd_send_file(struct thread_data *data)
           {
                logger(LOG_NOTICE, "options <%s> require roughly a blksize of %d for the OACK.",
                       string, strlen(string)-2);
-               tftp_send_error(sockfd, sa, EOPTNEG, data->data_buffer, data->data_buffer_size);
+               tftp_send_error(sockfd, sa, EOPTNEG, data->data_buffer,
+                               data->data_buffer_size, NULL);
                if (data->trace)
                     logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", EOPTNEG,
                            tftp_errmsg[EOPTNEG]);
@@ -634,7 +663,8 @@ int tftpd_send_file(struct thread_data *data)
 
           if (data->data_buffer == NULL)
           {
-               tftp_send_error(sockfd, sa, ENOSPACE, data->data_buffer, data->data_buffer_size);
+               tftp_send_error(sockfd, sa, ENOSPACE, data->data_buffer,
+                               data->data_buffer_size, NULL);
                if (data->trace)
                     logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", ENOSPACE,
                            tftp_errmsg[ENOSPACE]);
@@ -652,7 +682,8 @@ int tftpd_send_file(struct thread_data *data)
      /* Verify that the file can be sent in MAXBLOCKS blocks of BLKSIZE octets */
      if ((file_size / (data->data_buffer_size - 4)) > MAXBLOCKS)
      {
-          tftp_send_error(sockfd, sa, EUNDEF, data->data_buffer, data->data_buffer_size);
+          tftp_send_error(sockfd, sa, EUNDEF, data->data_buffer,
+                          data->data_buffer_size, NULL);
           logger(LOG_NOTICE, "Requested file too big, increase BLKSIZE");
           logger(LOG_NOTICE, "Only %d blocks of %d bytes can be served via multicast", MAXBLOCKS, data->data_buffer_size);
           if (data->trace)
@@ -673,7 +704,8 @@ int tftpd_send_file(struct thread_data *data)
 	  /* Verify that the file can be sent in 65536 blocks of BLKSIZE octets */
 	  if ((file_size / (data->data_buffer_size - 4)) > 65536)
 	  {
-		tftp_send_error(sockfd, sa, EUNDEF, data->data_buffer, data->data_buffer_size);
+		tftp_send_error(sockfd, sa, EUNDEF, data->data_buffer,
+                        data->data_buffer_size, NULL);
 		logger(LOG_NOTICE, "Requested file too big, increase BLKSIZE");
 		logger(LOG_NOTICE, "Only %d blocks of %d bytes can be served.", 65536, data->data_buffer_size);
 		if (data->trace)
@@ -823,7 +855,8 @@ int tftpd_send_file(struct thread_data *data)
                {
                     tftpd_clientlist_done(data, client_info, NULL);
                     tftp_send_error(sockfd, &client_info->client,
-                                    EUNDEF, data->data_buffer, data->data_buffer_size);
+                                    EUNDEF, data->data_buffer,
+                                    data->data_buffer_size, NULL);
                     if (data->trace)
                     {
                          logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s> to %s", EUNDEF,

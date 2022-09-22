@@ -200,7 +200,7 @@ int tftp_receive_file(struct client_data *data)
                else
                {
                     tftp_send_error(sockfd, &sa, EUNDEF, data->data_buffer,
-                                    data->data_buffer_size);
+                                    data->data_buffer_size, NULL);
                     if (data->trace)
                          fprintf(stderr,  "sent ERROR <code: %d, msg: %s>\n",
                                  EUNDEF, tftp_errmsg[EUNDEF]);
@@ -311,6 +311,13 @@ int tftp_receive_file(struct client_data *data)
                     fprintf(stderr, "tftp: error received from server <");
                     fwrite(tftphdr->th_msg, 1, data_size - 4 - 1, stderr);
                     fprintf(stderr, ">\n");
+
+                   if (data->tftp_error_cb) {
+                       data->tftp_error_cb(ntohs(tftphdr->th_code),
+                                           tftphdr->th_msg,
+                                           data->tftp_error_ctx);
+                   }
+
                     state = S_ABORT;
                     break;
                case GET_DATA:
@@ -358,7 +365,7 @@ int tftp_receive_file(struct client_data *data)
                     if (master_client == 1)
                     {
                          tftp_send_error(sockfd, &sa, EUNDEF, data->data_buffer,
-                                         data->data_buffer_size);
+                                         data->data_buffer_size, NULL);
                          fprintf(stderr, "tftp: unexpected OACK\n");
                          state = S_ABORT;
                          break;
@@ -385,7 +392,7 @@ int tftp_receive_file(struct client_data *data)
                     else
                     {
                          tftp_send_error(sockfd, &sa, EUNDEF, data->data_buffer,
-                                         data->data_buffer_size);
+                                         data->data_buffer_size, NULL);
                          fprintf(stderr, "tftp: error parsing OACK\n");
                          state = S_ABORT;
                     }
@@ -398,7 +405,7 @@ int tftp_receive_file(struct client_data *data)
                     if (oacks > 1)
                     {
                          tftp_send_error(sockfd, &sa, EUNDEF, data->data_buffer,
-                                         data->data_buffer_size);
+                                         data->data_buffer_size, NULL);
                          fprintf(stderr, "tftp: unexpected OACK\n");
                          state = S_ABORT;
                          break;
@@ -552,7 +559,7 @@ int tftp_receive_file(struct client_data *data)
                     fprintf(stderr, "tftp: error writing to file %s\n",
                             data->local_file);
                     tftp_send_error(sockfd, &sa, ENOSPACE, data->data_buffer,
-                                    data->data_buffer_size);
+                                    data->data_buffer_size, NULL);
                     state = S_ABORT;
                     break;
                }
@@ -709,7 +716,8 @@ int tftp_send_file(struct client_data *data)
                else
                {
                     tftp_send_error(sockfd, &sa, EUNDEF, data->data_buffer,
-                                    data->data_buffer_size);
+                                    data->data_buffer_size, NULL);
+
                     if (data->trace)
                          fprintf(stderr,  "sent ERROR <code: %d, msg: %s>\n",
                                  EUNDEF, tftp_errmsg[EUNDEF]);
@@ -832,6 +840,13 @@ int tftp_send_file(struct client_data *data)
                     fprintf(stderr, "tftp: error received from server <");
                     fwrite(tftphdr->th_msg, 1, data_size - 4 - 1, stderr);
                     fprintf(stderr, ">\n");
+
+                    if (data->tftp_error_cb) {
+                        data->tftp_error_cb(ntohs(tftphdr->th_code),
+                                            tftphdr->th_msg,
+                                            data->tftp_error_ctx);
+                    }
+
                     state = S_ABORT;
                     break;
                case GET_DISCARD:

@@ -240,7 +240,7 @@ int tftp_mtftp_receive_file(struct client_data *data)
                     if (mode == RECEIVE)
                     {
                          tftp_send_error(sockfd, &sa, EUNDEF, data->data_buffer,
-                                         data->data_buffer_size);
+                                         data->data_buffer_size, NULL);
                          if (data->trace)
                               fprintf(stderr,  "sent ERROR <code: %d, msg: %s>\n",
                                       EUNDEF, tftp_errmsg[EUNDEF]);
@@ -461,7 +461,7 @@ int tftp_mtftp_receive_file(struct client_data *data)
                             data->local_file);
 		    if (mode == RECEIVE)
 			 tftp_send_error(sockfd, &sa, ENOSPACE, data->data_buffer,
-                                         data->data_buffer_size);
+                                         data->data_buffer_size, NULL);
                     state = S_END;
                     break;
                }

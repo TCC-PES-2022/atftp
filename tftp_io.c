@@ -158,7 +158,7 @@ int tftp_send_oack(int socket, struct sockaddr_storage *sa, struct tftp_opt *tft
  * ---------------------------------------
  */
 int tftp_send_error(int socket, struct sockaddr_storage *sa, short err_code,
-                    char *buffer, int buffer_size)
+                    char *buffer, int buffer_size, char *custom_err_msg)
 {
      int size;
      int result;
@@ -167,10 +167,16 @@ int tftp_send_error(int socket, struct sockaddr_storage *sa, short err_code,
      if (err_code > EOPTNEG)
           return ERR;
      tftphdr->th_opcode = htons(ERROR);
-     tftphdr->th_code = htons(err_code);
-     Strncpy(tftphdr->th_msg, tftp_errmsg[err_code], buffer_size - 4);
 
-     size = 4 + strlen(tftp_errmsg[err_code]) + 1;
+     // For custom message, make sure the error code is zero.
+     tftphdr->th_code = htons((custom_err_msg == NULL) ? err_code : EUNDEF);
+
+     char *err_msg = (custom_err_msg == NULL) ? tftp_errmsg[err_code] :
+                                                custom_err_msg;
+
+     Strncpy(tftphdr->th_msg, err_msg, buffer_size - 4);
+
+     size = 4 + strlen(err_msg) + 1;
 
      result = sendto(socket, tftphdr, size, 0, (struct sockaddr *)sa,
                      sizeof(*sa));

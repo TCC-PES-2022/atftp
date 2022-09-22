@@ -46,7 +46,7 @@ int tftp_send_ack(int socket, struct sockaddr_storage *s_inn, long block_number)
 int tftp_send_oack(int socket, struct sockaddr_storage *s_inn, struct tftp_opt *tftp_options,
                    char *buffer, int buffer_size);
 int tftp_send_error(int socket, struct sockaddr_storage *s_inn, short err_code,
-                    char *buffer, int buffer_size);
+                    char *buffer, int buffer_size, char *custom_err_msg);
 int tftp_send_data(int socket, struct sockaddr_storage *s_inn, long block_number,
                    int size, char *data);
 int tftp_get_packet(int sock1, int sock2, int *sock, struct sockaddr_storage *sa,

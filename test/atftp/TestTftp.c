@@ -10,7 +10,7 @@
 #include <stdlib.h>
 #include <time.h>
 
-#define NUM_TESTS 7
+#define NUM_TESTS 8
 #define BUF_SIZE 1024
 
 #define NUM_ITERATIONS_MULTIPLE_CLIENT_TEST 100
@@ -26,6 +26,15 @@ char server_port[BUF_SIZE] = "60907";
 
 int executed_tests = 0;                     //TODO: Mutex-me for thread safety
 pid_t pid_server;
+
+typedef struct {
+    char test_file_name[BUF_SIZE];
+    char test_file_content[BUF_SIZE];
+    int content_match;
+    TftpHandlerPtr handler;
+    char error_message[BUF_SIZE];
+    short error_code;
+} ClientCtx;
 
 void start_tftp_server()
 {
@@ -233,15 +242,6 @@ void test_GetFile_ToMemory_ShouldReturnTFTPOKIfFileWasSent(void)
     TEST_ASSERT_EQUAL_STRING(test_string, buffer);
 }
 
-
-
-typedef struct {
-    char test_file_name[BUF_SIZE];
-    char test_file_content[BUF_SIZE];
-    int content_match;
-    TftpHandlerPtr handler;
-} ClientCtx;
-
 void *client_thread(void *arg)
 {
     ClientCtx *ctx = (ClientCtx *)arg;
@@ -330,6 +330,46 @@ void test_MultipleClients_ShouldReturnTFTPOK(void) {
 
     TEST_ASSERT_EQUAL(1, ctx1.content_match);
     TEST_ASSERT_EQUAL(1, ctx2.content_match);
+}
+
+TftpOperationResult tftpErrorCallback (
+        short error_code,
+        const char *error_message,
+        void *context)
+{
+    printf("Error code: %d\n", error_code);
+    printf("Error message: %s\n", error_message);
+    if (context) {
+        ClientCtx *ctx = (ClientCtx *)context;
+        strcpy(ctx->error_message, error_message);
+        ctx->error_code = error_code;
+    }
+    return TFTP_OK;
+}
+void test_TftpErrorCallback_ShouldReturnTFTPError(void)
+{
+    TftpOperationResult result = TFTP_OK;
+
+    set_connection(handler, host, port);
+    config_tftp(handler);
+
+    ClientCtx ctx;
+    ctx.error_code = 0;
+    memset(ctx.error_message, 0, BUF_SIZE);
+    register_tftp_error_callback(handler, tftpErrorCallback, &ctx);
+
+    char test_file[BUF_SIZE] = "inexistent_file.txt";
+    FILE *fp = fopen(test_file, "w");
+    if (fp) {
+        result = fetch_file(handler, test_file, fp);
+        fclose(fp);
+    }
+
+    TEST_ASSERT_EQUAL(TFTP_ERROR, result);
+
+    // TFTP ERROR CODE 1 = File not found
+    TEST_ASSERT_EQUAL(1, ctx.error_code);
+    TEST_ASSERT_EQUAL_STRING("File not found", ctx.error_message);
 }
 
 void test_ConnectionTimeoutSend_ShouldReturnTFTPError(void)

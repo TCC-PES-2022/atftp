@@ -123,6 +123,8 @@ TftpOperationResult create_tftp_handler(TftpHandlerPtr *handler)
     (*handler)->data.data_buffer = NULL;
     (*handler)->data.tftp_options = NULL;
     (*handler)->data.tftp_options_reply = NULL;
+    (*handler)->data.tftp_error_cb = NULL;
+    (*handler)->data.tftp_error_ctx = NULL;
 
     return TFTP_OK;
 }
@@ -145,6 +147,16 @@ TftpOperationResult destroy_tftp_handler(TftpHandlerPtr *handler)
         return TFTP_ERROR;
     }
     free((*handler));
+    return TFTP_OK;
+}
+
+TftpOperationResult register_tftp_error_callback(
+        const TftpHandlerPtr handler,
+        tftp_error_callback callback,
+        void *context)
+{
+    handler->data.tftp_error_cb = callback;
+    handler->data.tftp_error_ctx = context;
     return TFTP_OK;
 }
 

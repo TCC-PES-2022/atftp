@@ -22,10 +22,14 @@
 #include <sys/types.h>
 #include "tftp_def.h"
 #include "config.h"
+#include "tftp_api.h"
 
 struct client_data {
      char *data_buffer;         /* used for sending and receiving of data */
      int data_buffer_size;      /* size of the buffer, may be reallocated */
+
+     tftp_error_callback tftp_error_cb;
+     void *tftp_error_ctx;
 
      char local_file[VAL_SIZE]; /* the file we are reading or writing is not
                                    necessary the same on the server */

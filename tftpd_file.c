@@ -723,7 +723,7 @@ int tftpd_send_file(struct thread_data *data)
            * Find a server with the same options to give up the client.
            */
           logger(LOG_DEBUG, "Searching a server thread to give up this client");
-          result = tftpd_list_find_multicast_server_and_add(&thread, data, data->client_info);
+          result = tftpd_list_find_multicast_server_and_add(data->handler, &thread, data, data->client_info);
           if ( result > 0)
           {
                /* add this client to its list of client */
@@ -836,7 +836,7 @@ int tftpd_send_file(struct thread_data *data)
                /* set multicast flag */
                multicast = 1;
                /* Now ready to receive new clients */
-               tftpd_clientlist_ready(data);
+               tftpd_clientlist_ready(data->handler, data);
           }
      }
 
@@ -853,7 +853,7 @@ int tftpd_send_file(struct thread_data *data)
                logger(LOG_DEBUG, "thread cancelled");
                do
                {
-                    tftpd_clientlist_done(data, client_info, NULL);
+                    tftpd_clientlist_done(data->handler, data, client_info, NULL);
                     tftp_send_error(sockfd, &client_info->client,
                                     EUNDEF, data->data_buffer,
                                     data->data_buffer_size, NULL);
@@ -864,7 +864,7 @@ int tftpd_send_file(struct thread_data *data)
                                 sockaddr_print_addr(&client_info->client,
                                                     addr_str, sizeof(addr_str)));
                     }
-               } while (tftpd_clientlist_next(data, &client_info) == 1);
+               } while (tftpd_clientlist_next(data->handler, data, &client_info) == 1);
                state = S_ABORT;
           }
 
@@ -937,7 +937,7 @@ int tftpd_send_file(struct thread_data *data)
                          {
                               client_old = client_info;
 
-                              tftpd_clientlist_next(data, &client_info);
+                              tftpd_clientlist_next(data->handler, data, &client_info);
 
                               if (client_info && (client_info != client_old))
                               {
@@ -993,7 +993,7 @@ int tftpd_send_file(struct thread_data *data)
                                */
                               if ((last_block != -1) && (block_number > last_block))
                               {
-                                   if (tftpd_clientlist_done(data, NULL, &from) == 1)
+                                   if (tftpd_clientlist_done(data->handler, data, NULL, &from) == 1)
                                         logger(LOG_DEBUG, "client done <%s>",
                                                sockaddr_print_addr(
                                                     &from, addr_str,
@@ -1147,7 +1147,7 @@ int tftpd_send_file(struct thread_data *data)
                          if (!sockaddr_equal(sa, &from))
                          {
                               /* mark this client done */
-                              if (tftpd_clientlist_done(data, NULL, &from) == 1)
+                              if (tftpd_clientlist_done(data->handler, data, NULL, &from) == 1)
                               {
                                    if (data->trace)
                                         logger(LOG_DEBUG, "client sent ERROR, mark as done <%s>",
@@ -1214,11 +1214,11 @@ int tftpd_send_file(struct thread_data *data)
                {
                     logger(LOG_DEBUG, "End of multicast transfer");
                     /* mark the current client done */
-                    tftpd_clientlist_done(data, client_info, NULL);
+                    tftpd_clientlist_done(data->handler, data, client_info, NULL);
                     /* Look if there is another client to serve. We lock list of
                        client to make sure no other thread try to add clients in
                        our back */
-                    if (tftpd_clientlist_next(data, &client_info) == 1)
+                    if (tftpd_clientlist_next(data->handler, data, &client_info) == 1)
                     {
                          logger(LOG_INFO,
                                 "Serving next client: %s:%d",

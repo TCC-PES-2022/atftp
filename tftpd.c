@@ -59,46 +59,6 @@
 #include <stdlib.h>
 #include "tftpd_api.h"
 #define MAX_PARAM_SIZE 32
-struct TftpdHandler {
-    void *open_file_context;
-    open_file_callback open_file_cb;
-    void *close_file_context;
-    close_file_callback close_file_cb;
-    void *section_started_context;
-    section_started section_started_cb;
-    void *section_finished_context;
-    section_finished section_finished_cb;
-    int tftpd_port;           /* Port atftpd listen to */
-    int tftpd_timeout;        /* number of second of inactivity
-                                   before exiting */
-    int tftpd_cancel;           /* When true, thread must exit. pthread
-                                   cancellation point are not used because
-                                   thread id are not tracked. */
-    pthread_t main_thread_id;
-    int stop_pipe[2];
-
-    /*
-     * "logging level" is the maximum error level that will get logged.
-     *  This can be increased with the -v switch.
-     */
-    int logging_level;
-    char *log_file;
-
-    /*
-     * We need a lock on stdin from the time we notice fresh data coming from
-     * stdin to the time the freshly created server thread as read it.
-     */
-    pthread_mutex_t stdin_mutex;
-};
-
-struct TftpdSectionHandler {
-    SectionId section_id;
-    char client_ip[SOCKADDR_PRINT_ADDR_LEN];
-    TftpdSectionStatus status;
-    char *error_msg;
-    int abort;                   /* 1 if we need to abort because the maximum
-                                   number of threads have been reached*/
-};
 
 /*
  * Global variables set by main when starting. Read-only for threads
@@ -174,198 +134,202 @@ void tftpd_usage(void);
 
 TftpdOperationResult create_tftpd_handler(TftpdHandlerPtr *handler)
 {
-    (*handler) = (TftpdHandlerPtr)malloc(sizeof(struct TftpdHandler));
+     (*handler) = (TftpdHandlerPtr)malloc(sizeof(struct TftpdHandler));
 
-    (*handler)->tftpd_port = 69;
-    (*handler)->tftpd_timeout = 300;
-    (*handler)->open_file_cb = NULL;
-    (*handler)->close_file_cb = NULL;
-    (*handler)->section_started_cb = NULL;
-    (*handler)->section_finished_cb = NULL;
-    (*handler)->open_file_context = NULL;
-    (*handler)->close_file_context = NULL;
-    (*handler)->section_started_context = NULL;
-    (*handler)->section_finished_context = NULL;
-    (*handler)->tftpd_cancel = 0;
-    (*handler)->logging_level = LOG_DEBUG;
-    (*handler)->log_file = NULL;
-    pthread_mutex_init(&(*handler)->stdin_mutex, NULL);
-    pipe((*handler)->stop_pipe);
-    fcntl((*handler)->stop_pipe[1], F_SETFL, O_NONBLOCK);
+     (*handler)->tftpd_port = 69;
+     (*handler)->tftpd_timeout = 300;
+     (*handler)->open_file_cb = NULL;
+     (*handler)->close_file_cb = NULL;
+     (*handler)->section_started_cb = NULL;
+     (*handler)->section_finished_cb = NULL;
+     (*handler)->open_file_context = NULL;
+     (*handler)->close_file_context = NULL;
+     (*handler)->section_started_context = NULL;
+     (*handler)->section_finished_context = NULL;
+     (*handler)->tftpd_cancel = 0;
+     (*handler)->logging_level = LOG_DEBUG;
+     (*handler)->log_file = NULL;
+     pthread_mutex_init(&(*handler)->stdin_mutex, NULL);
+     pipe((*handler)->stop_pipe);
+     fcntl((*handler)->stop_pipe[1], F_SETFL, O_NONBLOCK);
 
-    return TFTPD_OK;
+     (*handler)->thread_data = NULL;
+     (*handler)->number_of_thread = 0;
+     pthread_mutex_init(&(*handler)->thread_list_mutex, NULL);
+
+     return TFTPD_OK;
 }
 
 TftpdOperationResult destroy_tftpd_handler(TftpdHandlerPtr *handler)
 {
     if ((*handler) == NULL) {
-        return TFTPD_ERROR;
-    }
-    (*handler)->open_file_cb = NULL;
-    (*handler)->close_file_cb = NULL;
-    (*handler)->section_started_cb = NULL;
-    (*handler)->section_finished_cb = NULL;
-    (*handler)->close_file_context = NULL;
-    (*handler)->section_started_context = NULL;
-    (*handler)->section_finished_context = NULL;
+          return TFTPD_ERROR;
+     }
+     (*handler)->open_file_cb = NULL;
+     (*handler)->close_file_cb = NULL;
+     (*handler)->section_started_cb = NULL;
+     (*handler)->section_finished_cb = NULL;
+     (*handler)->close_file_context = NULL;
+     (*handler)->section_started_context = NULL;
+     (*handler)->section_finished_context = NULL;
     if ((*handler)->log_file != NULL) {
-        free((*handler)->log_file);
-        (*handler)->log_file = NULL;
-    }
-    close((*handler)->stop_pipe[0]);
-    close((*handler)->stop_pipe[1]);
-    free((*handler));
-    (*handler) = NULL;
-    return TFTPD_OK;
+          free((*handler)->log_file);
+          (*handler)->log_file = NULL;
+     }
+     close((*handler)->stop_pipe[0]);
+     close((*handler)->stop_pipe[1]);
+     free((*handler));
+     (*handler) = NULL;
+     return TFTPD_OK;
 }
 
 TftpdOperationResult set_port(
-        const TftpdHandlerPtr handler,
-        const int port)
+    const TftpdHandlerPtr handler,
+    const int port)
 {
     if (handler == NULL) {
-        return TFTPD_ERROR;
-    }
+          return TFTPD_ERROR;
+     }
     if (port < 0) {
-        return TFTPD_ERROR;
-    }
-    handler->tftpd_port = port;
-    return TFTPD_OK;
+          return TFTPD_ERROR;
+     }
+     handler->tftpd_port = port;
+     return TFTPD_OK;
 }
 
 TftpdOperationResult set_server_timeout(
-        const TftpdHandlerPtr handler,
-        const int timeout)
+    const TftpdHandlerPtr handler,
+    const int timeout)
 {
     if (handler == NULL) {
-        return TFTPD_ERROR;
-    }
+          return TFTPD_ERROR;
+     }
     if (timeout < 0) {
-        return TFTPD_ERROR;
-    }
-    handler->tftpd_timeout = timeout;
-    return TFTPD_OK;
+          return TFTPD_ERROR;
+     }
+     handler->tftpd_timeout = timeout;
+     return TFTPD_OK;
 }
 
 TftpdOperationResult register_open_file_callback(
-        const TftpdHandlerPtr handler,
-        open_file_callback callback,
-        void *context)
+    const TftpdHandlerPtr handler,
+    open_file_callback callback,
+    void *context)
 {
     if (handler == NULL) {
-        return TFTPD_ERROR;
-    }
-    handler->open_file_cb = callback;
-    handler->open_file_context = context;
-    return TFTPD_OK;
+          return TFTPD_ERROR;
+     }
+     handler->open_file_cb = callback;
+     handler->open_file_context = context;
+     return TFTPD_OK;
 }
 
 TftpdOperationResult register_close_file_callback(
-        const TftpdHandlerPtr handler,
-        close_file_callback callback,
-        void *context)
+    const TftpdHandlerPtr handler,
+    close_file_callback callback,
+    void *context)
 {
     if (handler == NULL) {
-        return TFTPD_ERROR;
-    }
-    handler->close_file_cb = callback;
-    handler->close_file_context = context;
-    return TFTPD_OK;
+          return TFTPD_ERROR;
+     }
+     handler->close_file_cb = callback;
+     handler->close_file_context = context;
+     return TFTPD_OK;
 }
 
 TftpdOperationResult register_section_started_callback(
-        const TftpdHandlerPtr handler,
-        section_started callback,
-        void *context)
+    const TftpdHandlerPtr handler,
+    section_started callback,
+    void *context)
 {
     if (handler == NULL) {
-        return TFTPD_ERROR;
-    }
-    handler->section_started_cb = callback;
-    handler->section_started_context = context;
-    return TFTPD_OK;
+          return TFTPD_ERROR;
+     }
+     handler->section_started_cb = callback;
+     handler->section_started_context = context;
+     return TFTPD_OK;
 }
 
 TftpdOperationResult register_section_finished_callback(
-        const TftpdHandlerPtr handler,
-        section_finished callback,
-        void *context)
+    const TftpdHandlerPtr handler,
+    section_finished callback,
+    void *context)
 {
     if (handler == NULL) {
-        return TFTPD_ERROR;
-    }
-    handler->section_finished_cb = callback;
-    handler->section_finished_context = context;
-    return TFTPD_OK;
+          return TFTPD_ERROR;
+     }
+     handler->section_finished_cb = callback;
+     handler->section_finished_context = context;
+     return TFTPD_OK;
 }
 
 TftpdOperationResult get_section_id(
-        const TftpdSectionHandlerPtr section_handler,
-        SectionId *id)
+    const TftpdSectionHandlerPtr section_handler,
+    SectionId *id)
 {
     if (section_handler == NULL) {
-        return TFTPD_ERROR;
-    }
-    *id = section_handler->section_id;
-    return TFTPD_OK;
+          return TFTPD_ERROR;
+     }
+     *id = section_handler->section_id;
+     return TFTPD_OK;
 }
 
 TftpdOperationResult get_client_ip(
-        const TftpdSectionHandlerPtr section_handler,
-        char *ip)
+    const TftpdSectionHandlerPtr section_handler,
+    char *ip)
 {
     if (section_handler == NULL) {
-        return TFTPD_ERROR;
-    }
-    memcpy(ip, section_handler->client_ip, sizeof(section_handler->client_ip));
-    return TFTPD_OK;
+          return TFTPD_ERROR;
+     }
+     memcpy(ip, section_handler->client_ip, sizeof(section_handler->client_ip));
+     return TFTPD_OK;
 }
 
 TftpdOperationResult get_section_status(
-        const TftpdSectionHandlerPtr section_handler,
-        TftpdSectionStatus *status)
+    const TftpdSectionHandlerPtr section_handler,
+    TftpdSectionStatus *status)
 {
     if (section_handler == NULL) {
-        return TFTPD_ERROR;
-    }
-    *status = section_handler->status;
-    return TFTPD_OK;
+          return TFTPD_ERROR;
+     }
+     *status = section_handler->status;
+     return TFTPD_OK;
 }
 
 TftpdOperationResult set_error_msg(
-        const TftpdSectionHandlerPtr section_handler,
-        const char *error_msg)
+    const TftpdSectionHandlerPtr section_handler,
+    const char *error_msg)
 {
     if (section_handler == NULL) {
-        return TFTPD_ERROR;
-    }
-    section_handler->error_msg = strdup(error_msg);
-    return TFTPD_OK;
+          return TFTPD_ERROR;
+     }
+     section_handler->error_msg = strdup(error_msg);
+     return TFTPD_OK;
 }
 
 TftpdOperationResult get_error_msg(
-        const TftpdSectionHandlerPtr section_handler,
-        char **error_msg)
+    const TftpdSectionHandlerPtr section_handler,
+    char **error_msg)
 {
     if (section_handler == NULL) {
-        return TFTPD_ERROR;
-    }
+          return TFTPD_ERROR;
+     }
 
-    (*error_msg) = strdup(section_handler->error_msg);
-    return TFTPD_OK;
+     (*error_msg) = strdup(section_handler->error_msg);
+     return TFTPD_OK;
 }
 
 TftpdOperationResult stop_listening(
-        const TftpdHandlerPtr handler)
+    const TftpdHandlerPtr handler)
 {
     if (handler == NULL) {
-        return TFTPD_ERROR;
-    }
-    handler->tftpd_cancel = 1;
+          return TFTPD_ERROR;
+     }
+     handler->tftpd_cancel = 1;
 
     //Send signal to thread to force return from select.
-    write(handler->stop_pipe[1], "\0", 1);
-    return TFTPD_OK;
+     write(handler->stop_pipe[1], "\0", 1);
+     return TFTPD_OK;
 }
 
 /*
@@ -458,12 +422,12 @@ TftpdOperationResult start_listening(const TftpdHandlerPtr handler)
                if (err == EAI_SERVICE)
                {
                     logger(LOG_ERR, "atftpd: udp/tftp, unknown service");
-                   return TFTPD_ERROR;
+                    return TFTPD_ERROR;
                }
                if (err || sockaddr_set_addrinfo(&sa, result))
                {
                     logger(LOG_ERR, "atftpd: invalid IP address %s", tftpd_addr);
-                   return TFTPD_ERROR;
+                    return TFTPD_ERROR;
                }
 
                if (!handler->tftpd_port)
@@ -495,7 +459,7 @@ TftpdOperationResult start_listening(const TftpdHandlerPtr handler)
           {
                logger(LOG_ERR, "atftpd: can't bind port %s:%d/udp",
                       tftpd_addr, handler->tftpd_port);
-              return TFTPD_ERROR;
+               return TFTPD_ERROR;
           }
 
           /* release priviliedge */
@@ -542,8 +506,8 @@ TftpdOperationResult start_listening(const TftpdHandlerPtr handler)
                }
                /* to be able to remove it later */
                if (drop_privs && chown(pidfile, user->pw_uid, group->gr_gid) != OK) {
-                 logger(LOG_ERR,
-                     "atftpd: failed to chown our pid file %s to owner %s.%s.",
+                    logger(LOG_ERR,
+                           "atftpd: failed to chown our pid file %s to owner %s.%s.",
                            pidfile, user_name, group_name);
                     return TFTPD_ERROR;
                }
@@ -609,7 +573,7 @@ TftpdOperationResult start_listening(const TftpdHandlerPtr handler)
                          tftpd_mtftp_clean(mtftp_data);
                          mtftp_data = NULL;
                     }
-              }
+               }
           }
      }
 #endif
@@ -650,7 +614,7 @@ TftpdOperationResult start_listening(const TftpdHandlerPtr handler)
           {
                int rv;
 
-//               if ((tftpd_timeout == 0) || (tftpd_daemon))
+               //               if ((tftpd_timeout == 0) || (tftpd_daemon))
                if ((handler->tftpd_timeout == 0))
                     rv = select(FD_SETSIZE, &rfds, NULL, NULL, NULL);
                else
@@ -660,7 +624,7 @@ TftpdOperationResult start_listening(const TftpdHandlerPtr handler)
                            __FILE__, __LINE__, strerror(errno));
                     /* Clear the bits, they are undefined! */
                     FD_ZERO(&rfds);
-	       }
+               }
           }
 
 #ifdef RATE_CONTROL
@@ -669,7 +633,7 @@ TftpdOperationResult start_listening(const TftpdHandlerPtr handler)
           {
                gettimeofday(&previous_time, NULL);
                previous = (long long)previous_time.tv_sec*1000000L +
-                    previous_time.tv_usec;
+                          previous_time.tv_usec;
           }
 #endif
 
@@ -688,6 +652,7 @@ TftpdOperationResult start_listening(const TftpdHandlerPtr handler)
                 */
                pthread_mutex_init(&new->client_mutex, NULL);
                new->sockfd = sockfd;
+               new->handler = handler;
                new->open_file_ctx =  handler->open_file_context;
                new->open_file_cb = handler->open_file_cb;
                new->close_file_ctx =  handler->close_file_context;
@@ -710,7 +675,7 @@ TftpdOperationResult start_listening(const TftpdHandlerPtr handler)
 
                /* Allocate memory for tftp option structure. */
                if ((new->tftp_options =
-                    malloc(sizeof(tftp_default_options))) == NULL)
+                        malloc(sizeof(tftp_default_options))) == NULL)
                {
                     logger(LOG_ERR, "%s: %d: Memory allocation failed",
                            __FILE__, __LINE__);
@@ -736,7 +701,7 @@ TftpdOperationResult start_listening(const TftpdHandlerPtr handler)
 
                /* Allocate memory for a client structure. */
                if ((new->client_info =
-                    calloc(1, sizeof(struct client_info))) == NULL)
+                        calloc(1, sizeof(struct client_info))) == NULL)
                {
                     logger(LOG_ERR, "%s: %d: Memory allocation failed",
                            __FILE__, __LINE__);
@@ -764,17 +729,17 @@ TftpdOperationResult start_listening(const TftpdHandlerPtr handler)
                /* Either select return after timeout of we've been killed. In the first case
                   we wait for server thread to finish, in the other we kill them */
                if (handler->tftpd_cancel)
-                    tftpd_list_kill_threads();
+                    tftpd_list_kill_threads(handler);
 
                /*
                 * TODO: Some times we get stuck here. For now, adding max wait time
                 * to avoid this.
                 */
                int max_wait = 3;
-               while ((tftpd_list_num_of_thread() != 0)
-                        && (max_wait > 0)) {
-                   sleep(1);
-                   max_wait--;
+               while ((tftpd_list_num_of_thread(handler) != 0) && (max_wait > 0))
+               {
+                    sleep(1);
+                    max_wait--;
                }
 
                run = 0;
@@ -828,40 +793,40 @@ TftpdOperationResult start_listening(const TftpdHandlerPtr handler)
 
 static void tftpd_receive_request_cleanup(void *arg)
 {
-    struct thread_data *data = (struct thread_data *)arg;
+     struct thread_data *data = (struct thread_data *)arg;
 
-    /* update stats */
-    stats_thread_usage_locked();
+     /* update stats */
+     stats_thread_usage_locked();
 
-    /* Remove the thread_data structure from the list, if it as been
-       added. */
-    if (!data->section_handler_ptr->abort)
-        tftpd_list_remove(data);
+     /* Remove the thread_data structure from the list, if it as been
+        added. */
+     if (!data->section_handler_ptr->abort)
+          tftpd_list_remove(data->handler, data);
 
-    /* Free memory. */
-    if (data->data_buffer)
-        free(data->data_buffer);
+     /* Free memory. */
+     if (data->data_buffer)
+          free(data->data_buffer);
 
-    if (data->section_handler_ptr->error_msg)
-        free(data->section_handler_ptr->error_msg);
+     if (data->section_handler_ptr->error_msg)
+          free(data->section_handler_ptr->error_msg);
 
-    free(data->tftp_options);
+     free(data->tftp_options);
 
-    /* if the thread had reserverd a multicast IP/Port, deallocate it */
-    if (data->mc_port != 0)
-        tftpd_mcast_free_tid(data->mc_addr, data->mc_port);
+     /* if the thread had reserverd a multicast IP/Port, deallocate it */
+     if (data->mc_port != 0)
+          tftpd_mcast_free_tid(data->mc_addr, data->mc_port);
 
-    /* this function take care of freeing allocated memory by other threads */
-    tftpd_clientlist_free(data);
+     /* this function take care of freeing allocated memory by other threads */
+     tftpd_clientlist_free(data->handler, data);
 
-    if (data->section_finished_cb != NULL)
-        data->section_finished_cb(data->section_handler_ptr,
-                                  data->section_finished_ctx);
+     if (data->section_finished_cb != NULL)
+          data->section_finished_cb(data->section_handler_ptr,
+                                    data->section_finished_ctx);
 
-    /* free the thread structure */
-    free(data);
+     /* free the thread structure */
+     free(data);
 
-    logger(LOG_INFO, "Server thread exiting");
+     logger(LOG_INFO, "Server thread exiting");
 }
 
 /*
@@ -874,11 +839,11 @@ static void tftpd_receive_request_cleanup(void *arg)
  */
 void *tftpd_receive_request(void *arg)
 {
-    pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-    pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+     pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+     pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
-    struct thread_data *data = (struct thread_data *)arg;
-    pthread_cleanup_push(tftpd_receive_request_cleanup, data);
+     struct thread_data *data = (struct thread_data *)arg;
+     pthread_cleanup_push(tftpd_receive_request_cleanup, data);
 
      int retval;                /* hold return value for testing */
      int data_size;             /* returned size by recvfrom */
@@ -901,29 +866,29 @@ void *tftpd_receive_request(void *arg)
                               &to, data->timeout, &data_size,
                               data->data_buffer);
 
-    struct TftpdSectionHandler section_handler;
-    section_handler.section_id = data->tid;
-    section_handler.status = TFTPD_SECTION_UNDEFINED;
-    section_handler.abort = 0;
-    section_handler.error_msg = NULL;
-    sockaddr_print_addr(&data->client_info->client,
-                        section_handler.client_ip,
-                        sizeof(section_handler.client_ip));
-    data->section_handler_ptr = &section_handler;
+     struct TftpdSectionHandler section_handler;
+     section_handler.section_id = data->tid;
+     section_handler.status = TFTPD_SECTION_UNDEFINED;
+     section_handler.abort = 0;
+     section_handler.error_msg = NULL;
+     sockaddr_print_addr(&data->client_info->client,
+                         section_handler.client_ip,
+                         sizeof(section_handler.client_ip));
+     data->section_handler_ptr = &section_handler;
 
     if (retval == ERR) {
-        logger(LOG_NOTICE, "Invalid request in 1st packet");
-        section_handler.abort = 1;
-    }
+          logger(LOG_NOTICE, "Invalid request in 1st packet");
+          section_handler.abort = 1;
+     }
 
     if(data->section_started_cb != NULL)
-        data->section_started_cb(&section_handler, data->section_started_ctx);
+          data->section_started_cb(&section_handler, data->section_started_ctx);
 
      /* now unlock stdin */
      pthread_mutex_unlock(data->stdin_mutex);
 
      /* Verify the number of threads */
-     if ((num_of_threads = tftpd_list_num_of_thread()) >= tftpd_max_thread)
+     if ((num_of_threads = tftpd_list_num_of_thread(data->handler)) >= tftpd_max_thread)
      {
           logger(LOG_INFO, "Maximum number of threads reached: %d",
                  num_of_threads);
@@ -952,13 +917,14 @@ void *tftpd_receive_request(void *arg)
 #endif
 
      /* Add this new thread structure to the list. */
-     if (!section_handler.abort) {
-         stats_new_thread(tftpd_list_add(data));
+     if (!section_handler.abort)
+     {
+          stats_new_thread(tftpd_list_add(data->handler, data));
      }
 
      /* if the maximum number of thread is reached, too bad we section_handler.abort. */
      if (section_handler.abort)
-         stats_abort_locked();
+          stats_abort_locked();
      else
      {
           /* open a socket for client communication */
@@ -981,7 +947,7 @@ void *tftpd_receive_request(void *arg)
           {
                logger(LOG_INFO, "forcing socket to listen on local address");
                if (setsockopt(data->sockfd, SOL_SOCKET, SO_BROADCAST, &on, sizeof(on)) != 0) {
-                  logger(LOG_ERR, "setsockopt: %s", strerror(errno));
+                    logger(LOG_ERR, "setsockopt: %s", strerror(errno));
                }
           }
           else
@@ -1042,12 +1008,12 @@ void *tftpd_receive_request(void *arg)
                if (data->trace)
                     logger(LOG_DEBUG, "received RRQ <%s>", string);
                if (tftpd_send_file(data) == OK) {
-                   stats_send_locked();
-                   section_handler.status = TFTPD_SECTION_OK;
+                    stats_send_locked();
+                    section_handler.status = TFTPD_SECTION_OK;
                }
                else {
-                   stats_err_locked();
-                   section_handler.status = TFTPD_SECTION_ERROR;
+                    stats_err_locked();
+                    section_handler.status = TFTPD_SECTION_ERROR;
                }
                break;
           case GET_WRQ:
@@ -1058,12 +1024,12 @@ void *tftpd_receive_request(void *arg)
                if (data->trace)
                     logger(LOG_DEBUG, "received WRQ <%s>", string);
                if (tftpd_receive_file(data) == OK) {
-                   stats_recv_locked();
-                   section_handler.status = TFTPD_SECTION_OK;
+                    stats_recv_locked();
+                    section_handler.status = TFTPD_SECTION_OK;
                }
                else {
-                   stats_err_locked();
-                   section_handler.status = TFTPD_SECTION_ERROR;
+                    stats_err_locked();
+                    section_handler.status = TFTPD_SECTION_ERROR;
                }
                break;
           case ERR:

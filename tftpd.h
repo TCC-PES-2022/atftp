@@ -41,6 +41,7 @@ struct thread_data {
                                    on first timeout from the current client. */
      int trace;
 
+     TftpdHandlerPtr handler;
     TftpdSectionHandlerPtr section_handler_ptr;
 
      int sockfd;
@@ -94,6 +95,55 @@ struct client_info {
      struct client_info *next;
 };
 
+
+struct TftpdHandler
+{
+     void *open_file_context;
+     open_file_callback open_file_cb;
+     void *close_file_context;
+     close_file_callback close_file_cb;
+     void *section_started_context;
+     section_started section_started_cb;
+     void *section_finished_context;
+     section_finished section_finished_cb;
+     int tftpd_port;    /* Port atftpd listen to */
+     int tftpd_timeout; /* number of second of inactivity
+                             before exiting */
+     int tftpd_cancel;  /* When true, thread must exit. pthread
+                           cancellation point are not used because
+                           thread id are not tracked. */
+     pthread_t main_thread_id;
+     int stop_pipe[2];
+
+     /*
+      * "logging level" is the maximum error level that will get logged.
+      *  This can be increased with the -v switch.
+      */
+     int logging_level;
+     char *log_file;
+
+     /*
+      * We need a lock on stdin from the time we notice fresh data coming from
+      * stdin to the time the freshly created server thread as read it.
+      */
+     pthread_mutex_t stdin_mutex;
+
+     struct thread_data *thread_data; /* head of thread list */
+     int number_of_thread;
+
+     pthread_mutex_t thread_list_mutex;
+};
+
+struct TftpdSectionHandler
+{
+     SectionId section_id;
+     char client_ip[SOCKADDR_PRINT_ADDR_LEN];
+     TftpdSectionStatus status;
+     char *error_msg;
+     int abort; /* 1 if we need to abort because the maximum
+                  number of threads have been reached*/
+};
+
 /*
  * Functions defined in tftpd_file.c
  */
@@ -104,25 +154,29 @@ int tftpd_send_file(struct thread_data *data);
 /*
  * Defined in tftpd_list.c, operation on thread_data list.
  */
-int tftpd_list_add(struct thread_data *new);
-int tftpd_list_remove(struct thread_data *old);
-int tftpd_list_num_of_thread(void);
-int tftpd_list_find_multicast_server_and_add(struct thread_data **thread,
+int tftpd_list_add(TftpdHandlerPtr handler, struct thread_data *new);
+int tftpd_list_remove(TftpdHandlerPtr handler, struct thread_data *old);
+int tftpd_list_num_of_thread(TftpdHandlerPtr handler);
+int tftpd_list_find_multicast_server_and_add(TftpdHandlerPtr handler,
+                                             struct thread_data **thread,
                                              struct thread_data *data,
                                              struct client_info *client);
 /*
  * Defined in tftpd_list.c, operation on client structure list.
  */
-void tftpd_clientlist_ready(struct thread_data *thread);
-void tftpd_clientlist_remove(struct thread_data *thread,
+void tftpd_clientlist_ready(TftpdHandlerPtr handler, struct thread_data *thread);
+void tftpd_clientlist_remove(TftpdHandlerPtr handler,
+                             struct thread_data *thread,
                              struct client_info *client);
-void tftpd_clientlist_free(struct thread_data *thread);
-int tftpd_clientlist_done(struct thread_data *thread,
+void tftpd_clientlist_free(TftpdHandlerPtr handler, struct thread_data *thread);
+int tftpd_clientlist_done(TftpdHandlerPtr handler,
+                          struct thread_data *thread,
                           struct client_info *client,
                           struct sockaddr_storage *sock);
-int tftpd_clientlist_next(struct thread_data *thread,
+int tftpd_clientlist_next(TftpdHandlerPtr handler,
+                          struct thread_data *thread,
                           struct client_info **client);
-void tftpd_list_kill_threads(void);
+void tftpd_list_kill_threads(TftpdHandlerPtr handler);
 
 /*
  * Defines in tftpd_mcast.c

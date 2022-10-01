@@ -75,6 +75,11 @@ $(TARGET_SERVER_TEST): $(OBJ_SERVER_TEST)
 makedir:
 	@mkdir -p $(BIN_PATH) $(OBJ_PATH) $(DBG_PATH) $(TEST_PATH)
 
+.PHONY: dependencies
+dependencies:
+	@echo "\n\n *** No dependencies to build for ATFTP *** \n\n"
+
+
 .PHONY: all
 all: makedir $(TARGET_CLIENT) $(TARGET_SERVER)
 

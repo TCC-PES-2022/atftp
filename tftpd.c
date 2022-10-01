@@ -303,6 +303,9 @@ TftpdOperationResult set_error_msg(
     if (section_handler == NULL) {
           return TFTPD_ERROR;
      }
+     if (error_msg == NULL) {
+          return TFTPD_ERROR;
+     }
      section_handler->error_msg = strdup(error_msg);
      return TFTPD_OK;
 }
@@ -312,6 +315,9 @@ TftpdOperationResult get_error_msg(
     char **error_msg)
 {
     if (section_handler == NULL) {
+          return TFTPD_ERROR;
+     }
+     if (section_handler->error_msg == NULL) {
           return TFTPD_ERROR;
      }
 

@@ -1,5 +1,17 @@
 ﻿A simplified library version based on atftp project. Check tftp_api.h and tftpd_api.h for details.
 
+To build, run:
+    make deps && make
+
+To install, run (default instalation path is /tmp):
+    make install [DESTDIR=<path_to_intall_dir>]
+
+To test, run:
+    cd test && make deps && make make runtests
+
+To generate test coverage, run:
+    make report
+
     Kollins G. Lima <kgl2@cin.ufpe.br>
     September 03rd, 2022
 

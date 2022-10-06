@@ -56,7 +56,6 @@ makedir:
 deps:
 	@echo "\n\n *** No dependencies to build for ATFTP *** \n\n"
 
-
 .PHONY: all
 all: makedir $(TARGET_CLIENT) $(TARGET_SERVER)
 

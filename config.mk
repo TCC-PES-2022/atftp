@@ -3,12 +3,12 @@ VERSION = 0.1
 
 # paths
 DESTDIR 	?= /tmp
-DEP_PATH 	?= /tmp
+DEP_PATH 	?= $(DESTDIR)
 
 CC 			?= gcc
 AR 			?= ar
 CFLAGS 		:= -Wall -Werror -pthread
-ARFLAGS		 = rcs
+ARFLAGS		:= rcs
 DBGFLAGS 	:= -g -ggdb
 TESTFLAGS 	:= -fprofile-arcs -ftest-coverage --coverage
 #LINKFLAGS 	:= -shared

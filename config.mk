@@ -2,17 +2,18 @@
 VERSION = 0.1
 
 # paths
-DEST 	:= /opt/fls
+DESTDIR 	?= /tmp
 
-INSTALL_PATH := $(DEST)
-
-CC 			?=
+CC 			?= gcc
+AR 			?= ar
 CFLAGS 		:= -Wall -Werror -pthread
+ARFLAGS		 = rcs
 DBGFLAGS 	:= -g -ggdb
 TESTFLAGS 	:= -fprofile-arcs -ftest-coverage --coverage
-LINKFLAGS 	:= -shared
+#LINKFLAGS 	:= -shared
 
-COBJFLAGS 	:= $(CFLAGS) -c -fPIC
+#COBJFLAGS 	:= $(CFLAGS) -c -fPIC
+COBJFLAGS 	:= $(CFLAGS) -c
 test: COBJFLAGS 	+= $(TESTFLAGS)
 test: LINKFLAGS 	+= -fprofile-arcs -lgcov
 debug: COBJFLAGS 	+= $(DBGFLAGS)

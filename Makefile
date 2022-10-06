@@ -58,6 +58,10 @@ deps:
 
 .PHONY: all
 all: makedir $(TARGET_CLIENT) $(TARGET_SERVER)
+	strip --strip-unneeded $(TARGET_CLIENT)
+	strip --strip-unneeded $(TARGET_SERVER)
+	ranlib $(TARGET_CLIENT)
+	ranlib $(TARGET_SERVER)
 
 .PHONY: debug
 debug: makedir $(TARGET_CLIENT) $(TARGET_SERVER)

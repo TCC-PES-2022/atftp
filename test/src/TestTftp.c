@@ -41,7 +41,7 @@ void start_tftp_server()
     pid_server = fork();
     if (pid_server == 0) {
         // Child process
-        char *args[] = {"./atftp/bin/atftpd",
+        char *args[] = {"./server/atftpd",
                         "--verbose=7",
                         "--trace",
                         "--port",

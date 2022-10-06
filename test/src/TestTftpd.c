@@ -57,7 +57,7 @@ void start_tftp_client(char *operation,
         // Child process
         char port_str[BUF_SIZE];
         sprintf(port_str, "%d", port);
-        char *args[] = {"./atftp/bin/atftp",
+        char *args[] = {"./client/atftp",
                         "--verbose",
                         "--trace",
                         operation,

@@ -2,17 +2,16 @@ include config.mk
 
 # path macros
 BIN_PATH := bin
-SRC_PATH := atftp
+SRC_PATH := src
 REPORT_PATH := report
 
-CLIENT_DEPS := libtftp.so
-SERVER_DEPS := libtftpd.so
+DEPS := atftp
 
 # compile macros
-TARGET_NAME_CLIENT := tftp_client
+TARGET_NAME_CLIENT := unity_test_tftp_client
 TARGET_CLIENT := $(BIN_PATH)/$(TARGET_NAME_CLIENT)
 
-TARGET_NAME_SERVER := tftp_server
+TARGET_NAME_SERVER := unity_test_tftp_server
 TARGET_SERVER := $(BIN_PATH)/$(TARGET_NAME_SERVER)
 
 # src files & obj files
@@ -26,11 +25,9 @@ LIBS_CLIENT := $(LDLIBS) -ltftp
 LIBS_SERVER := $(LDLIBS) -ltftpd
 
 # clean files list
-DISTCLEAN_LIST := $(OBJ_CLIENT) \
-				  $(OBJ_SERVER) \
-				  *.so
-
-CLEAN_LIST := $(TARGET_CLIENT) 	\
+CLEAN_LIST := $(OBJ_CLIENT) \
+			  $(OBJ_SERVER) \
+			  $(TARGET_CLIENT) 	\
 			  $(TARGET_SERVER) 	\
 			  *.txt 			\
 			  *.gcov			\
@@ -45,17 +42,15 @@ CLEAN_LIST := $(TARGET_CLIENT) 	\
 default: all
 
 # non-phony targets
-$(TARGET_CLIENT): $(CLIENT_DEPS) $(OBJ_CLIENT)
-	$(CC) $(LINKFLAGS) -o $@ $(OBJ_CLIENT) $(CFLAGS) $(INCFLAGS) $(LDFLAGS) $(LIBS_CLIENT)
+$(TARGET_CLIENT): $(OBJ_CLIENT)
+	$(CC) -o $@ $(OBJ_CLIENT) $(CFLAGS) $(LDFLAGS) $(LDLIBS) $(INCFLAGS)
 
-$(TARGET_SERVER): $(SERVER_DEPS) $(OBJ_SERVER)
-	$(CC) $(LINKFLAGS) -o $@ $(OBJ_SERVER) $(CFLAGS) $(INCFLAGS) $(LDFLAGS) $(LIBS_SERVER)
+$(TARGET_SERVER): $(OBJ_SERVER)
+	$(CC) -o $@ $(OBJ_SERVER) $(CFLAGS) $(LDFLAGS) $(LDLIBS) $(INCFLAGS)
 
-$(CLIENT_DEPS):
-	cd .. && $(MAKE) test
-
-$(SERVER_DEPS):
-	cd .. && $(MAKE) test
+atftp:
+	cd .. && $(MAKE) $(DEP_RULE) -j$(shell echo $$((`nproc`))) && \
+	$(MAKE) install DESTDIR=$(DEP_PATH)
 
 %.o: %.c*
 	$(CC) $(COBJFLAGS) -o $@ $< $(INCFLAGS)
@@ -73,31 +68,39 @@ $(SERVER_DEPS):
 makedir:
 	@mkdir -p $(BIN_PATH)
 
+.PHONY: deps
+deps: $(DEPS)
+
+.PHONY: debugdeps
+debugdeps: $(DEPS)
+
+.PHONY: testdeps
+testdeps: $(DEPS)
+
 .PHONY: all
 all: makedir $(TARGET_CLIENT) $(TARGET_SERVER)
 
 .PHONY: debug
 debug: makedir $(TARGET_CLIENT) $(TARGET_SERVER)
 
-.PHONY: client
-client: makedir $(TARGET_CLIENT)
-
-.PHONY: server
-server: makedir $(TARGET_SERVER)
-
 .PHONY: runtests
 runtests: runclient runserver
 
 .PHONY: runclient
 runclient:
-	LD_LIBRARY_PATH=. ./$(TARGET_CLIENT)
+	./$(TARGET_CLIENT)
 
 .PHONY: runserver
 runserver:
-	LD_LIBRARY_PATH=. ./$(TARGET_SERVER)
+	./$(TARGET_SERVER)
 
 .PHONY: report
-report:
+report: 
+	cd .. && $(MAKE) clean && cd -
+	$(MAKE) clean
+	$(MAKE) testdeps
+	$(MAKE) all
+	$(MAKE) runtests
 	@mkdir -p $(REPORT_PATH)
 	find .. -name "*.gcov" -exec gcov {} --object-directory ../obj \;
 	lcov --capture --directory ../obj --output-file $(REPORT_PATH)/coverage.info
@@ -107,8 +110,3 @@ report:
 clean:
 	@echo CLEAN $(CLEAN_LIST)
 	@rm -f $(CLEAN_LIST)
-
-.PHONY: distclean
-distclean:
-	@echo CLEAN $(DISTCLEAN_LIST)
-	@rm -f $(DISTCLEAN_LIST)

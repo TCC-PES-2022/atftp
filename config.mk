@@ -3,6 +3,7 @@ VERSION = 0.1
 
 # paths
 DESTDIR 	?= /tmp
+DEP_PATH 	?= /tmp
 
 CC 			?= gcc
 AR 			?= ar

@@ -24,10 +24,10 @@ OBJ_SERVER := $(addprefix $(OBJ_PATH)/, $(addsuffix .o, $(notdir $(basename $(SR
 OBJ_SERVER_DEBUG := $(addprefix $(OBJ_PATH)/, $(addsuffix .o, $(notdir $(basename $(SRC_SERVER)))))
 OBJ_SERVER_TEST := $(addprefix $(OBJ_PATH)/, $(addsuffix .o, $(notdir $(basename $(SRC_SERVER)))))
 
-# clean files list
-DISTCLEAN_LIST := $(OBJ_CLIENT) \
-                  $(OBJ_SERVER) \
-CLEAN_LIST := $(TARGET_CLIENT) \
+# clean files list    
+CLEAN_LIST := $(OBJ_CLIENT) \
+			  $(OBJ_SERVER) \
+			  $(TARGET_CLIENT) \
 			  $(TARGET_SERVER) \
               $(DISTCLEAN_LIST)
 
@@ -41,7 +41,7 @@ $(TARGET_CLIENT): $(OBJ_CLIENT)
 
 $(TARGET_SERVER): $(OBJ_SERVER)
 	@echo "Linking $@"
-	$(AR) $(ARFLAGS) $@ $(OBJ_CLIENT)
+	$(AR) $(ARFLAGS) $@ $(OBJ_SERVER)
 
 $(OBJ_PATH)/%.o: $(SRC_PATH)/%.c*
 	@echo "Building $<"
@@ -79,9 +79,4 @@ install:
 clean:
 	@echo CLEAN $(CLEAN_LIST)
 	@rm -f $(CLEAN_LIST)
-
-.PHONY: distclean
-distclean:
-	@echo CLEAN $(DISTCLEAN_LIST)
-	@rm -f $(DISTCLEAN_LIST)
 	@rm -rf $(OUT_PATH) $(OBJ_PATH)

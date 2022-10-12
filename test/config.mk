@@ -1,6 +1,7 @@
 # version
 VERSION = 0.1
 
+DESTDIR 	?= /tmp
 DEP_PATH 	?= $(DESTDIR)
 
 UNITY_ROOT=./Unity

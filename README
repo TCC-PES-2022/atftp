@@ -1,9 +1,20 @@
 ﻿A simplified library version based on atftp project. Check tftp_api.h and tftpd_api.h for details.
 
+To clone this repository, run:
+
+    git clone https://github.com/TCC-PES-2022/atftp.git
+    cd atftp
+    git checkout libatftp -f
+    git submodule update --init --recursive
+
 Before building your project, you may need to install some dependencies. To do so, run:
 
     sudo apt update
-    sudo apt install -y build-essential
+    sudo apt install -y build-essential 
+    
+For tests, you'll also need
+    
+    sudo apt install -y ruby-full lcov
 
 Export the instalation path to the environment:
     export DESTDIR=<path_to_install>

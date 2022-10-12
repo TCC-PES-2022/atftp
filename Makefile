@@ -6,11 +6,11 @@ OBJ_PATH := obj
 SRC_PATH := ./
 
 # compile macros
-TARGET_NAME_CLIENT := libtftp.a
-TARGET_CLIENT := $(OUT_PATH)/$(TARGET_NAME_CLIENT)
+TARGET_NAME_CLIENT := libtftp.a libtftp.so
+TARGET_CLIENT := $(addprefix $(OUT_PATH)/, $(TARGET_NAME_CLIENT))
 
-TARGET_NAME_SERVER := libtftpd.a
-TARGET_SERVER := $(OUT_PATH)/$(TARGET_NAME_SERVER)
+TARGET_NAME_SERVER := libtftpd.a libtftpd.so
+TARGET_SERVER := $(addprefix $(OUT_PATH)/, $(TARGET_NAME_SERVER))
 
 # src files & obj files
 SRC_CLIENT := tftp.c tftp_io.c logger.c options.c tftp_def.c tftp_file.c tftp_mtftp.c
@@ -35,13 +35,21 @@ CLEAN_LIST := $(OBJ_CLIENT) \
 default: all
 
 # non-phony targets
-$(TARGET_CLIENT): $(OBJ_CLIENT)
+$(OUT_PATH)/libtftp.a: $(OBJ_CLIENT)
 	@echo "Linking $@"
 	$(AR) $(ARFLAGS) $@ $(OBJ_CLIENT)
 
-$(TARGET_SERVER): $(OBJ_SERVER)
+$(OUT_PATH)/libtftp.so: $(OBJ_CLIENT)
+	@echo "Linking $@"
+	$(CC) -o $@ $(LINKFLAGS) $(OBJ_CLIENT) $(CFLAGS)
+
+$(OUT_PATH)/libtftpd.a: $(OBJ_SERVER)
 	@echo "Linking $@"
 	$(AR) $(ARFLAGS) $@ $(OBJ_SERVER)
+
+$(OUT_PATH)/libtftpd.so: $(OBJ_SERVER)
+	@echo "Linking $@"
+	$(CC) -o $@ $(LINKFLAGS) $(OBJ_SERVER) $(CFLAGS)
 
 $(OBJ_PATH)/%.o: $(SRC_PATH)/%.c*
 	@echo "Building $<"
@@ -58,10 +66,6 @@ deps:
 
 .PHONY: all
 all: makedir $(TARGET_CLIENT) $(TARGET_SERVER)
-	strip --strip-unneeded $(TARGET_CLIENT)
-	strip --strip-unneeded $(TARGET_SERVER)
-	ranlib $(TARGET_CLIENT)
-	ranlib $(TARGET_SERVER)
 
 .PHONY: debug
 debug: makedir $(TARGET_CLIENT) $(TARGET_SERVER)

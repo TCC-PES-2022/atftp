@@ -88,11 +88,11 @@ runtests: runclient runserver
 
 .PHONY: runclient
 runclient:
-	./$(TARGET_CLIENT)
+	LD_LIBRARY_PATH=$(DEP_PATH)/lib ./$(TARGET_CLIENT)
 
 .PHONY: runserver
 runserver:
-	./$(TARGET_SERVER)
+	LD_LIBRARY_PATH=$(DEP_PATH)/lib ./$(TARGET_SERVER)
 
 .PHONY: report
 report: 

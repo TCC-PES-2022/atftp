@@ -8,10 +8,10 @@ DEP_PATH 	?= $(DESTDIR)
 CC 			?= gcc
 AR 			?= ar
 CFLAGS 		:= -Wall -Werror -pthread
-ARFLAGS		:= -rcv
+ARFLAGS		:= -rcvs
 DBGFLAGS 	:= -g -ggdb
 TESTFLAGS 	:= -fprofile-arcs -ftest-coverage --coverage
-#LINKFLAGS 	:= -shared
+LINKFLAGS 	:= -shared
 
 COBJFLAGS 	:= $(CFLAGS) -c -fPIC
 test: COBJFLAGS 	+= $(TESTFLAGS)

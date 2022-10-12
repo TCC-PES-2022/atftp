@@ -1,5 +1,7 @@
 ﻿A simplified library version based on atftp project. Check tftp_api.h and tftpd_api.h for details.
 
+This project was modified to be used in project [ARIEL](https://github.com/TCC-PES-2022)
+
 To clone this repository, run:
 
     git clone https://github.com/TCC-PES-2022/atftp.git

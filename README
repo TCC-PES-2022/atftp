@@ -2,6 +2,7 @@
 
 Before building your project, you may need to install some dependencies. To do so, run:
 
+    sudo apt update
     sudo apt install -y build-essential
 
 Export the instalation path to the environment:
@@ -15,10 +16,7 @@ To build, run:
 To install, run:
     make install
 
-To test, run:
-    cd test && make deps && make make runtests
-
-To generate test coverage, run:
+To test and generate coverage report, run:
     make report
 
     Kollins G. Lima <kgl2@cin.ufpe.br>

@@ -1,4 +1,4 @@
-A simplified library version based on atftp project. Check tftp_api.h and tftpd_api.h for details.
+﻿A simplified library version based on atftp project. Check tftp_api.h and tftpd_api.h for details.
 
 This project was modified to be used in project [ARIEL](https://github.com/TCC-PES-2022)
 
@@ -9,14 +9,15 @@ To clone this repository, run:
     git checkout libatftp -f
     git submodule update --init --recursive
 
-Before building your project, you may need to install some dependencies. To do so, run:
+Before building your project, you may need to install some dependencies. 
+To do so, on Ubuntu, run:
 
     sudo apt update
-    sudo apt install -y build-essential 
+    sudo apt install -y build-essential=12.9ubuntu3 
     
 For tests, you'll also need
     
-    sudo apt install -y ruby-full lcov
+    sudo apt install -y ruby-full=1:3.0~exp1 lcov=1.15-1
 
 Export the instalation path to the environment:
     export DESTDIR=<path_to_install>

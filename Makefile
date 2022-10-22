@@ -6,10 +6,12 @@ OBJ_PATH := obj
 SRC_PATH := ./
 
 # compile macros
-TARGET_NAME_CLIENT := libtftp.a libtftp.so
+# TARGET_NAME_CLIENT := libtftp.a libtftp.so
+TARGET_NAME_CLIENT := libtftp.a
 TARGET_CLIENT := $(addprefix $(OUT_PATH)/, $(TARGET_NAME_CLIENT))
 
-TARGET_NAME_SERVER := libtftpd.a libtftpd.so
+# TARGET_NAME_SERVER := libtftpd.a libtftpd.so
+TARGET_NAME_SERVER := libtftpd.a
 TARGET_SERVER := $(addprefix $(OUT_PATH)/, $(TARGET_NAME_SERVER))
 
 # src files & obj files

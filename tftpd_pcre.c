@@ -30,7 +30,7 @@
 
 #include "tftp_def.h"
 #include "config.h"
-#include "logger.h"
+#include "atftp_logger.h"
 
 #include "tftpd_pcre.h"
 
@@ -67,31 +67,31 @@ tftpd_pcre_self_t *tftpd_pcre_open(char *filename)
      /* open file */
      if ((fh = fopen(filename, "r")) == NULL)
      {
-          logger(LOG_ERR, "Cannot open %s for reading: %s",
+          atftp_logger(LOG_ERR, "Cannot open %s for reading: %s",
                  filename, strerror(errno));
           return NULL;
      }
 
      /* compile and study pattern for lines */
-     logger(LOG_DEBUG, "Using file pattern %s", TFTPD_PCRE_FILE_PATTERN);
+     atftp_logger(LOG_DEBUG, "Using file pattern %s", TFTPD_PCRE_FILE_PATTERN);
      if ((file_re = pcre_compile(TFTPD_PCRE_FILE_PATTERN, 0,
                                  &error, &erroffset, NULL)) == NULL)
      {
-          logger(LOG_ERR, "PCRE file pattern failed to compile");
+          atftp_logger(LOG_ERR, "PCRE file pattern failed to compile");
           return NULL;
      }
 
      file_pe = pcre_study(file_re, 0, &error);
      if (error != NULL)
      {
-          logger(LOG_ERR, "PCRE file pattern failed to study");
+          atftp_logger(LOG_ERR, "PCRE file pattern failed to study");
           return NULL;
      }
     
      /* allocate header  and copy info */
      if ((self = calloc(1, sizeof(tftpd_pcre_self_t))) == NULL)
      {
-          logger(LOG_ERR, "calloc filed");
+          atftp_logger(LOG_ERR, "calloc filed");
           return NULL;
      }
      self->lock = (pthread_mutex_t) PTHREAD_MUTEX_INITIALIZER;
@@ -102,7 +102,7 @@ tftpd_pcre_self_t *tftpd_pcre_open(char *filename)
           fgets(line, MAXLEN, fh) != NULL;
           linecount++, curpatp = &pat->next)
      {
-          logger(LOG_DEBUG,"file: %s line: %d value: %s",
+          atftp_logger(LOG_DEBUG,"file: %s line: %d value: %s",
                  filename, linecount, line);
           
           /* allocate space for pattern info */
@@ -120,14 +120,14 @@ tftpd_pcre_self_t *tftpd_pcre_open(char *filename)
           pcre_get_substring_list(line, ovector, matches, (const char ***)&substrlist);
           for(subnum = 0; subnum <= matches; subnum++)
           {
-               logger(LOG_DEBUG,"file: %s line: %d substring: %d value: %s",
+               atftp_logger(LOG_DEBUG,"file: %s line: %d substring: %d value: %s",
                       filename, linecount, subnum, substrlist[subnum]);
           }
           pcre_free_substring_list((const char **)substrlist);
     
           if (matches < 2)
           {
-               logger(LOG_ERR, "error with pattern in file \"%s\" line %d",
+               atftp_logger(LOG_ERR, "error with pattern in file \"%s\" line %d",
                       filename, linecount);
                tftpd_pcre_close(self);
                pcre_free(file_re);
@@ -142,13 +142,13 @@ tftpd_pcre_self_t *tftpd_pcre_open(char *filename)
     
           /* extract right side */
           pcre_get_substring(line, ovector, matches, 2, (const char **)&pat->right_str);
-          logger(LOG_DEBUG,"pattern: %s right_str: %s", pat->pattern, pat->right_str);
+          atftp_logger(LOG_DEBUG,"pattern: %s right_str: %s", pat->pattern, pat->right_str);
           
           if ((pat->left_re = pcre_compile(pat->pattern, 0,
                                            &error, &erroffset, NULL)) == NULL)
           {
                /* compilation failed*/
-               logger(LOG_ERR,
+               atftp_logger(LOG_ERR,
                       "PCRE compilation failed in file \"%s\" line %d at %d: %s",
                       filename, linecount,
                       erroffset, error);
@@ -162,7 +162,7 @@ tftpd_pcre_self_t *tftpd_pcre_open(char *filename)
           pat->left_pe = pcre_study(pat->left_re, 0, &error);
           if (error != NULL)
           {
-               logger(LOG_ERR,
+               atftp_logger(LOG_ERR,
                       "PCRE study failed in file \"%s\" line %d: %s",
                       filename, linecount,
                       error);
@@ -222,10 +222,10 @@ int tftpd_pcre_makesub(struct tftpd_pcre_pattern *pat,
                switch (rc)
                {
                case PCRE_ERROR_NOMEMORY:
-                    logger(LOG_ERR, "PCRE out of memory");
+                    atftp_logger(LOG_ERR, "PCRE out of memory");
                     break;
                case PCRE_ERROR_NOSUBSTRING:
-                    logger(LOG_ERR,
+                    atftp_logger(LOG_ERR,
                            "PCRE attempted substitution failed for \"%s\" on pattern %d",
                            str, pat->linenum);
                     break;
@@ -252,11 +252,11 @@ int tftpd_pcre_sub(tftpd_pcre_self_t *self, char *outstr, int outlen, char *str)
      /* lock for duration */
      pthread_mutex_lock(&self->lock);
      
-     logger(LOG_DEBUG, "Looking to match \"%s\"", str);
+     atftp_logger(LOG_DEBUG, "Looking to match \"%s\"", str);
      /* interate over pattern list */
      for(pat = self->list; pat != NULL; pat = pat->next)
      {
-          logger(LOG_DEBUG,"Attempting to match \"%s\"", pat->pattern);
+          atftp_logger(LOG_DEBUG,"Attempting to match \"%s\"", pat->pattern);
           /* attempt match */
           matches = pcre_exec(pat->left_re, pat->left_pe,
                               str, (int)(strlen(str)),
@@ -269,21 +269,21 @@ int tftpd_pcre_sub(tftpd_pcre_self_t *self, char *outstr, int outlen, char *str)
           /* error in making a match - log and attempt to continue */
           if (matches < 0)
           {
-               logger(LOG_WARNING,
+               atftp_logger(LOG_WARNING,
                       "PCRE Matching error %d", matches);
                continue;
           }
           /* we have a match  - carry out substitution */
-          logger(LOG_DEBUG,"Pattern \"%s\" matches", pat->pattern);
+          atftp_logger(LOG_DEBUG,"Pattern \"%s\" matches", pat->pattern);
           tftpd_pcre_makesub(pat,
                                   outstr, outlen,
                                   str,
                                   ovector, matches);
-          logger(LOG_DEBUG,"outstr: \"%s\"", outstr);
+          atftp_logger(LOG_DEBUG,"outstr: \"%s\"", outstr);
           pthread_mutex_unlock(&self->lock);
           return 0;
      }
-     logger(LOG_DEBUG, "Failed to match \"%s\"", str);
+     atftp_logger(LOG_DEBUG, "Failed to match \"%s\"", str);
      pthread_mutex_unlock(&self->lock);
      return -1;
 }

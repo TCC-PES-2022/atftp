@@ -20,7 +20,7 @@
 #include <string.h>
 #include "tftp_def.h"
 #include "stats.h"
-#include "logger.h"
+#include "atftp_logger.h"
 
 /*
  * That structure allows global statistic to be collected. See stats.h.
@@ -155,26 +155,26 @@ void stats_print(void)
      s_stats.tms.tms_utime += s_stats.tms_thread.tms_utime;
      s_stats.tms.tms_stime += s_stats.tms_thread.tms_stime;
 
-     logger(LOG_INFO, "  Load measurements:");
-     logger(LOG_INFO, "   User: %8.3fs  Sys:%8.3fs",
+     atftp_logger(LOG_INFO, "  Load measurements:");
+     atftp_logger(LOG_INFO, "   User: %8.3fs  Sys:%8.3fs",
             (double)(s_stats.tms.tms_utime) / CLOCKS_PER_SEC,
             (double)(s_stats.tms.tms_stime) / CLOCKS_PER_SEC);
-     logger(LOG_INFO, "   Total:%8.3fs  CPU:%8.3f%%", 
+     atftp_logger(LOG_INFO, "   Total:%8.3fs  CPU:%8.3f%%", 
             (double)(tmp.tv_sec + tmp.tv_usec * 1e-6),
             (double)(s_stats.tms.tms_utime + s_stats.tms.tms_stime) /
             (double)(tmp.tv_sec + tmp.tv_usec * 1e-6));
-     logger(LOG_INFO, "  Time between connections:");
+     atftp_logger(LOG_INFO, "  Time between connections:");
      if (s_stats.min_time.tv_sec == LONG_MAX)
-          logger(LOG_INFO, "   Min: -----   Max: -----");
+          atftp_logger(LOG_INFO, "   Min: -----   Max: -----");
      else
-          logger(LOG_INFO, "   Min: %.3fs Max: %.3fs",
+          atftp_logger(LOG_INFO, "   Min: %.3fs Max: %.3fs",
                  (double)(s_stats.min_time.tv_sec + s_stats.min_time.tv_usec * 1e-6),
                  (double)(s_stats.max_time.tv_sec + s_stats.max_time.tv_usec * 1e-6));
-     logger(LOG_INFO, "  Thread stats:");
-     logger(LOG_INFO, "   simultaneous threads:     %d", s_stats.max_simul_threads);
-     logger(LOG_INFO, "   number of servers:        %d", s_stats.number_of_server);
-     logger(LOG_INFO, "   number of aborts:         %d", s_stats.number_of_abort);
-     logger(LOG_INFO, "   number of errors:         %d", s_stats.number_of_err);
-     logger(LOG_INFO, "   number of files sent:     %d", s_stats.num_file_send);
-     logger(LOG_INFO, "   number of files received: %d", s_stats.num_file_recv);
+     atftp_logger(LOG_INFO, "  Thread stats:");
+     atftp_logger(LOG_INFO, "   simultaneous threads:     %d", s_stats.max_simul_threads);
+     atftp_logger(LOG_INFO, "   number of servers:        %d", s_stats.number_of_server);
+     atftp_logger(LOG_INFO, "   number of aborts:         %d", s_stats.number_of_abort);
+     atftp_logger(LOG_INFO, "   number of errors:         %d", s_stats.number_of_err);
+     atftp_logger(LOG_INFO, "   number of files sent:     %d", s_stats.num_file_send);
+     atftp_logger(LOG_INFO, "   number of files received: %d", s_stats.num_file_recv);
 }

@@ -22,7 +22,7 @@
 #include <string.h>
 #include <signal.h>
 #include "tftpd.h"
-#include "logger.h"
+#include "atftp_logger.h"
 #include "tftpd_api.h"
 
 /*

@@ -31,7 +31,7 @@
 #include "tftpd.h"
 #include "tftp_io.h"
 #include "tftp_def.h"
-#include "logger.h"
+#include "atftp_logger.h"
 #include "options.h"
 #ifdef HAVE_PCRE
 #include "tftpd_pcre.h"
@@ -85,7 +85,7 @@ int tftpd_rules_check(char *filename)
      if (strstr(filename, "/../") != NULL)
      {
           /* Illegal access. */
-          logger(LOG_INFO, "File name with /../ are forbidden");
+          atftp_logger(LOG_INFO, "File name with /../ are forbidden");
           return ERR;  
      }
 #endif
@@ -132,7 +132,7 @@ int tftpd_receive_file(struct thread_data *data)
      if (strcasecmp(data->tftp_options[OPT_MODE].value, "netascii") == 0)
      {
           convert = 1;
-          logger(LOG_DEBUG, "will do netascii conversion");
+          atftp_logger(LOG_DEBUG, "will do netascii conversion");
      }
 
      /* file name verification */
@@ -143,7 +143,7 @@ int tftpd_receive_file(struct thread_data *data)
           tftp_send_error(sockfd, sa, EACCESS, data->data_buffer,
                           data->data_buffer_size, NULL);
           if (data->trace)
-               logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", EACCESS,
+               atftp_logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", EACCESS,
                       tftp_errmsg[EACCESS]);
           return ERR;
      }
@@ -152,7 +152,7 @@ int tftpd_receive_file(struct thread_data *data)
      if (((result = opt_get_tsize(data->tftp_options)) > -1) && !convert)
      {
           opt_set_tsize(result, data->tftp_options);
-          logger(LOG_DEBUG, "tsize option -> %d", result);
+          atftp_logger(LOG_DEBUG, "tsize option -> %d", result);
      }
 
      /* timeout option */
@@ -163,13 +163,13 @@ int tftpd_receive_file(struct thread_data *data)
                tftp_send_error(sockfd, sa, EOPTNEG, data->data_buffer,
                                data->data_buffer_size, NULL);
                if (data->trace)
-                    logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", EOPTNEG,
+                    atftp_logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", EOPTNEG,
                            tftp_errmsg[EOPTNEG]);
                return ERR;
           }
           timeout = result;
           opt_set_timeout(timeout, data->tftp_options);
-          logger(LOG_DEBUG, "timeout option -> %d", timeout);
+          atftp_logger(LOG_DEBUG, "timeout option -> %d", timeout);
      }
 
      /*
@@ -188,12 +188,12 @@ int tftpd_receive_file(struct thread_data *data)
           opt_options_to_string(data->tftp_options, string, MAXLEN);
           if ((result < strlen(string)-2) || (result > 65464))
           {
-               logger(LOG_NOTICE, "options <%s> require roughly a blksize of %d for the OACK.",
+               atftp_logger(LOG_NOTICE, "options <%s> require roughly a blksize of %d for the OACK.",
                       string, strlen(string)-2);
                tftp_send_error(sockfd, sa, EOPTNEG, data->data_buffer,
                                data->data_buffer_size, NULL);
                if (data->trace)
-                    logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", EOPTNEG,
+                    atftp_logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", EOPTNEG,
                            tftp_errmsg[EOPTNEG]);
                return ERR;
           }
@@ -203,7 +203,7 @@ int tftpd_receive_file(struct thread_data *data)
 
           if (data->data_buffer == NULL)
           {
-               logger(LOG_ERR, "memory allocation failure");
+               atftp_logger(LOG_ERR, "memory allocation failure");
                return ERR;
           }
           tftphdr = (struct tftphdr *)data->data_buffer;
@@ -213,12 +213,12 @@ int tftpd_receive_file(struct thread_data *data)
                tftp_send_error(sockfd, sa, ENOSPACE, data->data_buffer,
                                data->data_buffer_size, NULL);
                if (data->trace)
-                    logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", ENOSPACE,
+                    atftp_logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", ENOSPACE,
                            tftp_errmsg[ENOSPACE]);
                return ERR;
           }
           opt_set_blksize(result, data->tftp_options);
-          logger(LOG_DEBUG, "blksize option -> %d", result);
+          atftp_logger(LOG_DEBUG, "blksize option -> %d", result);
      }
 
      /* that's it, we start receiving the file */
@@ -226,11 +226,11 @@ int tftpd_receive_file(struct thread_data *data)
      {
           if (*(data->tftpd_cancel))
           {
-               logger(LOG_DEBUG, "thread cancelled");
+               atftp_logger(LOG_DEBUG, "thread cancelled");
                tftp_send_error(sockfd, sa, EUNDEF, data->data_buffer,
                                data->data_buffer_size, NULL);
                if (data->trace)
-                    logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", EUNDEF,
+                    atftp_logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", EUNDEF,
                            tftp_errmsg[EUNDEF]);
                state = S_ABORT;
           }
@@ -248,7 +248,7 @@ int tftpd_receive_file(struct thread_data *data)
                timeout_state = state;
                tftp_send_ack(sockfd, sa, block_number);
                if (data->trace)
-                    logger(LOG_DEBUG, "sent ACK <block: %ld>", block_number);
+                    atftp_logger(LOG_DEBUG, "sent ACK <block: %ld>", block_number);
                if (all_blocks_received)
                     state = S_END;
                else
@@ -260,7 +260,7 @@ int tftpd_receive_file(struct thread_data *data)
                               data->data_buffer, data->data_buffer_size);
                opt_options_to_string(data->tftp_options, string, MAXLEN);
                if (data->trace)
-                    logger(LOG_DEBUG, "sent OACK <%s>", string);
+                    atftp_logger(LOG_DEBUG, "sent OACK <%s>", string);
                state = S_WAIT_PACKET;
                break;
           case S_WAIT_PACKET:
@@ -274,14 +274,14 @@ int tftpd_receive_file(struct thread_data *data)
                     number_of_timeout++;
                     if (number_of_timeout > NB_OF_RETRY)
                     {
-                         logger(LOG_INFO, "client (%s) not responding",
+                         atftp_logger(LOG_INFO, "client (%s) not responding",
                                 sockaddr_print_addr(&data->client_info->client,
                                                     addr_str, sizeof(addr_str)));
                          state = S_END;
                     }
                     else
                     {
-                         logger(LOG_WARNING, "timeout: retrying...");
+                         atftp_logger(LOG_WARNING, "timeout: retrying...");
                          state = timeout_state;
                     }
                     break;
@@ -301,17 +301,17 @@ int tftpd_receive_file(struct thread_data *data)
                     {
                          if (data->checkport)
                          {
-                              logger(LOG_WARNING, "packet discarded <%s>",
+                              atftp_logger(LOG_WARNING, "packet discarded <%s>",
                                      sockaddr_print_addr(&from, addr_str,
                                                          sizeof(addr_str)));
                               break;
                          }
                          else
-                              logger(LOG_WARNING, "source port mismatch, check bypassed");
+                              atftp_logger(LOG_WARNING, "source port mismatch, check bypassed");
                     }
                     Strncpy(string, tftphdr->th_msg, sizeof(string));
                     if (data->trace)
-                         logger(LOG_DEBUG, "received ERROR <code: %d, msg: %s>",
+                         atftp_logger(LOG_DEBUG, "received ERROR <code: %d, msg: %s>",
                                 ntohs(tftphdr->th_code), string);
                     state = S_ABORT;
                     break;
@@ -321,30 +321,30 @@ int tftpd_receive_file(struct thread_data *data)
                     {
                          if (data->checkport)
                          {
-                              logger(LOG_WARNING, "packet discarded <%s>",
+                              atftp_logger(LOG_WARNING, "packet discarded <%s>",
                                      sockaddr_print_addr(&from, addr_str,
                                                          sizeof(addr_str)));
                               break;
                          }
                          else
-                              logger(LOG_WARNING, "source port mismatch, check bypassed");
+                              atftp_logger(LOG_WARNING, "source port mismatch, check bypassed");
                     }
                     number_of_timeout = 0;
                     state = S_DATA_RECEIVED;
                     break;
                case GET_DISCARD:
                     /* FIXME: should we increment number_of_timeout */
-                    logger(LOG_WARNING, "packet discarded <%s>",
+                    atftp_logger(LOG_WARNING, "packet discarded <%s>",
                            sockaddr_print_addr(&from, addr_str,
                                                sizeof(addr_str)));
                     break;
                case ERR:
-                    logger(LOG_ERR, "%s: %d: recvfrom: %s",
+                    atftp_logger(LOG_ERR, "%s: %d: recvfrom: %s",
                            __FILE__, __LINE__, strerror(errno));
                     state = S_ABORT;
                     break;
                default:
-                    logger(LOG_ERR, "%s: %d: abnormal return value %d",
+                    atftp_logger(LOG_ERR, "%s: %d: abnormal return value %d",
                            __FILE__, __LINE__, result);
                     state = S_ABORT;
                }
@@ -363,7 +363,7 @@ int tftpd_receive_file(struct thread_data *data)
                                 get_error_msg(data->section_handler_ptr, &custom_error_msg);
 
                                /* Can't create the file. */
-                               logger(LOG_INFO, "Can't open %s for writing", filename);
+                               atftp_logger(LOG_INFO, "Can't open %s for writing", filename);
                                tftp_send_error(sockfd, sa, EACCESS,
                                                data->data_buffer,
                                                data->data_buffer_size,
@@ -374,7 +374,7 @@ int tftpd_receive_file(struct thread_data *data)
                                }
 
                                if (data->trace)
-                                       logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", EACCESS,
+                                       atftp_logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", EACCESS,
                                                        tftp_errmsg[EACCESS]);
                                return ERR;
                        }
@@ -384,19 +384,19 @@ int tftpd_receive_file(struct thread_data *data)
 	       block_number = tftp_rollover_blocknumber(
 		      ntohs(tftphdr->th_block), prev_block_number, 0);
                if (data->trace)
-                    logger(LOG_DEBUG, "received DATA <block: %ld, size: %d>",
+                    atftp_logger(LOG_DEBUG, "received DATA <block: %ld, size: %d>",
                            block_number, data_size - 4);
 
                if (tftp_file_write(fp, tftphdr->th_data, data->data_buffer_size - 4, block_number,
                                    data_size - 4, convert, &prev_block_number, &temp)
                    != data_size - 4)
                {
-                    logger(LOG_ERR, "%s: %d: error writing to file %s",
+                    atftp_logger(LOG_ERR, "%s: %d: error writing to file %s",
                            __FILE__, __LINE__, filename);
                     tftp_send_error(sockfd, sa, ENOSPACE, data->data_buffer,
                                     data->data_buffer_size, NULL);
                     if (data->trace)
-                         logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>",
+                         atftp_logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>",
                                 ENOSPACE, tftp_errmsg[ENOSPACE]);
                     state = S_ABORT;
                     break;
@@ -433,7 +433,7 @@ int tftpd_receive_file(struct thread_data *data)
                       data->close_file_cb(data->section_handler_ptr, fp, data->close_file_ctx);
                   }
               }
-               logger(LOG_ERR, "%s: %d: tftpd_file.c: huh?",
+               atftp_logger(LOG_ERR, "%s: %d: tftpd_file.c: huh?",
                       __FILE__, __LINE__);
                return ERR;
           }
@@ -497,7 +497,7 @@ int tftpd_send_file(struct thread_data *data)
      if (strcasecmp(data->tftp_options[OPT_MODE].value, "netascii") == 0)
      {
           convert = 1;
-          logger(LOG_DEBUG, "will do netascii conversion");
+          atftp_logger(LOG_DEBUG, "will do netascii conversion");
      }
 
      /* file name verification */
@@ -508,7 +508,7 @@ int tftpd_send_file(struct thread_data *data)
           tftp_send_error(sockfd, sa, EACCESS, data->data_buffer,
                           data->data_buffer_size, NULL);
           if (data->trace)
-               logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", EACCESS,
+               atftp_logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", EACCESS,
                       tftp_errmsg[EACCESS]);
           return ERR;
      }
@@ -530,11 +530,11 @@ int tftpd_send_file(struct thread_data *data)
                if (tftpd_pcre_sub(pcre_top, string, MAXLEN,
                                   data->tftp_options[OPT_FILENAME].value) < 0)
                {
-                    logger(LOG_DEBUG, "PCRE failed to match");
+                    atftp_logger(LOG_DEBUG, "PCRE failed to match");
                }
                else
                {
-                    logger(LOG_INFO, "PCRE mapped %s -> %s", 
+                    atftp_logger(LOG_INFO, "PCRE mapped %s -> %s", 
                            data->tftp_options[OPT_FILENAME].value, string);
                     Strncpy(filename, string, MAXLEN);
                     /* recheck those rules */
@@ -543,7 +543,7 @@ int tftpd_send_file(struct thread_data *data)
                          tftp_send_error(sockfd, sa, EACCESS, data->data_buffer,
                                          data->data_buffer_size, NULL);
                          if (data->trace)
-                              logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", EACCESS,
+                              atftp_logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", EACCESS,
                                      tftp_errmsg[EACCESS]);
                          return ERR;
                     }
@@ -572,9 +572,9 @@ int tftpd_send_file(struct thread_data *data)
               free(custom_error_msg);
           }
 
-          logger(LOG_INFO, "File %s not found", filename);
+          atftp_logger(LOG_INFO, "File %s not found", filename);
           if (data->trace)
-               logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", ENOTFOUND,
+               atftp_logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", ENOTFOUND,
                       tftp_errmsg[ENOTFOUND]);
           return ERR;
      }
@@ -590,7 +590,7 @@ int tftpd_send_file(struct thread_data *data)
      if ((opt_get_tsize(data->tftp_options) > -1) && !convert)
      {
           opt_set_tsize(file_size, data->tftp_options);
-          logger(LOG_INFO, "tsize option -> %d", file_size);
+          atftp_logger(LOG_INFO, "tsize option -> %d", file_size);
      }
 
      /* timeout option */
@@ -601,7 +601,7 @@ int tftpd_send_file(struct thread_data *data)
                tftp_send_error(sockfd, sa, EOPTNEG, data->data_buffer,
                                data->data_buffer_size, NULL);
                if (data->trace)
-                    logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", EOPTNEG,
+                    atftp_logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", EOPTNEG,
                            tftp_errmsg[EOPTNEG]);
 
                if (data->close_file_cb != NULL) {
@@ -613,7 +613,7 @@ int tftpd_send_file(struct thread_data *data)
           }
           timeout = result;
           opt_set_timeout(timeout, data->tftp_options);
-          logger(LOG_INFO, "timeout option -> %d", timeout);
+          atftp_logger(LOG_INFO, "timeout option -> %d", timeout);
      }
 
      /*
@@ -632,12 +632,12 @@ int tftpd_send_file(struct thread_data *data)
           opt_options_to_string(data->tftp_options, string, MAXLEN);
           if ((result < strlen(string)-2) || (result > 65464))
           {
-               logger(LOG_NOTICE, "options <%s> require roughly a blksize of %d for the OACK.",
+               atftp_logger(LOG_NOTICE, "options <%s> require roughly a blksize of %d for the OACK.",
                       string, strlen(string)-2);
                tftp_send_error(sockfd, sa, EOPTNEG, data->data_buffer,
                                data->data_buffer_size, NULL);
                if (data->trace)
-                    logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", EOPTNEG,
+                    atftp_logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", EOPTNEG,
                            tftp_errmsg[EOPTNEG]);
 
               if (data->close_file_cb != NULL) {
@@ -653,7 +653,7 @@ int tftpd_send_file(struct thread_data *data)
 
           if (data->data_buffer == NULL)
           {
-               logger(LOG_ERR, "memory allocation failure");
+               atftp_logger(LOG_ERR, "memory allocation failure");
               if (data->close_file_cb != NULL) {
                   data->close_file_cb(data->section_handler_ptr, fp, data->close_file_ctx);
               } else {
@@ -668,7 +668,7 @@ int tftpd_send_file(struct thread_data *data)
                tftp_send_error(sockfd, sa, ENOSPACE, data->data_buffer,
                                data->data_buffer_size, NULL);
                if (data->trace)
-                    logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", ENOSPACE,
+                    atftp_logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", ENOSPACE,
                            tftp_errmsg[ENOSPACE]);
               if (data->close_file_cb != NULL) {
                   data->close_file_cb(data->section_handler_ptr, fp, data->close_file_ctx);
@@ -678,7 +678,7 @@ int tftpd_send_file(struct thread_data *data)
                return ERR;
           }
           opt_set_blksize(result, data->tftp_options);
-          logger(LOG_INFO, "blksize option -> %d", result);
+          atftp_logger(LOG_INFO, "blksize option -> %d", result);
      }
 
      /* Verify that the file can be sent in MAXBLOCKS blocks of BLKSIZE octets */
@@ -686,10 +686,10 @@ int tftpd_send_file(struct thread_data *data)
      {
           tftp_send_error(sockfd, sa, EUNDEF, data->data_buffer,
                           data->data_buffer_size, NULL);
-          logger(LOG_NOTICE, "Requested file too big, increase BLKSIZE");
-          logger(LOG_NOTICE, "Only %d blocks of %d bytes can be served via multicast", MAXBLOCKS, data->data_buffer_size);
+          atftp_logger(LOG_NOTICE, "Requested file too big, increase BLKSIZE");
+          atftp_logger(LOG_NOTICE, "Only %d blocks of %d bytes can be served via multicast", MAXBLOCKS, data->data_buffer_size);
           if (data->trace)
-               logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", EUNDEF,
+               atftp_logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", EUNDEF,
                       tftp_errmsg[EUNDEF]);
          if (data->close_file_cb != NULL) {
              data->close_file_cb(data->section_handler_ptr, fp, data->close_file_ctx);
@@ -708,10 +708,10 @@ int tftpd_send_file(struct thread_data *data)
 	  {
 		tftp_send_error(sockfd, sa, EUNDEF, data->data_buffer,
                         data->data_buffer_size, NULL);
-		logger(LOG_NOTICE, "Requested file too big, increase BLKSIZE");
-		logger(LOG_NOTICE, "Only %d blocks of %d bytes can be served.", 65536, data->data_buffer_size);
+		atftp_logger(LOG_NOTICE, "Requested file too big, increase BLKSIZE");
+		atftp_logger(LOG_NOTICE, "Only %d blocks of %d bytes can be served.", 65536, data->data_buffer_size);
 		if (data->trace)
-		    logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", EUNDEF,
+		    atftp_logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", EUNDEF,
 			    tftp_errmsg[EUNDEF]);
           if (data->close_file_cb != NULL) {
               data->close_file_cb(data->section_handler_ptr, fp, data->close_file_ctx);
@@ -724,16 +724,16 @@ int tftpd_send_file(struct thread_data *data)
           /*
            * Find a server with the same options to give up the client.
            */
-          logger(LOG_DEBUG, "Searching a server thread to give up this client");
+          atftp_logger(LOG_DEBUG, "Searching a server thread to give up this client");
           result = tftpd_list_find_multicast_server_and_add(data->handler, &thread, data, data->client_info);
           if ( result > 0)
           {
                /* add this client to its list of client */
                if (result == 1)
-                    logger(LOG_DEBUG, "Added client %p to thread %p", data->client_info,
+                    atftp_logger(LOG_DEBUG, "Added client %p to thread %p", data->client_info,
                            thread);
                else
-                    logger(LOG_DEBUG, "Client (%p) is already in list of thread %p",
+                    atftp_logger(LOG_DEBUG, "Client (%p) is already in list of thread %p",
                            data->client_info, thread);
 
                /* NULL our own pointer so we don't free memory */
@@ -743,7 +743,7 @@ int tftpd_send_file(struct thread_data *data)
                /* Look at needed information to oack that client */
                opt_set_multicast(data->tftp_options, thread->mc_addr,
                                  thread->mc_port, 0);
-               logger(LOG_INFO, "multicast option -> %s,%d,%d",
+               atftp_logger(LOG_INFO, "multicast option -> %s,%d,%d",
                       thread->mc_addr, thread->mc_port, 0);
 
                /* Send an OACK to that client. There is a possible race condition
@@ -753,12 +753,12 @@ int tftpd_send_file(struct thread_data *data)
                   OACK or continu with the next client */
                opt_options_to_string(data->tftp_options, string, MAXLEN);
                if (data->trace)
-                    logger(LOG_DEBUG, "sent OACK <%s>", string);
+                    atftp_logger(LOG_DEBUG, "sent OACK <%s>", string);
                tftp_send_oack(thread->sockfd, sa, data->tftp_options,
                               data->data_buffer, data->data_buffer_size);
 
                /* We are done */
-               logger(LOG_INFO, "Client transferred to %p", thread);
+               atftp_logger(LOG_INFO, "Client transferred to %p", thread);
               if (data->close_file_cb != NULL) {
                   data->close_file_cb(data->section_handler_ptr, fp, data->close_file_ctx);
               } else {
@@ -773,7 +773,7 @@ int tftpd_send_file(struct thread_data *data)
                /* configure socket, get an IP address */
                if (tftpd_mcast_get_tid(&data->mc_addr, &data->mc_port) != OK)
                {
-                    logger(LOG_ERR, "No multicast address/port available");
+                    atftp_logger(LOG_ERR, "No multicast address/port available");
                    if (data->close_file_cb != NULL) {
                        data->close_file_cb(data->section_handler_ptr, fp, data->close_file_ctx);
                    } else {
@@ -781,7 +781,7 @@ int tftpd_send_file(struct thread_data *data)
                    }
                     return ERR;
                }
-               logger(LOG_DEBUG, "mcast_addr: %s, mcast_port: %d",
+               atftp_logger(LOG_DEBUG, "mcast_addr: %s, mcast_port: %d",
                       data->mc_addr, data->mc_port);
 
                /* convert address */
@@ -791,7 +791,7 @@ int tftpd_send_file(struct thread_data *data)
                if (getaddrinfo(data->mc_addr, NULL, &hints, &result) ||
                    sockaddr_set_addrinfo(&data->sa_mcast, result))
                {
-                    logger(LOG_ERR, "bad address %s\n",data->mc_addr);
+                    atftp_logger(LOG_ERR, "bad address %s\n",data->mc_addr);
                    if (data->close_file_cb != NULL) {
                        data->close_file_cb(data->section_handler_ptr, fp, data->close_file_ctx);
                    } else {
@@ -805,7 +805,7 @@ int tftpd_send_file(struct thread_data *data)
                /* verify address is multicast */
                if (!sockaddr_is_multicast(&data->sa_mcast))
                {
-                    logger(LOG_ERR, "bad multicast address %s\n",
+                    atftp_logger(LOG_ERR, "bad multicast address %s\n",
                            sockaddr_print_addr(&data->sa_mcast,
                                                addr_str, sizeof(addr_str)));
                    if (data->close_file_cb != NULL) {
@@ -828,7 +828,7 @@ int tftpd_send_file(struct thread_data *data)
                /* set options data for OACK */
                opt_set_multicast(data->tftp_options, data->mc_addr,
                                  data->mc_port, 1);
-               logger(LOG_INFO, "multicast option -> %s,%d,%d", data->mc_addr,
+               atftp_logger(LOG_INFO, "multicast option -> %s,%d,%d", data->mc_addr,
                       data->mc_port, 1);
             
                /* the socket must be unconnected for multicast */
@@ -852,7 +852,7 @@ int tftpd_send_file(struct thread_data *data)
           if (*(data->tftpd_cancel))
           {
                /* Send error to all client */
-               logger(LOG_DEBUG, "thread cancelled");
+               atftp_logger(LOG_DEBUG, "thread cancelled");
                do
                {
                     tftpd_clientlist_done(data->handler, data, client_info, NULL);
@@ -861,7 +861,7 @@ int tftpd_send_file(struct thread_data *data)
                                     data->data_buffer_size, NULL);
                     if (data->trace)
                     {
-                         logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s> to %s", EUNDEF,
+                         atftp_logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s> to %s", EUNDEF,
                                 tftp_errmsg[EUNDEF],
                                 sockaddr_print_addr(&client_info->client,
                                                     addr_str, sizeof(addr_str)));
@@ -882,7 +882,7 @@ int tftpd_send_file(struct thread_data *data)
                timeout_state = state;
                opt_options_to_string(data->tftp_options, string, MAXLEN);
                if (data->trace)
-                    logger(LOG_DEBUG, "sent OACK <%s>", string);
+                    atftp_logger(LOG_DEBUG, "sent OACK <%s>", string);
                tftp_send_oack(sockfd, sa, data->tftp_options,
                               data->data_buffer, data->data_buffer_size);
                state = S_WAIT_PACKET;
@@ -910,7 +910,7 @@ int tftpd_send_file(struct thread_data *data)
                                    data_size, data->data_buffer);
                }
                if (data->trace)
-                    logger(LOG_DEBUG, "sent DATA <block: %ld, size %d>",
+                    atftp_logger(LOG_DEBUG, "sent DATA <block: %ld, size %d>",
                            block_number + 1, data_size - 4);
                state = S_WAIT_PACKET;
                break;
@@ -925,7 +925,7 @@ int tftpd_send_file(struct thread_data *data)
                     
                     if (number_of_timeout > NB_OF_RETRY)
                     {
-                         logger(LOG_INFO, "client (%s) not responding",
+                         atftp_logger(LOG_INFO, "client (%s) not responding",
                                 sockaddr_print_addr(&client_info->client,
                                                     addr_str, sizeof(addr_str)));
                          state = S_END;
@@ -948,13 +948,13 @@ int tftpd_send_file(struct thread_data *data)
                                    opt_options_to_string(options,
                                                          string, MAXLEN);
                                    if (data->trace)
-                                        logger(LOG_DEBUG, "sent OACK <%s>", string);
+                                        atftp_logger(LOG_DEBUG, "sent OACK <%s>", string);
                                    tftp_send_oack(sockfd, sa, options,
                                                   data->data_buffer, data->data_buffer_size);
 
                                    /* Proceed normally with the next client,
                                       going to OACK state */
-                                   logger(LOG_INFO,
+                                   atftp_logger(LOG_INFO,
                                           "Serving next client: %s:%d",
                                           sockaddr_print_addr(
                                                &client_info->client,
@@ -972,14 +972,14 @@ int tftpd_send_file(struct thread_data *data)
                               else if (client_info == NULL)
                               {
                                    /* we got a big problem if this happend */
-                                   logger(LOG_ERR,
+                                   atftp_logger(LOG_ERR,
                                           "%s: %d: abnormal condition",
                                           __FILE__, __LINE__);
                                    state = S_ABORT;
                                    break;
                               }
                          }
-                         logger(LOG_WARNING, "timeout: retrying...");
+                         atftp_logger(LOG_WARNING, "timeout: retrying...");
                          state = timeout_state;
                     }
                     break;
@@ -996,12 +996,12 @@ int tftpd_send_file(struct thread_data *data)
                               if ((last_block != -1) && (block_number > last_block))
                               {
                                    if (tftpd_clientlist_done(data->handler, data, NULL, &from) == 1)
-                                        logger(LOG_DEBUG, "client done <%s>",
+                                        atftp_logger(LOG_DEBUG, "client done <%s>",
                                                sockaddr_print_addr(
                                                     &from, addr_str,
                                                     sizeof(addr_str)));
                                    else
-                                        logger(LOG_WARNING, "packet discarded <%s:%d>",
+                                        atftp_logger(LOG_WARNING, "packet discarded <%s:%d>",
                                                sockaddr_print_addr(
                                                     &from, addr_str,
                                                     sizeof(addr_str)),
@@ -1013,7 +1013,7 @@ int tftpd_send_file(struct thread_data *data)
                                    opt_options_to_string(options,
                                                          string, MAXLEN);
                                    if (data->trace)
-                                        logger(LOG_DEBUG, "sent OACK <%s>", string);
+                                        atftp_logger(LOG_DEBUG, "sent OACK <%s>", string);
                                    tftp_send_oack(sockfd, &from, options,
                                                   data->data_buffer, data->data_buffer_size);
                               }
@@ -1028,14 +1028,14 @@ int tftpd_send_file(struct thread_data *data)
                          {
                               if (data->checkport)
                               {
-                                   logger(LOG_WARNING, "packet discarded <%s:%d>",
+                                   atftp_logger(LOG_WARNING, "packet discarded <%s:%d>",
                                           sockaddr_print_addr(&from, addr_str,
                                                               sizeof(addr_str)),
                                           sockaddr_get_port(&from));
                                    break;
                               }
                               else
-                                   logger(LOG_WARNING,
+                                   atftp_logger(LOG_WARNING,
                                           "source port mismatch, check bypassed");
                          }
                     }
@@ -1050,7 +1050,7 @@ int tftpd_send_file(struct thread_data *data)
 				ntohs(tftphdr->th_block), prev_block_number, 0);
 		    }
                     if (data->trace)
-                         logger(LOG_DEBUG, "received ACK <block: %ld>",
+                         atftp_logger(LOG_DEBUG, "received ACK <block: %ld>",
                                 block_number);
 
                     /* Now check the ACK number and possibly ignore the request */
@@ -1061,7 +1061,7 @@ int tftpd_send_file(struct thread_data *data)
                          if (tftpd_prevent_sas) {
                               if (prev_sent_block >= block_number) {
                                    if (data->trace)
-                                        logger(LOG_DEBUG, "received duplicated ACK <block: %d >= %d>", prev_sent_block, block_number);
+                                        atftp_logger(LOG_DEBUG, "received duplicated ACK <block: %d >= %d>", prev_sent_block, block_number);
                                    break;
                               } else
                                    prev_sent_block = block_number;
@@ -1073,11 +1073,11 @@ int tftpd_send_file(struct thread_data *data)
                               if (prev_sent_block == block_number) {
                                    /* drop if number of ACKs == times of previous block sending */
                                    if (++prev_ack_count == prev_sent_count) {
-                                        logger(LOG_DEBUG, "ACK count (%d) == previous block transmission count -> dropping ACK", prev_ack_count);
+                                        atftp_logger(LOG_DEBUG, "ACK count (%d) == previous block transmission count -> dropping ACK", prev_ack_count);
                                         break;
                                    }
                                    /* else resend the block */
-                                   logger(LOG_DEBUG, "resending block %d", block_number + 1);
+                                   atftp_logger(LOG_DEBUG, "resending block %d", block_number + 1);
                               }
                               /* received ACK to sent block -> move on to next block */
                               else if (prev_sent_block < block_number) {
@@ -1088,7 +1088,7 @@ int tftpd_send_file(struct thread_data *data)
                               }
                               /* block with low number -> ignore it completely */
                               else {
-                                   logger(LOG_DEBUG, "ignoring ACK %d", block_number);
+                                   atftp_logger(LOG_DEBUG, "ignoring ACK %d", block_number);
                                    break;
                               }
                          }
@@ -1097,9 +1097,9 @@ int tftpd_send_file(struct thread_data *data)
                          /* if turned on, check whether the block request isn't already fulfilled */
                          if (tftpd_prevent_sas) {
                               if (prev_sent_block + 1 != block_number) {
-                                   logger(LOG_WARNING, "timeout: retrying...");
+                                   atftp_logger(LOG_WARNING, "timeout: retrying...");
                                    if (data->trace)
-                                        logger(LOG_DEBUG, "received out of order ACK <block: %d != %d>", prev_sent_block + 1, block_number);
+                                        atftp_logger(LOG_DEBUG, "received out of order ACK <block: %d != %d>", prev_sent_block + 1, block_number);
                                    break;
                               } else {
                                    prev_sent_block = block_number;
@@ -1111,11 +1111,11 @@ int tftpd_send_file(struct thread_data *data)
                               if (prev_sent_block == block_number) {
                                    /* drop if number of ACKs == times of previous block sending */
                                    if (++prev_ack_count == prev_sent_count) {
-                                        logger(LOG_DEBUG, "ACK count (%d) == previous block transmission count -> dropping ACK", prev_ack_count);
+                                        atftp_logger(LOG_DEBUG, "ACK count (%d) == previous block transmission count -> dropping ACK", prev_ack_count);
                                         break;
                                    }
                                    /* else resend the block */
-                                   logger(LOG_DEBUG, "resending block %d", block_number + 1);
+                                   atftp_logger(LOG_DEBUG, "resending block %d", block_number + 1);
                               }
                               /* received ACK to sent block -> move on to next block */
                               else if (prev_sent_block < block_number) {
@@ -1126,7 +1126,7 @@ int tftpd_send_file(struct thread_data *data)
                               }
                               /* nor previous nor current block number -> ignore it completely */
                               else {
-                                   logger(LOG_DEBUG, "ignoring ACK %d", block_number);
+                                   atftp_logger(LOG_DEBUG, "ignoring ACK %d", block_number);
                                    break;
                               }
                          }
@@ -1152,13 +1152,13 @@ int tftpd_send_file(struct thread_data *data)
                               if (tftpd_clientlist_done(data->handler, data, NULL, &from) == 1)
                               {
                                    if (data->trace)
-                                        logger(LOG_DEBUG, "client sent ERROR, mark as done <%s>",
+                                        atftp_logger(LOG_DEBUG, "client sent ERROR, mark as done <%s>",
                                                sockaddr_print_addr(
                                                     &from, addr_str,
                                                     sizeof(addr_str)));
                               }
                               else
-                                   logger(LOG_WARNING, "packet discarded <%s>",
+                                   atftp_logger(LOG_WARNING, "packet discarded <%s>",
                                           sockaddr_print_addr(&from, addr_str,
                                                               sizeof(addr_str)));
                               /* current state is unchanged */
@@ -1172,24 +1172,24 @@ int tftpd_send_file(struct thread_data *data)
                          {
                               if (data->checkport)
                               {
-                                   logger(LOG_WARNING, "packet discarded <%s>",
+                                   atftp_logger(LOG_WARNING, "packet discarded <%s>",
                                           sockaddr_print_addr(&from, addr_str,
                                                               sizeof(addr_str)));
                                    break;
                               }
                               else
-                                   logger(LOG_WARNING,
+                                   atftp_logger(LOG_WARNING,
                                           "source port mismatch, check bypassed");
                          }
                     }
                     /* Got an ERROR from the current master client */
                     Strncpy(string, tftphdr->th_msg, sizeof(string));
                     if (data->trace)
-                         logger(LOG_DEBUG, "received ERROR <code: %d, msg: %s>",
+                         atftp_logger(LOG_DEBUG, "received ERROR <code: %d, msg: %s>",
                                 ntohs(tftphdr->th_code), string);
                     if (multicast)
                     {
-                         logger(LOG_DEBUG, "Marking client as done");
+                         atftp_logger(LOG_DEBUG, "Marking client as done");
                          state = S_END;
                     }
                     else
@@ -1197,24 +1197,24 @@ int tftpd_send_file(struct thread_data *data)
                     break;
                case GET_DISCARD:
                     /* FIXME: should we increment number_of_timeout */
-                    logger(LOG_WARNING, "packet discarded <%s>",
+                    atftp_logger(LOG_WARNING, "packet discarded <%s>",
                            sockaddr_print_addr(&from, addr_str,
                                                sizeof(addr_str)));
                     break;
                case ERR:
-                    logger(LOG_ERR, "%s: %d: recvfrom: %s",
+                    atftp_logger(LOG_ERR, "%s: %d: recvfrom: %s",
                            __FILE__, __LINE__, strerror(errno));
                     state = S_ABORT;
                     break;
                default:
-                    logger(LOG_ERR, "%s: %d: abnormal return value %d",
+                    atftp_logger(LOG_ERR, "%s: %d: abnormal return value %d",
                            __FILE__, __LINE__, result);
                }
                break;
           case S_END:
                if (multicast)
                {
-                    logger(LOG_DEBUG, "End of multicast transfer");
+                    atftp_logger(LOG_DEBUG, "End of multicast transfer");
                     /* mark the current client done */
                     tftpd_clientlist_done(data->handler, data, client_info, NULL);
                     /* Look if there is another client to serve. We lock list of
@@ -1222,7 +1222,7 @@ int tftpd_send_file(struct thread_data *data)
                        our back */
                     if (tftpd_clientlist_next(data->handler, data, &client_info) == 1)
                     {
-                         logger(LOG_INFO,
+                         atftp_logger(LOG_INFO,
                                 "Serving next client: %s:%d",
                                 sockaddr_print_addr(&client_info->client,
                                                     addr_str, sizeof(addr_str)),
@@ -1237,7 +1237,7 @@ int tftpd_send_file(struct thread_data *data)
                     }
                     else
                     {
-                         logger(LOG_INFO, "No more client, end of transfers");
+                         atftp_logger(LOG_INFO, "No more client, end of transfers");
                         if (data->close_file_cb != NULL) {
                             data->close_file_cb(data->section_handler_ptr, fp, data->close_file_ctx);
                         } else {
@@ -1248,7 +1248,7 @@ int tftpd_send_file(struct thread_data *data)
                }
                else
                {
-                    logger(LOG_DEBUG, "End of transfer");
+                    atftp_logger(LOG_DEBUG, "End of transfer");
                    if (data->close_file_cb != NULL) {
                        data->close_file_cb(data->section_handler_ptr, fp, data->close_file_ctx);
                    } else {
@@ -1258,7 +1258,7 @@ int tftpd_send_file(struct thread_data *data)
                }
                break;
           case S_ABORT:
-               logger(LOG_DEBUG, "Aborting transfer");
+               atftp_logger(LOG_DEBUG, "Aborting transfer");
                   if (data->close_file_cb != NULL) {
                       data->close_file_cb(data->section_handler_ptr, fp, data->close_file_ctx);
                   } else {
@@ -1271,7 +1271,7 @@ int tftpd_send_file(struct thread_data *data)
               } else {
                   fclose(fp);
               }
-               logger(LOG_ERR, "%s: %d: abnormal condition",
+               atftp_logger(LOG_ERR, "%s: %d: abnormal condition",
                       __FILE__, __LINE__);
                return ERR;
           }

@@ -25,7 +25,7 @@
 #include <netinet/in.h>
 #include "tftpd.h"
 #include "tftp_def.h"
-#include "logger.h"
+#include "atftp_logger.h"
 
 #define START    0
 #define GET_ENUM 1
@@ -240,7 +240,7 @@ int parse_ip(char *string, char **res_ip)
 		    i = ip[3];
 		    if (i >= tmp_ip[0])
 		    {
-			 logger(LOG_ERR, "Bad address range: %d.%d.%d.%d-%d",
+			 atftp_logger(LOG_ERR, "Bad address range: %d.%d.%d.%d-%d",
 				ip[0], ip[1], ip[2], ip[3], tmp_ip[0]);
 			 return ERR;
 		    }
@@ -335,7 +335,7 @@ int parse_port(char *string, char **res_port)
 		    i = port;
 		    if (i >= tmp_port)
 		    {
-			 logger(LOG_ERR, "Bad port range: %d-%d", i, tmp_port);
+			 atftp_logger(LOG_ERR, "Bad port range: %d-%d", i, tmp_port);
 			 return ERR;
 		    }
 		    state = EXPAND;

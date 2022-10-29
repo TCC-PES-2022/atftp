@@ -24,7 +24,7 @@
 #include <arpa/inet.h>
 #include "tftp_def.h"
 #include "options.h"
-#include "logger.h"
+#include "atftp_logger.h"
 
 /*
  * This is the default option structure, that must be used
@@ -166,13 +166,13 @@ int Gethostbyname(char *addr, struct hostent *host)
      /*  Check for errors. */
      if (res != 0)
      {
-          logger(LOG_ERR, "%s: %d: gethostbyname_r: %s",
+          atftp_logger(LOG_ERR, "%s: %d: gethostbyname_r: %s",
                  __FILE__, __LINE__, strerror(herr));
           return ERR;
      }
      if (hp != host)
      {
-          logger(LOG_ERR, "%s: %d: abnormal return value",
+          atftp_logger(LOG_ERR, "%s: %d: abnormal return value",
                  __FILE__, __LINE__);
           return ERR;
      }

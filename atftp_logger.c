@@ -1,9 +1,9 @@
 /* hey emacs! -*- Mode: C; c-file-style: "k&r"; indent-tabs-mode: nil -*- */
 /*
- * logger.c
+ * atftp_logger.c
  *    functions for logging messages.
  *
- * $Id: logger.c,v 1.12 2004/02/27 02:05:26 jp Exp $
+ * $Id: atftp_logger.c,v 1.12 2004/02/27 02:05:26 jp Exp $
  *
  * Copyright (c) 2000 Jean-Pierre Lefebvre <helix@step.polymtl.ca>
  *                and Remi Lefebvre <remi@debian.org>
@@ -28,7 +28,7 @@
 #include <unistd.h>
 #include <netdb.h>
 #include <pthread.h>
-#include "logger.h"
+#include "atftp_logger.h"
 
 #define MAXLEN 128
 #define SIMPLE_LOG  //Enable a simplified log version
@@ -48,9 +48,9 @@ static int log_fd;
  * stderr for the client or the syslog for the server. Log
  * only message less or equal to priority.
  */
-void open_logger(char *ident, char *filename, int priority)
+void open_atftp_logger(char *ident, char *filename, int priority)
 {
-     close_logger(); /* make sure we initialise variables and close
+     close_atftp_logger(); /* make sure we initialise variables and close
                         previously opened log. */
 
      log_priority = priority;
@@ -83,7 +83,7 @@ void open_logger(char *ident, char *filename, int priority)
           {
                openlog(log_ident, LOG_PID, LOG_DAEMON);
                log_syslog_is_open = 1;
-               logger(LOG_CRIT, "Unable to open %s for logging, "
+               atftp_logger(LOG_CRIT, "Unable to open %s for logging, "
                            "reverting to syslog", log_filename);
           }
           else
@@ -95,9 +95,9 @@ void open_logger(char *ident, char *filename, int priority)
 /*
  * Same as syslog but allows one to format a string, like printf, when logging to
  * file. This fonction will either call syslog or fprintf depending of the
- * previous call to open_logger().
+ * previous call to open_atftp_logger().
  */
-void logger(int severity, const char *fmt, ...)
+void atftp_logger(int severity, const char *fmt, ...)
 {
      char message[MAXLEN];
      char time_buf[MAXLEN];
@@ -136,7 +136,7 @@ void logger(int severity, const char *fmt, ...)
 /*
  * Close the file or syslog. Initialise variables.
  */
-void close_logger(void)
+void close_atftp_logger(void)
 {
      log_priority = 0;
 

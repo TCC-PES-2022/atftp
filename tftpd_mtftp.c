@@ -36,7 +36,7 @@
 #endif
 #include "tftp_io.h"
 #include "tftp_def.h"
-#include "logger.h"
+#include "atftp_logger.h"
 #include "tftpd.h"
 #include "tftpd_mtftp.h"
 
@@ -79,15 +79,15 @@ struct mtftp_data *tftpd_mtftp_init(char *filename)
      /* open file */
      if ((fp = fopen(filename, "r")) == NULL)
      {
-          logger(LOG_ERR, "mtftp: failed to open configuration file, continuing");
+          atftp_logger(LOG_ERR, "mtftp: failed to open configuration file, continuing");
           return NULL;
      }
-     logger(LOG_DEBUG, "mtftp: opened configuration file %s", filename);
+     atftp_logger(LOG_DEBUG, "mtftp: opened configuration file %s", filename);
 
      /* allocate memory */
      if ((data = malloc(sizeof(struct mtftp_data))) == NULL)
      {
-          logger(LOG_ERR, "%s: %d: Memory allocation failed",
+          atftp_logger(LOG_ERR, "%s: %d: Memory allocation failed",
                  __FILE__, __LINE__);
           fclose(fp);
           return NULL;
@@ -96,7 +96,7 @@ struct mtftp_data *tftpd_mtftp_init(char *filename)
      if ((data->tftp_options = 
           malloc(sizeof(tftp_default_options))) == NULL)
      {
-          logger(LOG_ERR, "%s: %d: Memory allocation failed",
+          atftp_logger(LOG_ERR, "%s: %d: Memory allocation failed",
                  __FILE__, __LINE__);
           tftpd_mtftp_clean(data);
           return NULL;
@@ -104,7 +104,7 @@ struct mtftp_data *tftpd_mtftp_init(char *filename)
      /* Allocate data buffer for tftp transfer. */
      if ((data->data_buffer = malloc((size_t)SEGSIZE + 4)) == NULL)
      {
-          logger(LOG_ERR, "%s: %d: Memory allocation failed",
+          atftp_logger(LOG_ERR, "%s: %d: Memory allocation failed",
                  __FILE__, __LINE__);
           tftpd_mtftp_clean(data);
           return NULL;
@@ -123,7 +123,7 @@ struct mtftp_data *tftpd_mtftp_init(char *filename)
      data->thread_data = NULL;
      data->number_of_thread = 0;
 
-     logger(LOG_DEBUG, "mtftp options: ");
+     atftp_logger(LOG_DEBUG, "mtftp options: ");
 
      /* parse the file */
      while (fgets(string, MAXLEN, fp) != NULL)
@@ -135,7 +135,7 @@ struct mtftp_data *tftpd_mtftp_init(char *filename)
                /* allocate memory */
                if ((thread = calloc(1, sizeof(struct mtftp_thread))) == NULL)
                {
-                    logger(LOG_ERR, "%s: %d: Memory allocation failed",
+                    atftp_logger(LOG_ERR, "%s: %d: Memory allocation failed",
                            __FILE__, __LINE__);
                     fclose(fp);
                     tftpd_mtftp_clean(data);
@@ -144,7 +144,7 @@ struct mtftp_data *tftpd_mtftp_init(char *filename)
                /* Allocate data buffer for tftp transfer. */
                if ((thread->data_buffer = malloc((size_t)SEGSIZE + 4)) == NULL)
                {
-                    logger(LOG_ERR, "%s: %d: Memory allocation failed",
+                    atftp_logger(LOG_ERR, "%s: %d: Memory allocation failed",
                            __FILE__, __LINE__);
                     tftpd_mtftp_clean(data);
                     return NULL;
@@ -177,14 +177,14 @@ struct mtftp_data *tftpd_mtftp_init(char *filename)
           /* file name verification */
           if (tftpd_rules_check(thread->file_name) != OK)
           {
-               logger(LOG_WARNING, "mtftp: file name rules violated %s (%s line %d)",
+               atftp_logger(LOG_WARNING, "mtftp: file name rules violated %s (%s line %d)",
                       thread->file_name, filename, line);
                continue;
           }
           /* open file */
           if ((thread->fp = fopen(thread->file_name, "r")) == NULL)
           {
-               logger(LOG_WARNING, "mtftp: can't open file %s (%s line %d)",
+               atftp_logger(LOG_WARNING, "mtftp: can't open file %s (%s line %d)",
                       thread->file_name,
                       filename, line);
                continue;
@@ -193,7 +193,7 @@ struct mtftp_data *tftpd_mtftp_init(char *filename)
           fstat(fileno(thread->fp), &file_stat);  
           if ((file_stat.st_size / SEGSIZE) > 65535)
           {
-               logger(LOG_WARNING, "mtftp: file %s too big (%s line %d)", thread->file_name,
+               atftp_logger(LOG_WARNING, "mtftp: file %s too big (%s line %d)", thread->file_name,
                       filename, line);
                fclose(thread->fp);
                continue;
@@ -202,7 +202,7 @@ struct mtftp_data *tftpd_mtftp_init(char *filename)
           thread->mcast_port = atoi(thread->client_port);
           if ((thread->mcast_port < 0) || (thread->mcast_port > 65535))
           {
-               logger(LOG_WARNING, "mtftp: bad port number %d (%s line %d)",
+               atftp_logger(LOG_WARNING, "mtftp: bad port number %d (%s line %d)",
                       thread->client_port, filename, line);
                fclose(thread->fp);
                continue;
@@ -218,7 +218,7 @@ struct mtftp_data *tftpd_mtftp_init(char *filename)
                freeaddrinfo(addrinfo);
                if (!sockaddr_is_multicast(&thread->sa_mcast))
                {
-                    logger(LOG_WARNING, "mtftp: bad multicast address %s\n",
+                    atftp_logger(LOG_WARNING, "mtftp: bad multicast address %s\n",
                            thread->mcast_ip);
                     fclose(thread->fp);
                     continue;
@@ -227,12 +227,12 @@ struct mtftp_data *tftpd_mtftp_init(char *filename)
           /* verify IP/port is unique */
           if (tftpd_mtftp_unique(data, thread->file_name, thread->mcast_ip, thread->client_port))
           {
-               logger(LOG_INFO, "mtftp: duplicate server (%s line %d)", filename, line);
+               atftp_logger(LOG_INFO, "mtftp: duplicate server (%s line %d)", filename, line);
                continue;
           }
 
           /* some useful info */
-          logger(LOG_INFO, "mtftp: will serve %s on %s port %s", thread->file_name,
+          atftp_logger(LOG_INFO, "mtftp: will serve %s on %s port %s", thread->file_name,
                  thread->mcast_ip, thread->client_port);
           /* next loop we must allocate a new structure */
           thread = NULL;
@@ -353,9 +353,9 @@ void *tftpd_mtftp_server(void *arg)
      int retval;                /* hold return value for testing */
      int data_size;             /* returned size by recvfrom */
      char filename[MAXLEN];
-     char string[MAXLEN];       /* hold the string we pass to the logger */
+     char string[MAXLEN];       /* hold the string we pass to the atftp_logger */
 
-     logger(LOG_NOTICE, "mtftp main server thread started");
+     atftp_logger(LOG_NOTICE, "mtftp main server thread started");
 
      /* initialise sockaddr_storage structure */
      memset(&sa, 0, sizeof(sa));
@@ -365,13 +365,13 @@ void *tftpd_mtftp_server(void *arg)
      /* open the socket */
      if ((sockfd = socket(sa.ss_family, SOCK_DGRAM, 0)) == 0)
      {
-          logger(LOG_ERR, "mtftp: can't open socket");
+          atftp_logger(LOG_ERR, "mtftp: can't open socket");
           pthread_exit(NULL);
      }
      /* bind the socket to the tftp port  */
      if (bind(sockfd, (struct sockaddr*)&sa, sizeof(sa)) < 0)
      {
-          logger(LOG_ERR, "mtftp: can't bind port");
+          atftp_logger(LOG_ERR, "mtftp: can't bind port");
           pthread_exit(NULL);
      }
 
@@ -395,7 +395,7 @@ void *tftpd_mtftp_server(void *arg)
 #ifdef HAVE_WRAP
                if (!sockaddr_family_supported(&sa))
                {
-                    logger(LOG_ERR, "mtftp: Connection from unsupported network address family refused");
+                    atftp_logger(LOG_ERR, "mtftp: Connection from unsupported network address family refused");
                     continue;
                }
                /* Verify the client has access. We don't look for the name but
@@ -404,7 +404,7 @@ void *tftpd_mtftp_server(void *arg)
                if (hosts_ctl("in.tftpd", STRING_UNKNOWN, addr_str,
                              STRING_UNKNOWN) == 0)
                {
-                    logger(LOG_ERR, "mtftp: connection refused from %s", addr_str);
+                    atftp_logger(LOG_ERR, "mtftp: connection refused from %s", addr_str);
                     continue;
                }
 #endif
@@ -417,44 +417,44 @@ void *tftpd_mtftp_server(void *arg)
                /* verify this is a RRQ */
                if (retval != GET_RRQ)
                {
-                    logger(LOG_WARNING, "unsupported request <%d> from %s",
+                    atftp_logger(LOG_WARNING, "unsupported request <%d> from %s",
                            retval,
                            sockaddr_print_addr(&sa, addr_str, sizeof(addr_str)));
                     tftp_send_error(sockfd, &sa, EBADOP, data->data_buffer,
                                     data->data_buffer_size, NULL);
                     if (data->trace)
-                         logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", EBADOP,
+                         atftp_logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", EBADOP,
                                 tftp_errmsg[EBADOP]);
                     continue;
                }
                else
                {
-                    logger(LOG_NOTICE, "Serving %s to %s:%d", filename,
+                    atftp_logger(LOG_NOTICE, "Serving %s to %s:%d", filename,
                            sockaddr_print_addr(&sa, addr_str, sizeof(addr_str)));
                     if (data->trace)
-                         logger(LOG_DEBUG, "received RRQ <%s>", string);
+                         atftp_logger(LOG_DEBUG, "received RRQ <%s>", string);
                }
                /* validity check, only octet mode supported */
                if (strcasecmp(data->tftp_options[OPT_MODE].value, "octet") != 0)
                {
-                    logger(LOG_WARNING, "mtftp: support only octet mode");
+                    atftp_logger(LOG_WARNING, "mtftp: support only octet mode");
                     continue;
                }
                /* file name verification */
                if (tftpd_rules_check(filename) != OK)
                {
-                    logger(LOG_WARNING, "mtftp: file name rules violated %s", filename);
+                    atftp_logger(LOG_WARNING, "mtftp: file name rules violated %s", filename);
                     continue;
                }
                /* find server for this file*/
                if ((thread = tftpd_mtftp_find_server(data, filename)) == NULL)
                {
-                    logger(LOG_WARNING, "mtftp: no server found for file %s", filename);
+                    atftp_logger(LOG_WARNING, "mtftp: no server found for file %s", filename);
                     continue;
                }
                if (thread->running)
                {
-                    logger(LOG_NOTICE, "mtftp: already serving this file");
+                    atftp_logger(LOG_NOTICE, "mtftp: already serving this file");
                     continue;
                }
                /* copy client info for server */
@@ -462,7 +462,7 @@ void *tftpd_mtftp_server(void *arg)
                /* open a socket for client communication */
                if ((thread->sockfd = socket(AF_INET, SOCK_DGRAM, 0)) == 0)
                {
-                    logger(LOG_ERR, "mtftp: can't open socket");
+                    atftp_logger(LOG_ERR, "mtftp: can't open socket");
                     pthread_exit(NULL);
                }
                getsockname(sockfd, (struct sockaddr *)&(sa), &len);
@@ -471,7 +471,7 @@ void *tftpd_mtftp_server(void *arg)
                /* bind the socket to the tftp port  */
                if (bind(thread->sockfd, (struct sockaddr*)&sa, sizeof(sa)) < 0)
                {
-                    logger(LOG_ERR, "mtftp: can't bind port");
+                    atftp_logger(LOG_ERR, "mtftp: can't bind port");
                     pthread_exit(NULL);
                }
                getsockname(thread->sockfd, (struct sockaddr *)&(sa), &len);
@@ -496,7 +496,7 @@ void *tftpd_mtftp_server(void *arg)
                if (pthread_create(&thread->tid, NULL, tftpd_mtftp_send_file,
                                   (void *)thread) != 0)
                {
-                    logger(LOG_ERR, "mtftp: failed to start new thread");
+                    atftp_logger(LOG_ERR, "mtftp: failed to start new thread");
                     thread->running = 0;
                }
           }
@@ -504,7 +504,7 @@ void *tftpd_mtftp_server(void *arg)
 
      tftpd_mtftp_clean(data);
 
-     logger(LOG_NOTICE, "mtftp main server thread exiting");
+     atftp_logger(LOG_NOTICE, "mtftp main server thread exiting");
 
      pthread_exit(NULL);
 }
@@ -538,11 +538,11 @@ void *tftpd_mtftp_send_file(void *arg)
      {
           if (data->tftpd_cancel)
           {
-               logger(LOG_DEBUG, "thread cancelled");
+               atftp_logger(LOG_DEBUG, "thread cancelled");
                tftp_send_error(sockfd, sa, EUNDEF, data->data_buffer,
                                data->data_buffer_size, NULL);
                if (data->mtftp_data->trace)
-                    logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", EUNDEF,
+                    atftp_logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", EUNDEF,
                            tftp_errmsg[EUNDEF]);
                state = S_ABORT;
           }
@@ -568,7 +568,7 @@ void *tftpd_mtftp_send_file(void *arg)
                tftp_send_data(sockfd, sa, block_number + 1,
                               data_size, data->data_buffer);
                if (data->mtftp_data->trace)
-                    logger(LOG_DEBUG, "sent DATA <block: %ld, size %d>",
+                    atftp_logger(LOG_DEBUG, "sent DATA <block: %ld, size %d>",
                            block_number + 1, data_size - 4);
                state = S_WAIT_PACKET;
                break;
@@ -591,7 +591,7 @@ void *tftpd_mtftp_send_file(void *arg)
                               block_number + 1, data_size,
                               data->data_buffer);
                if (data->mtftp_data->trace)
-                    logger(LOG_DEBUG, "sent DATA <block: %ld, size %d>",
+                    atftp_logger(LOG_DEBUG, "sent DATA <block: %ld, size %d>",
                            block_number + 1, data_size - 4);
                state = S_WAIT_PACKET;
                break;
@@ -608,19 +608,19 @@ void *tftpd_mtftp_send_file(void *arg)
                     
                     if (number_of_timeout > NB_OF_RETRY)
                     {
-                         logger(LOG_INFO, "client (%s) not responding",
+                         atftp_logger(LOG_INFO, "client (%s) not responding",
                                 sockaddr_print_addr(&data->sa_in, addr_str,
                                                     sizeof(addr_str)));
                          state = S_END;
                          break;
                     }
-                    logger(LOG_WARNING, "timeout: retrying...");
+                    atftp_logger(LOG_WARNING, "timeout: retrying...");
                     state = timeout_state;
                     break;
                case GET_ACK:
                     if (sockaddr_get_port(sa) != sockaddr_get_port(&from))
                     {
-                         logger(LOG_WARNING, "packet discarded");
+                         atftp_logger(LOG_WARNING, "packet discarded");
                          break;
                     }
                     /* handle case where packet come from un unexpected client */
@@ -630,7 +630,7 @@ void *tftpd_mtftp_send_file(void *arg)
                          number_of_timeout = 0;
                          block_number = ntohs(tftphdr->th_block);
                          if (data->mtftp_data->trace)
-                              logger(LOG_DEBUG, "received ACK <block: %ld>",
+                              atftp_logger(LOG_DEBUG, "received ACK <block: %ld>",
                                      block_number);
                          if ((last_block != -1) && (block_number > last_block))
                          {
@@ -643,7 +643,7 @@ void *tftpd_mtftp_send_file(void *arg)
                case GET_ERROR:
                     if (sockaddr_get_port(sa) != sockaddr_get_port(&from))
                     {
-                         logger(LOG_WARNING, "packet discarded");
+                         atftp_logger(LOG_WARNING, "packet discarded");
                          break;
                     }
                     /* handle case where packet come from un unexpected client */
@@ -652,30 +652,30 @@ void *tftpd_mtftp_send_file(void *arg)
                          /* Got an ERROR from the current master client */
                          Strncpy(string, tftphdr->th_msg, sizeof(string));
                          if (data->mtftp_data->trace)
-                              logger(LOG_DEBUG, "received ERROR <code: %d, msg: %s>",
+                              atftp_logger(LOG_DEBUG, "received ERROR <code: %d, msg: %s>",
                                      ntohs(tftphdr->th_code), string);
                          state = S_ABORT;
                     }
                     break;
                case GET_DISCARD:
-                    logger(LOG_WARNING, "packet discarded");
+                    atftp_logger(LOG_WARNING, "packet discarded");
                     break;
                case ERR:
-                    logger(LOG_ERR, "%s: %d: recvfrom: %s",
+                    atftp_logger(LOG_ERR, "%s: %d: recvfrom: %s",
                            __FILE__, __LINE__, strerror(errno));
                     state = S_ABORT;
                     break;
                default:
-                    logger(LOG_ERR, "%s: %d: abnormal return value %d",
+                    atftp_logger(LOG_ERR, "%s: %d: abnormal return value %d",
                            __FILE__, __LINE__, result);
                }
                break;
           case S_END:
-               logger(LOG_DEBUG, "End of transfer");
+               atftp_logger(LOG_DEBUG, "End of transfer");
                state = S_EXIT;
                break;
           case S_ABORT:
-               logger(LOG_DEBUG, "Aborting transfer");
+               atftp_logger(LOG_DEBUG, "Aborting transfer");
                state = S_EXIT;
                break;
           case S_EXIT:
@@ -683,7 +683,7 @@ void *tftpd_mtftp_send_file(void *arg)
                data->tid = 0;
                pthread_exit(NULL);
           default:
-               logger(LOG_ERR, "%s: %d: abnormal condition",
+               atftp_logger(LOG_ERR, "%s: %d: abnormal condition",
                       __FILE__, __LINE__);
                state = S_EXIT;
           }

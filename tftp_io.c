@@ -29,7 +29,7 @@
 #include <errno.h>
 #include "string.h"
 #include "tftp_io.h"
-#include "logger.h"
+#include "atftp_logger.h"
 
 /*
  *  2 bytes   string    1 byte  string  1 byte  string 1 byte  string
@@ -255,7 +255,7 @@ int tftp_get_packet(int sock1, int sock2, int *sock, struct sockaddr_storage *sa
      switch (result)
      {
      case -1:
-          logger(LOG_ERR, "select: %s", strerror(errno));
+          atftp_logger(LOG_ERR, "select: %s", strerror(errno));
           return ERR;
      case 0:
           return GET_TIMEOUT;
@@ -283,7 +283,7 @@ int tftp_get_packet(int sock1, int sock2, int *sock, struct sockaddr_storage *sa
                return ERR;
           if (result == -1)
           {
-               logger(LOG_ERR, "recvmsg: %s", strerror(errno));
+               atftp_logger(LOG_ERR, "recvmsg: %s", strerror(errno));
                return ERR;
           }
 

@@ -36,7 +36,7 @@
 #include "tftp.h"
 #include "tftp_io.h"
 #include "tftp_def.h"
-#include "logger.h"
+#include "atftp_logger.h"
 #include "options.h"
 
 #undef HAVE_MTFTP

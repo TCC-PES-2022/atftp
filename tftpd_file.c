@@ -69,6 +69,7 @@ extern tftpd_pcre_self_t *pcre_top;
  */
 int tftpd_rules_check(char *filename)
 {
+#if 0
      char string[MAXLEN];
 
      /* If the filename does not start with the directory, change it */
@@ -87,6 +88,7 @@ int tftpd_rules_check(char *filename)
           logger(LOG_INFO, "File name with /../ are forbidden");
           return ERR;  
      }
+#endif
      return OK;
 }
 

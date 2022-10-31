@@ -1,3 +1,4 @@
+// Modified by Kollins G. Lima <kgl2@cin.ufpe.br>
 #ifndef TFTP_TFTPD_API_H
 #define TFTP_TFTPD_API_H
 

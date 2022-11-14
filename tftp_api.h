@@ -47,6 +47,21 @@ typedef TftpOperationResult (*tftp_error_callback) (
         void *context
 );
 
+/**
+ * @brief TFTP data received callback. This callback is called when the client
+ * receives data from the server related to the current fetch operation.
+ *
+ * @param[in]   data_size       Size of the data received.
+ * @param[in]   context         Context passed to the callback.
+ *
+ * @return TFTP_OK if success.
+ * @return TFTP_ERROR otherwise.
+ */
+typedef TftpOperationResult (*tftp_fetch_data_received_callback) (
+        int data_size,
+        void *context
+);
+
 /*
 *******************************************************************************
                                    FUNCTIONS
@@ -92,6 +107,22 @@ TftpOperationResult destroy_tftp_handler(
 TftpOperationResult register_tftp_error_callback(
         const TftpHandlerPtr handler,
         tftp_error_callback callback,
+        void *context
+);
+
+/**
+ * @brief Register TFTP fetch data received callback
+ *
+ * @param[in] handler the pointer to the tftpd handler.
+ * @param[in] callback the callback to register.
+ * @param[in] context the user context.
+ *
+ * @return TFTP_OK if success.
+ * @return TFTP_ERROR otherwise.
+ */
+TftpOperationResult register_tftp_fetch_data_received_callback(
+        const TftpHandlerPtr handler,
+        tftp_fetch_data_received_callback callback,
         void *context
 );
 

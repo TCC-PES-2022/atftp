@@ -31,6 +31,8 @@ struct client_data {
 
      tftp_error_callback tftp_error_cb;
      void *tftp_error_ctx;
+     tftp_fetch_data_received_callback tftp_fetch_data_received_cbk;
+     void *tftp_fetch_data_received_ctx;
 
      char local_file[VAL_SIZE]; /* the file we are reading or writing is not
                                    necessary the same on the server */

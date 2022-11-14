@@ -552,6 +552,12 @@ int tftp_receive_file(struct client_data *data)
                     fprintf(stderr, "received DATA <block: %ld, size: %d>\n",
                             block_number, data_size - 4);
 
+               if (data->tftp_fetch_data_received_cbk != NULL)
+               {
+                    data->tftp_fetch_data_received_cbk(data_size - 4,
+                                                       data->tftp_fetch_data_received_ctx);
+               }
+
                if (tftp_file_write(fp, tftphdr->th_data, data->data_buffer_size - 4, block_number,
                                    data_size - 4, convert, &prev_block_number, &temp)
                    != data_size - 4)

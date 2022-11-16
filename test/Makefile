@@ -14,6 +14,9 @@ TARGET_CLIENT := $(BIN_PATH)/$(TARGET_NAME_CLIENT)
 TARGET_NAME_SERVER := unity_test_tftp_server
 TARGET_SERVER := $(BIN_PATH)/$(TARGET_NAME_SERVER)
 
+TARGET_NAME_OPTIONS := unity_test_tftp_options
+TARGET_OPTIONS := $(BIN_PATH)/$(TARGET_NAME_OPTIONS)
+
 # src files & obj files
 SRC_CLIENT := $(UNITY_ROOT)/src/unity.c $(SRC_PATH)/TestTftp.c $(SRC_PATH)/Tftp_Runner.c
 OBJ_CLIENT := $(addsuffix .o, $(basename $(SRC_CLIENT)))
@@ -21,14 +24,20 @@ OBJ_CLIENT := $(addsuffix .o, $(basename $(SRC_CLIENT)))
 SRC_SERVER := $(UNITY_ROOT)/src/unity.c $(SRC_PATH)/TestTftpd.c $(SRC_PATH)/Tftpd_Runner.c
 OBJ_SERVER := $(addsuffix .o, $(basename $(SRC_SERVER)))
 
+SRC_OPTIONS := $(UNITY_ROOT)/src/unity.c $(SRC_PATH)/TestTftpOptions.c $(SRC_PATH)/TftpOptions_Runner.c
+OBJ_OPTIONS := $(addsuffix .o, $(basename $(SRC_OPTIONS)))
+
 LIBS_CLIENT := $(LDLIBS) -ltftp
 LIBS_SERVER := $(LDLIBS) -ltftpd
+LIBS_OPTION := $(LDLIBS) -ltftp -ltftpd
 
 # clean files list
 CLEAN_LIST := $(OBJ_CLIENT) \
 			  $(OBJ_SERVER) \
+			  $(OBJ_OPTIONS) \
 			  $(TARGET_CLIENT) 	\
 			  $(TARGET_SERVER) 	\
+			  $(TARGET_OPTIONS) 	\
 			  *.txt 			\
 			  *.gcov			\
 			  *.gcno			\
@@ -47,6 +56,9 @@ $(TARGET_CLIENT): $(OBJ_CLIENT)
 
 $(TARGET_SERVER): $(OBJ_SERVER)
 	$(CC) -o $@ $(OBJ_SERVER) $(CFLAGS) $(LDFLAGS) $(LDLIBS) $(INCFLAGS)
+
+$(TARGET_OPTIONS): $(OBJ_OPTIONS)
+	$(CC) -o $@ $(OBJ_OPTIONS) $(CFLAGS) $(LDFLAGS) $(LDLIBS) $(INCFLAGS)
 
 atftp:
 	cd .. && $(MAKE) $(DEP_RULE) -j$(shell echo $$((`nproc`))) && \
@@ -78,10 +90,10 @@ debugdeps: $(DEPS)
 testdeps: $(DEPS)
 
 .PHONY: all
-all: makedir $(TARGET_CLIENT) $(TARGET_SERVER)
+all: makedir $(TARGET_CLIENT) $(TARGET_SERVER) $(TARGET_OPTIONS)
 
 .PHONY: debug
-debug: makedir $(TARGET_CLIENT) $(TARGET_SERVER)
+debug: makedir $(TARGET_CLIENT) $(TARGET_SERVER) $(TARGET_OPTIONS)
 
 .PHONY: runtests
 runtests: runclient runserver
@@ -93,6 +105,10 @@ runclient:
 .PHONY: runserver
 runserver:
 	LD_LIBRARY_PATH=$(DEP_PATH)/lib ./$(TARGET_SERVER)
+
+.PHONY: runoptions
+runoptions:
+	LD_LIBRARY_PATH=$(DEP_PATH)/lib ./$(TARGET_OPTIONS)
 
 .PHONY: report
 report: 

@@ -41,6 +41,7 @@ struct tftp_opt tftp_default_options[OPT_NUMBER + 1] = {
      { "blksize", "512", 0, 1 }, /* This is the default option */
      { "multicast", "", 0, 1 }, /* structure */
      { "password", "", 0, 1},   /* password */
+     { "port", "", 0, 1},   /* password */
      { "", "", 0, 0}
 };
 

@@ -222,6 +222,17 @@ int opt_get_timeout(struct tftp_opt *options)
      return ERR;
 }
 
+int opt_get_port(struct tftp_opt *options)
+{
+     int port;
+     if (options[OPT_PORT].enabled && options[OPT_PORT].specified)
+     {
+          port = atoi(options[OPT_PORT].value);
+          return port;
+     }
+     return ERR;
+}
+
 int opt_get_blksize(struct tftp_opt *options)
 {
      int blksize;
@@ -294,6 +305,11 @@ void opt_set_tsize(int tsize, struct tftp_opt *options)
 void opt_set_timeout(int timeout, struct tftp_opt *options)
 {
      snprintf(options[OPT_TIMEOUT].value, VAL_SIZE, "%d", timeout);
+}
+
+void opt_set_port(int port, struct tftp_opt *options)
+{
+     snprintf(options[OPT_PORT].value, VAL_SIZE, "%d", port);
 }
 
 void opt_set_blksize(int blksize, struct tftp_opt *options)

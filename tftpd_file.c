@@ -152,13 +152,38 @@ int tftpd_receive_file(struct thread_data *data)
      /* tsize option */
      if (((result = opt_get_tsize(data->tftp_options)) > -1) && !convert)
      {
-          opt_set_tsize(result, data->tftp_options);
-          atftp_logger(LOG_DEBUG, "tsize option -> %d", result);
+          int accept_option = data->option_received_cb == NULL;
+          if (data->option_received_cb != NULL)
+          {
+               accept_option = data->option_received_cb(
+                    data->section_handler_ptr, 
+                    "tsize", 
+                    data->tftp_options[OPT_TSIZE].value, 
+                    data->option_received_ctx) == TFTPD_OK;
+          }
+          if (accept_option)
+          {
+               opt_set_tsize(result, data->tftp_options);
+               atftp_logger(LOG_DEBUG, "tsize option -> %d", result);
+          }
+          else
+          {
+               opt_disable_options(data->tftp_options, "tsize");
+          }
      }
 
      /* timeout option */
      if ((result = opt_get_timeout(data->tftp_options)) > -1)
      {
+          int accept_option = data->option_received_cb == NULL;
+          if (data->option_received_cb != NULL)
+          {
+               accept_option = data->option_received_cb(
+                    data->section_handler_ptr, 
+                    "timeout", 
+                    data->tftp_options[OPT_TIMEOUT].value, 
+                    data->option_received_ctx) == TFTPD_OK;
+          }
           if ((result < 1) || (result > 255))
           {
                tftp_send_error(sockfd, sa, EOPTNEG, data->data_buffer,
@@ -168,9 +193,48 @@ int tftpd_receive_file(struct thread_data *data)
                            tftp_errmsg[EOPTNEG]);
                return ERR;
           }
-          timeout = result;
-          opt_set_timeout(timeout, data->tftp_options);
-          atftp_logger(LOG_DEBUG, "timeout option -> %d", timeout);
+          if (accept_option)
+          {
+               timeout = result;
+               opt_set_timeout(timeout, data->tftp_options);
+               atftp_logger(LOG_DEBUG, "timeout option -> %d", timeout);
+          }
+          else
+          {
+               opt_disable_options(data->tftp_options, "timeout");
+          }
+     }
+
+     /* port option */
+     if ((result = opt_get_port(data->tftp_options)) > -1)
+     {
+          int accept_option = data->option_received_cb == NULL;
+          if (data->option_received_cb != NULL)
+          {
+               accept_option = data->option_received_cb(
+                    data->section_handler_ptr, 
+                    "port", 
+                    data->tftp_options[OPT_PORT].value, 
+                    data->option_received_ctx) == TFTPD_OK;
+          }
+          if (result > 65535)
+          {
+               tftp_send_error(sockfd, sa, EOPTNEG, data->data_buffer,
+                               data->data_buffer_size, NULL);
+               if (data->trace)
+                    atftp_logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", EOPTNEG,
+                           tftp_errmsg[EOPTNEG]);
+               return ERR;
+          }
+          if (accept_option)
+          {
+               opt_set_port(result, data->tftp_options);
+               atftp_logger(LOG_DEBUG, "port option -> %d", result);
+          }
+          else
+          {
+               opt_disable_options(data->tftp_options, "port");
+          }
      }
 
      /*
@@ -180,6 +244,18 @@ int tftpd_receive_file(struct thread_data *data)
       */
      if ((result = opt_get_blksize(data->tftp_options)) > -1)
      {
+          int accept_option = data->option_received_cb == NULL;
+          if (data->option_received_cb != NULL)
+          {
+               accept_option = data->option_received_cb(
+                    data->section_handler_ptr, 
+                    "blksize", 
+                    data->tftp_options[OPT_BLKSIZE].value, 
+                    data->option_received_ctx) == TFTPD_OK;
+
+               // Server may change blksize, get it again.
+               result = opt_get_blksize(data->tftp_options);
+          }
           /*
            *  If we receive more options, we have to make sure our buffer for
            *  the OACK is not too small.  Use the string representation of
@@ -198,28 +274,35 @@ int tftpd_receive_file(struct thread_data *data)
                            tftp_errmsg[EOPTNEG]);
                return ERR;
           }
-
-          data->data_buffer_size = result + 4;
-          data->data_buffer = realloc(data->data_buffer, data->data_buffer_size);
-
-          if (data->data_buffer == NULL)
+          if (accept_option)
           {
-               atftp_logger(LOG_ERR, "memory allocation failure");
-               return ERR;
-          }
-          tftphdr = (struct tftphdr *)data->data_buffer;
 
-          if (data->data_buffer == NULL)
-          {
-               tftp_send_error(sockfd, sa, ENOSPACE, data->data_buffer,
-                               data->data_buffer_size, NULL);
-               if (data->trace)
-                    atftp_logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", ENOSPACE,
-                           tftp_errmsg[ENOSPACE]);
-               return ERR;
+               data->data_buffer_size = result + 4;
+               data->data_buffer = realloc(data->data_buffer, data->data_buffer_size);
+
+               if (data->data_buffer == NULL)
+               {
+                    atftp_logger(LOG_ERR, "memory allocation failure");
+                    return ERR;
+               }
+               tftphdr = (struct tftphdr *)data->data_buffer;
+
+               if (data->data_buffer == NULL)
+               {
+                    tftp_send_error(sockfd, sa, ENOSPACE, data->data_buffer,
+                                   data->data_buffer_size, NULL);
+                    if (data->trace)
+                         atftp_logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", ENOSPACE,
+                              tftp_errmsg[ENOSPACE]);
+                    return ERR;
+               }
+               opt_set_blksize(result, data->tftp_options);
+               atftp_logger(LOG_DEBUG, "blksize option -> %d", result);
           }
-          opt_set_blksize(result, data->tftp_options);
-          atftp_logger(LOG_DEBUG, "blksize option -> %d", result);
+          else
+          {
+               opt_disable_options(data->tftp_options, "blksize");
+          }
      }
 
      /* that's it, we start receiving the file */
@@ -588,15 +671,40 @@ int tftpd_send_file(struct thread_data *data)
      }
 
      /* tsize option */
-     if ((opt_get_tsize(data->tftp_options) > -1) && !convert)
+     if (((result = opt_get_tsize(data->tftp_options)) > -1) && !convert)
      {
-          opt_set_tsize(file_size, data->tftp_options);
-          atftp_logger(LOG_INFO, "tsize option -> %d", file_size);
+          int accept_option = data->option_received_cb == NULL;
+          if (data->option_received_cb != NULL)
+          {
+               accept_option = data->option_received_cb(
+                    data->section_handler_ptr, 
+                    "tsize", 
+                    data->tftp_options[OPT_TSIZE].value, 
+                    data->option_received_ctx) == TFTPD_OK;
+          }
+          if (accept_option)
+          {
+               opt_set_tsize(file_size, data->tftp_options);
+               atftp_logger(LOG_INFO, "tsize option -> %d", file_size);
+          }
+          else
+          {
+               opt_disable_options(data->tftp_options, "tsize");
+          }
      }
 
      /* timeout option */
      if ((result = opt_get_timeout(data->tftp_options)) > -1)
      {
+          int accept_option = data->option_received_cb == NULL;
+          if (data->option_received_cb != NULL)
+          {
+               accept_option = data->option_received_cb(
+                    data->section_handler_ptr, 
+                    "timeout", 
+                    data->tftp_options[OPT_TIMEOUT].value, 
+                    data->option_received_ctx) == TFTPD_OK;
+          }
           if ((result < 1) || (result > 255))
           {
                tftp_send_error(sockfd, sa, EOPTNEG, data->data_buffer,
@@ -612,9 +720,48 @@ int tftpd_send_file(struct thread_data *data)
                 }
                return ERR;
           }
-          timeout = result;
-          opt_set_timeout(timeout, data->tftp_options);
-          atftp_logger(LOG_INFO, "timeout option -> %d", timeout);
+          if (accept_option)
+          {
+               timeout = result;
+               opt_set_timeout(timeout, data->tftp_options);
+               atftp_logger(LOG_INFO, "timeout option -> %d", timeout);
+          }
+          else
+          {
+               opt_disable_options(data->tftp_options, "timeout");
+          }
+     }
+
+     /* port option */
+     if ((result = opt_get_port(data->tftp_options)) > -1)
+     {
+          int accept_option = data->option_received_cb == NULL;
+          if (data->option_received_cb != NULL)
+          {
+               accept_option = data->option_received_cb(
+                    data->section_handler_ptr, 
+                    "port", 
+                    data->tftp_options[OPT_PORT].value, 
+                    data->option_received_ctx) == TFTPD_OK;
+          }
+          if (result > 65535)
+          {
+               tftp_send_error(sockfd, sa, EOPTNEG, data->data_buffer,
+                               data->data_buffer_size, NULL);
+               if (data->trace)
+                    atftp_logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", EOPTNEG,
+                           tftp_errmsg[EOPTNEG]);
+               return ERR;
+          }
+          if (accept_option)
+          {
+               opt_set_port(result, data->tftp_options);
+               atftp_logger(LOG_DEBUG, "port option -> %d", result);
+          }
+          else
+          {
+               opt_disable_options(data->tftp_options, "port");
+          }
      }
 
      /*
@@ -624,6 +771,18 @@ int tftpd_send_file(struct thread_data *data)
       */
      if ((result = opt_get_blksize(data->tftp_options)) > -1)
      {
+          int accept_option = data->option_received_cb == NULL;
+          if (data->option_received_cb != NULL)
+          {
+               accept_option = data->option_received_cb(
+                    data->section_handler_ptr, 
+                    "blksize", 
+                    data->tftp_options[OPT_BLKSIZE].value, 
+                    data->option_received_ctx) == TFTPD_OK;
+
+               // Server may change blksize, get it again.
+               result = opt_get_blksize(data->tftp_options);
+          }
           /*
            *  If we receive more options, we have to make sure our buffer for
            *  the OACK is not too small.  Use the string representation of
@@ -649,37 +808,44 @@ int tftpd_send_file(struct thread_data *data)
                return ERR;
           }
 
-          data->data_buffer_size = result + 4;
-          data->data_buffer = realloc(data->data_buffer, data->data_buffer_size);
-
-          if (data->data_buffer == NULL)
+          if (accept_option)
           {
-               atftp_logger(LOG_ERR, "memory allocation failure");
-              if (data->close_file_cb != NULL) {
-                  data->close_file_cb(data->section_handler_ptr, fp, data->close_file_ctx);
-              } else {
-                  fclose(fp);
-              }
-               return ERR;
-          }
-          tftphdr = (struct tftphdr *)data->data_buffer;
+               data->data_buffer_size = result + 4;
+               data->data_buffer = realloc(data->data_buffer, data->data_buffer_size);
 
-          if (data->data_buffer == NULL)
-          {
-               tftp_send_error(sockfd, sa, ENOSPACE, data->data_buffer,
-                               data->data_buffer_size, NULL);
-               if (data->trace)
-                    atftp_logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", ENOSPACE,
-                           tftp_errmsg[ENOSPACE]);
-              if (data->close_file_cb != NULL) {
-                  data->close_file_cb(data->section_handler_ptr, fp, data->close_file_ctx);
-              } else {
-                  fclose(fp);
-              }
-               return ERR;
+               if (data->data_buffer == NULL)
+               {
+                    atftp_logger(LOG_ERR, "memory allocation failure");
+               if (data->close_file_cb != NULL) {
+                    data->close_file_cb(data->section_handler_ptr, fp, data->close_file_ctx);
+               } else {
+                    fclose(fp);
+               }
+                    return ERR;
+               }
+               tftphdr = (struct tftphdr *)data->data_buffer;
+
+               if (data->data_buffer == NULL)
+               {
+                    tftp_send_error(sockfd, sa, ENOSPACE, data->data_buffer,
+                                   data->data_buffer_size, NULL);
+                    if (data->trace)
+                         atftp_logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", ENOSPACE,
+                              tftp_errmsg[ENOSPACE]);
+               if (data->close_file_cb != NULL) {
+                    data->close_file_cb(data->section_handler_ptr, fp, data->close_file_ctx);
+               } else {
+                    fclose(fp);
+               }
+                    return ERR;
+               }
+               opt_set_blksize(result, data->tftp_options);
+               atftp_logger(LOG_INFO, "blksize option -> %d", result);
           }
-          opt_set_blksize(result, data->tftp_options);
-          atftp_logger(LOG_INFO, "blksize option -> %d", result);
+          else
+          {
+               opt_disable_options(data->tftp_options, "blksize");
+          }
      }
 
      /* Verify that the file can be sent in MAXBLOCKS blocks of BLKSIZE octets */

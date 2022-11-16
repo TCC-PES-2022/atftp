@@ -173,6 +173,8 @@ TftpdOperationResult destroy_tftpd_handler(TftpdHandlerPtr *handler)
      (*handler)->close_file_context = NULL;
      (*handler)->section_started_context = NULL;
      (*handler)->section_finished_context = NULL;
+     (*handler)->option_received_cb = NULL;
+     (*handler)->option_received_context = NULL;
     if ((*handler)->log_file != NULL) {
           free((*handler)->log_file);
           (*handler)->log_file = NULL;
@@ -261,6 +263,19 @@ TftpdOperationResult register_section_finished_callback(
      }
      handler->section_finished_cb = callback;
      handler->section_finished_context = context;
+     return TFTPD_OK;
+}
+
+TftpdOperationResult register_option_received_callback(
+        const TftpdHandlerPtr handler,
+        option_received_callback callback,
+        void *context)
+{
+     if (handler == NULL) {
+          return TFTPD_ERROR;
+     }
+     handler->option_received_cb = callback;
+     handler->option_received_context = context;
      return TFTPD_OK;
 }
 
@@ -668,6 +683,8 @@ TftpdOperationResult start_listening(const TftpdHandlerPtr handler)
                new->section_started_cb = handler->section_started_cb;
                new->section_finished_ctx = handler->section_finished_context;
                new->section_finished_cb = handler->section_finished_cb;
+               new->option_received_cb = handler->option_received_cb;
+               new->option_received_ctx = handler->option_received_context;
                new->tftpd_cancel = &(handler->tftpd_cancel);
                new->stdin_mutex = &(handler->stdin_mutex);
 

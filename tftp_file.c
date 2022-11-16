@@ -417,7 +417,7 @@ int tftp_receive_file(struct client_data *data)
                            sizeof(tftp_default_options));
                     /*
                      * look in the returned string for tsize, timeout, blksize
-                     * or multicast
+                     * or multicast (or port, for ARINC-615A)
                      */
                     opt_disable_options(data->tftp_options_reply, NULL);
                     opt_parse_options(data->data_buffer, data_size,
@@ -428,6 +428,13 @@ int tftp_receive_file(struct client_data *data)
                     if ((result = opt_get_tsize(data->tftp_options_reply)) >
                         -1)
                     {
+                         if (data->tftp_option_accepted_cbk != NULL) {
+                              data->tftp_option_accepted_cbk(
+                                   "tsize", 
+                                   data->tftp_options_reply[OPT_TSIZE].value, 
+                                   data->tftp_option_accepted_ctx);
+                         }
+
                          if (data->trace)
                               fprintf(stderr, "tsize: %d, ", result);
                     }
@@ -435,13 +442,41 @@ int tftp_receive_file(struct client_data *data)
                     if ((result = opt_get_timeout(data->tftp_options_reply))
                         > -1)
                     {
+                         if (data->tftp_option_accepted_cbk != NULL) {
+                              data->tftp_option_accepted_cbk(
+                                   "timeout", 
+                                   data->tftp_options_reply[OPT_TIMEOUT].value, 
+                                   data->tftp_option_accepted_ctx);
+                         }
+
                          if (data->trace)
                               fprintf(stderr, "timeout: %d, ", result);
+                    }
+                    /* port */
+                    if ((result = opt_get_port(data->tftp_options_reply))
+                        > -1)
+                    {
+                         if (data->tftp_option_accepted_cbk != NULL) {
+                              data->tftp_option_accepted_cbk(
+                                   "port", 
+                                   data->tftp_options_reply[OPT_PORT].value, 
+                                   data->tftp_option_accepted_ctx);
+                         }
+
+                         if (data->trace)
+                              fprintf(stderr, "port: %d, ", result);
                     }
                     /* blksize: resize the buffer please */
                     if ((result = opt_get_blksize(data->tftp_options_reply))
                         > -1)
                     {
+                         if (data->tftp_option_accepted_cbk != NULL) {
+                              data->tftp_option_accepted_cbk(
+                                   "blksize", 
+                                   data->tftp_options_reply[OPT_BLKSIZE].value, 
+                                   data->tftp_option_accepted_ctx);
+                         }
+                         
                          if (data->trace)
                               fprintf(stderr, "blksize: %d, ", result);
 
@@ -891,18 +926,48 @@ int tftp_send_file(struct client_data *data)
                /* tsize: funny, now we know the file size */
                if ((result = opt_get_tsize(data->tftp_options_reply)) > -1)
                {
+                    if (data->tftp_option_accepted_cbk != NULL) {
+                         data->tftp_option_accepted_cbk(
+                                   "tsize", 
+                                   data->tftp_options_reply[OPT_TSIZE].value, 
+                                   data->tftp_option_accepted_ctx);
+                    }
                     if (data->trace)
                          fprintf(stderr, "tsize: %d, ", result);
                }
                /* timeout */
                if ((result = opt_get_timeout(data->tftp_options_reply)) > -1)
                {
+                    if (data->tftp_option_accepted_cbk != NULL) {
+                         data->tftp_option_accepted_cbk(
+                                   "timeout", 
+                                   data->tftp_options_reply[OPT_TIMEOUT].value, 
+                                   data->tftp_option_accepted_ctx);
+                    }
                     if (data->trace)
                          fprintf(stderr, "timeout: %d, ", result);
+               }
+               /* port */
+               if ((result = opt_get_port(data->tftp_options_reply)) > -1)
+               {
+                    if (data->tftp_option_accepted_cbk != NULL) {
+                         data->tftp_option_accepted_cbk(
+                                   "port", 
+                                   data->tftp_options_reply[OPT_PORT].value, 
+                                   data->tftp_option_accepted_ctx);
+                    }
+                    if (data->trace)
+                         fprintf(stderr, "port: %d, ", result);
                }
                /* blksize: resize the buffer please */
                if ((result = opt_get_blksize(data->tftp_options_reply)) > -1)
                {
+                    if (data->tftp_option_accepted_cbk != NULL) {
+                         data->tftp_option_accepted_cbk(
+                                   "blksize", 
+                                   data->tftp_options_reply[OPT_BLKSIZE].value, 
+                                   data->tftp_option_accepted_ctx);
+                    }
                     if (data->trace)
                          fprintf(stderr, "blksize: %d, ", result);
                     data->data_buffer = realloc(data->data_buffer,

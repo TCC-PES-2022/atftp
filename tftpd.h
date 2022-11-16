@@ -43,7 +43,7 @@ struct thread_data {
      int trace;
 
      TftpdHandlerPtr handler;
-    TftpdSectionHandlerPtr section_handler_ptr;
+     TftpdSectionHandlerPtr section_handler_ptr;
 
      int sockfd;
 
@@ -59,6 +59,9 @@ struct thread_data {
      /* callback for section finished */
      void *section_finished_ctx;
      section_finished section_finished_cb;
+     /* callback for option received */
+     void *option_received_ctx;
+     option_received_callback option_received_cb;
 
     int *tftpd_cancel;
     pthread_mutex_t *stdin_mutex;
@@ -107,6 +110,8 @@ struct TftpdHandler
      section_started section_started_cb;
      void *section_finished_context;
      section_finished section_finished_cb;
+     option_received_callback option_received_cb;
+     void *option_received_context;
      int tftpd_port;    /* Port atftpd listen to */
      int tftpd_timeout; /* number of second of inactivity
                              before exiting */

@@ -49,14 +49,16 @@
  * the original project reads from argv. So we don't
  * have to change the inner code.
  */
-struct TftpHandler {
-    char host[MAX_PARAM_SIZE];
-    char port[MAX_PARAM_SIZE];
+struct TftpHandler
+{
+     char host[MAX_PARAM_SIZE];
+     char port[MAX_PARAM_SIZE];
+     char tftp_options[OPT_NUMBER][VAL_SIZE];
 
-    /* Structure to hold some information that must be passed to
-     * functions.
-     */
-    struct client_data data;
+     /* Structure to hold some information that must be passed to
+      * functions.
+      */
+     struct client_data data;
 };
 
 /* defined as extern in tftp_file.c and mtftp_file.c, set by the signal
@@ -65,9 +67,9 @@ int tftp_cancel = 0;
 int tftp_prevent_sas = 0;
 
 /* local flags */
-int interactive = 1;            /* if false, we run in batch mode */
-int tftp_result = OK;           /* status of tftp_send_file or
-                                   tftp_receive_file, used for status() */
+int interactive = 1;  /* if false, we run in batch mode */
+int tftp_result = OK; /* status of tftp_send_file or
+                         tftp_receive_file, used for status() */
 
 /* tftp.c local only functions. */
 int tftp_cmd_line_options(int argc, char **argv);
@@ -116,172 +118,228 @@ struct command {
 
 TftpOperationResult create_tftp_handler(TftpHandlerPtr *handler)
 {
-    (*handler) = malloc(sizeof(struct TftpHandler));
+     (*handler) = malloc(sizeof(struct TftpHandler));
 
-    (*handler)->host[0] = '\0';
-    (*handler)->port[0] = '\0';
+     (*handler)->host[0] = '\0';
+     (*handler)->port[0] = '\0';
 
-    (*handler)->data.data_buffer = NULL;
-    (*handler)->data.tftp_options = NULL;
-    (*handler)->data.tftp_options_reply = NULL;
-    (*handler)->data.tftp_error_cb = NULL;
-    (*handler)->data.tftp_error_ctx = NULL;
-    (*handler)->data.tftp_fetch_data_received_cbk = NULL;
-    (*handler)->data.tftp_fetch_data_received_ctx = NULL;
+     (*handler)->data.data_buffer = NULL;
+     (*handler)->data.tftp_options = NULL;
+     (*handler)->data.tftp_options_reply = NULL;
+     (*handler)->data.tftp_error_cb = NULL;
+     (*handler)->data.tftp_error_ctx = NULL;
+     (*handler)->data.tftp_fetch_data_received_cbk = NULL;
+     (*handler)->data.tftp_fetch_data_received_ctx = NULL;
+     (*handler)->data.tftp_option_accepted_cbk = NULL;
+     (*handler)->data.tftp_option_accepted_ctx = NULL;
 
-    return TFTP_OK;
+     memset((*handler)->tftp_options, 0, OPT_NUMBER * VAL_SIZE);
+
+     /* Allocate memory for data buffer. */
+     if (((*handler)->data.data_buffer = malloc((size_t)SEGSIZE + 4)) == NULL)
+     {
+          fprintf(stderr, "tftp: memory allcoation failed.\n");
+          return TFTP_ERROR;
+     }
+     (*handler)->data.data_buffer_size = SEGSIZE + 4;
+
+     /* Allocate memory for tftp option structure. */
+     if (((*handler)->data.tftp_options =
+              malloc(sizeof(tftp_default_options))) == NULL)
+     {
+          fprintf(stderr, "tftp: memory allocation failed.\n");
+          return TFTP_ERROR;
+     }
+     /* Copy default options. */
+     memcpy((*handler)->data.tftp_options, tftp_default_options,
+            sizeof(tftp_default_options));
+
+     /* Allocate memory for tftp option reply from server. */
+     if (((*handler)->data.tftp_options_reply =
+              malloc(sizeof(tftp_default_options))) == NULL)
+     {
+          fprintf(stderr, "tftp: memory allocation failed.\n");
+          return TFTP_ERROR;
+     }
+     /* Copy default options. */
+     memcpy((*handler)->data.tftp_options_reply, tftp_default_options,
+            sizeof(tftp_default_options));
+
+     return TFTP_OK;
 }
 
 TftpOperationResult destroy_tftp_handler(TftpHandlerPtr *handler)
 {
-    if ((*handler)->data.data_buffer != NULL) {
-        free((*handler)->data.data_buffer);
-    }
+     if ((*handler)->data.data_buffer != NULL)
+     {
+          free((*handler)->data.data_buffer);
+     }
 
-    if ((*handler)->data.tftp_options != NULL) {
-        free((*handler)->data.tftp_options);
-    }
+     if ((*handler)->data.tftp_options != NULL)
+     {
+          free((*handler)->data.tftp_options);
+     }
 
-    if ((*handler)->data.tftp_options_reply != NULL) {
-        free((*handler)->data.tftp_options_reply);
-    }
+     if ((*handler)->data.tftp_options_reply != NULL)
+     {
+          free((*handler)->data.tftp_options_reply);
+     }
 
-    if ((*handler) == NULL) {
-        return TFTP_ERROR;
-    }
-    free((*handler));
-    return TFTP_OK;
+     if ((*handler) == NULL)
+     {
+          return TFTP_ERROR;
+     }
+     free((*handler));
+     return TFTP_OK;
 }
 
 TftpOperationResult register_tftp_error_callback(
-        const TftpHandlerPtr handler,
-        tftp_error_callback callback,
-        void *context)
+    const TftpHandlerPtr handler,
+    tftp_error_callback callback,
+    void *context)
 {
-    handler->data.tftp_error_cb = callback;
-    handler->data.tftp_error_ctx = context;
-    return TFTP_OK;
+     handler->data.tftp_error_cb = callback;
+     handler->data.tftp_error_ctx = context;
+     return TFTP_OK;
 }
 
 TftpOperationResult register_tftp_fetch_data_received_callback(
-        const TftpHandlerPtr handler,
-        tftp_fetch_data_received_callback callback,
-        void *context)
+    const TftpHandlerPtr handler,
+    tftp_fetch_data_received_callback callback,
+    void *context)
 {
      handler->data.tftp_fetch_data_received_cbk = callback;
      handler->data.tftp_fetch_data_received_ctx = context;
      return TFTP_OK;
 }
 
-TftpOperationResult set_connection(
-        TftpHandlerPtr handler,
-        const char* host,
-        const int port)
+TftpOperationResult register_tftp_option_accepted_callback(
+    const TftpHandlerPtr handler,
+    tftp_option_accepted_callback callback,
+    void *context)
 {
-    if (handler == NULL) {
-        return TFTP_ERROR;
-    }
-    if (host == NULL) {
-        return TFTP_ERROR;
-    }
-    if (port < 0) {
-        return TFTP_ERROR;
-    }
-    strncpy(handler->host, host, MAX_PARAM_SIZE);
-    sprintf(handler->port, "%d", port);
-    return TFTP_OK;
+     handler->data.tftp_option_accepted_cbk = callback;
+     handler->data.tftp_option_accepted_ctx = context;
+     return TFTP_OK;
+}
+
+TftpOperationResult set_connection(
+    TftpHandlerPtr handler,
+    const char *host,
+    const int port)
+{
+     if (handler == NULL)
+     {
+          return TFTP_ERROR;
+     }
+     if (host == NULL)
+     {
+          return TFTP_ERROR;
+     }
+     if (port < 0)
+     {
+          return TFTP_ERROR;
+     }
+     strncpy(handler->host, host, MAX_PARAM_SIZE);
+     sprintf(handler->port, "%d", port);
+     return TFTP_OK;
+}
+
+TftpOperationResult set_tftp_option(
+    TftpHandlerPtr handler,
+    TftpOption option,
+    const char *value)
+{
+     if (handler == NULL)
+     {
+          return TFTP_ERROR;
+     }
+     if (value == NULL)
+     {
+          return TFTP_ERROR;
+     }
+
+     switch (option)
+     {
+     case TFTP_BLOCKSIZE_OPTION:
+          strncpy(handler->tftp_options[OPT_BLKSIZE], value, VAL_SIZE);
+          break;
+     case TFTP_PORT_OPTION:
+          strncpy(handler->tftp_options[OPT_PORT], value, VAL_SIZE);
+          break;
+     default:
+          return TFTP_ERROR;
+          break;
+     }
+     return TFTP_OK;
 }
 
 TftpOperationResult send_file(
-        TftpHandlerPtr handler,
-        const char* filename,
-        FILE *fp)
+    TftpHandlerPtr handler,
+    const char *filename,
+    FILE *fp)
 {
-    if (handler == NULL) {
-        return TFTP_ERROR;
-    }
-    if (filename == NULL) {
-        return TFTP_ERROR;
-    }
-    if (fp == NULL) {
-        return TFTP_ERROR;
-    }
+     if (handler == NULL)
+     {
+          return TFTP_ERROR;
+     }
+     if (filename == NULL)
+     {
+          return TFTP_ERROR;
+     }
+     if (fp == NULL)
+     {
+          return TFTP_ERROR;
+     }
 
-    handler->data.fp = fp;
-    char *tmp_filename = strdup(filename);
-    int ret = put_file(2,
-                   (char *[]){
-                           "put",
-                           tmp_filename
-                   }, handler);
-    free(tmp_filename);
+     handler->data.fp = fp;
+     char *tmp_filename = strdup(filename);
+     int ret = put_file(2,
+                        (char *[]){
+                            "put",
+                            tmp_filename},
+                        handler);
+     free(tmp_filename);
 
-    return ret == OK ? TFTP_OK : TFTP_ERROR;
+     return ret == OK ? TFTP_OK : TFTP_ERROR;
 }
 
 TftpOperationResult fetch_file(
-        TftpHandlerPtr handler,
-        const char* filename,
-        FILE *fp)
+    TftpHandlerPtr handler,
+    const char *filename,
+    FILE *fp)
 {
-    if (handler == NULL) {
-        return TFTP_ERROR;
-    }
-    if (filename == NULL) {
-        return TFTP_ERROR;
-    }
-    if (fp == NULL) {
-        return TFTP_ERROR;
-    }
+     if (handler == NULL)
+     {
+          return TFTP_ERROR;
+     }
+     if (filename == NULL)
+     {
+          return TFTP_ERROR;
+     }
+     if (fp == NULL)
+     {
+          return TFTP_ERROR;
+     }
 
-    handler->data.fp = fp;
-    char *tmp_filename = strdup(filename);
-    int ret = get_file(2,
-                       (char *[]){
-                               "get",
-                               tmp_filename
-                       }, handler);
-    free(tmp_filename);
+     handler->data.fp = fp;
+     char *tmp_filename = strdup(filename);
+     int ret = get_file(2,
+                        (char *[]){
+                            "get",
+                            tmp_filename},
+                        handler);
+     free(tmp_filename);
 
-    return ret == OK ? TFTP_OK : TFTP_ERROR;
+     return ret == OK ? TFTP_OK : TFTP_ERROR;
 }
 
 /*
  * Init default configuration and open the socket
  */
 TftpOperationResult config_tftp(
-        const TftpHandlerPtr handler)
+    const TftpHandlerPtr handler)
 {
-     /* Allocate memory for data buffer. */
-     if ((handler->data.data_buffer = malloc((size_t)SEGSIZE+4)) == NULL)
-     {
-          fprintf(stderr, "tftp: memory allcoation failed.\n");
-          return TFTP_ERROR;
-     }
-     handler->data.data_buffer_size = SEGSIZE + 4;
-
-     /* Allocate memory for tftp option structure. */
-     if ((handler->data.tftp_options =
-          malloc(sizeof(tftp_default_options))) == NULL)
-     {
-          fprintf(stderr, "tftp: memory allocation failed.\n");
-         return TFTP_ERROR;
-     }
-     /* Copy default options. */
-     memcpy(handler->data.tftp_options, tftp_default_options,
-            sizeof(tftp_default_options));
-
-     /* Allocate memory for tftp option reply from server. */
-     if ((handler->data.tftp_options_reply =
-          malloc(sizeof(tftp_default_options))) == NULL)
-     {
-          fprintf(stderr, "tftp: memory allocation failed.\n");
-         return TFTP_ERROR;
-     }
-     /* Copy default options. */
-     memcpy(handler->data.tftp_options_reply, tftp_default_options,
-            sizeof(tftp_default_options));
-
      /* default options  */
 #ifdef HAVE_MTFTP
      handler->data.mtftp_client_port = 76;
@@ -301,26 +359,35 @@ TftpOperationResult config_tftp(
 
      // Set connection parameters
      char *set_peer_argv[] = {
-             "set_peer",
-             handler->host,
-             handler->port
-     };
+         "set_peer",
+         handler->host,
+         handler->port};
      config_ret |= set_peer(3, set_peer_argv, handler);
 
-    // Set mode
-    char *set_mode_argv[] = {
-            "option",
-            "octet"
-    };
-    config_ret |= set_mode(2, set_mode_argv, handler);
+     // Set mode
+     char *set_mode_argv[] = {
+         "option",
+         "octet"};
+     config_ret |= set_mode(2, set_mode_argv, handler);
 
-//     Set options
-    char *set_blksize_option_argv[] = {
-            "option",
-            "blksize",
-            "512"
-    };
-    config_ret |= set_option(3, set_blksize_option_argv, handler);
+     //     Set options
+     if (handler->tftp_options[OPT_BLKSIZE][0] != '\0')
+     {
+          char *set_blksize_argv[] = {
+              "option",
+              "blksize",
+              handler->tftp_options[OPT_BLKSIZE]};
+          config_ret |= set_option(3, set_blksize_argv, handler);
+     }
+
+     if (handler->tftp_options[OPT_PORT][0] != '\0')
+     {
+          char *set_port_argv[] = {
+              "option",
+              "port",
+              handler->tftp_options[OPT_PORT]};
+          config_ret |= set_option(3, set_port_argv, handler);
+     }
 
      return config_ret == OK ? TFTP_OK : TFTP_ERROR;
 }
@@ -353,7 +420,7 @@ int set_peer(int argc, char **argv, TftpHandlerPtr handler)
      {
           Strncpy(handler->data.hostname, addrinfo->ai_canonname,
                   sizeof(handler->data.hostname));
-          handler->data.hostname[sizeof(handler->data.hostname)-1] = 0;
+          handler->data.hostname[sizeof(handler->data.hostname) - 1] = 0;
           freeaddrinfo(addrinfo);
      }
      else
@@ -444,6 +511,10 @@ int set_option(int argc, char **argv, TftpHandlerPtr handler)
                fprintf(stderr, "   password: enabled\n");
           else
                fprintf(stderr, "   password: disabled\n");
+          if (handler->data.tftp_options[OPT_PORT].specified)
+               fprintf(stderr, "   port: enabled\n");
+          else
+               fprintf(stderr, "   port: disabled\n");
           return ERR;
      }
      /* if disabling an option */
@@ -522,7 +593,8 @@ int put_file(int argc, char **argv, TftpHandlerPtr handler)
 
      /* open a UDP socket */
      handler->data.sockfd = socket(handler->data.sa_peer.ss_family, SOCK_DGRAM, 0);
-     if (handler->data.sockfd < 0) {
+     if (handler->data.sockfd < 0)
+     {
           perror("tftp: ");
           exit(ERR);
      }
@@ -591,7 +663,8 @@ int get_file(int argc, char **argv, TftpHandlerPtr handler)
 
      /* open a UDP socket */
      handler->data.sockfd = socket(handler->data.sa_peer.ss_family, SOCK_DGRAM, 0);
-     if (handler->data.sockfd < 0) {
+     if (handler->data.sockfd < 0)
+     {
           perror("tftp: ");
           exit(ERR);
      }
@@ -783,8 +856,8 @@ int set_timeout(int argc, char **argv, TftpHandlerPtr handler)
 }
 
 #if 0
-#define PUT  1
-#define GET  2
+#define PUT 1
+#define GET 2
 #define MGET 3
 
 /*

@@ -135,6 +135,26 @@ typedef TftpdOperationResult (*close_file_callback) (
         void *context
 );
 
+/**
+ * @brief Option received callback. This callback is called when
+ * the server receives an option from the client. Returning TFTPD_OK
+ * will accept the option, returning TFTPD_ERROR will reject it.
+ *
+ * @param[in] section_handler the section handler.
+ * @param[in] option the option received.
+ * @param[in] value the value of the option.
+ * @param[in] context the user context.
+ *
+ * @return TFTPD_OK if success.
+ * @return TFTPD_ERROR otherwise.
+ */
+typedef TftpdOperationResult (*option_received_callback) (
+        const TftpdSectionHandlerPtr section_handler,
+        char *option,
+        char *value,
+        void *context
+);
+
 /*
 *******************************************************************************
                                    FUNCTIONS
@@ -259,6 +279,22 @@ TftpdOperationResult register_section_started_callback(
 TftpdOperationResult register_section_finished_callback(
         const TftpdHandlerPtr handler,
         section_finished callback,
+        void *context
+);
+
+/**
+ * @brief Register option received callback.
+ *
+ * @param[in] handler the pointer to the tftpd handler.
+ * @param[in] callback the callback to register.
+ * @param[in] context the user context.
+ *
+ * @return TFTPD_OK if success.
+ * @return TFTPD_ERROR otherwise.
+ */
+TftpdOperationResult register_option_received_callback(
+        const TftpdHandlerPtr handler,
+        option_received_callback callback,
         void *context
 );
 

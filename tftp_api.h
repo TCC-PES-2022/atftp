@@ -24,6 +24,17 @@ typedef enum {
     TFTP_ERROR
 } TftpOperationResult;
 
+/**
+ * @brief Enum with possible TFTP options.
+ * Possible return values are:
+ * - TFTP_BLOCKSIZE_OPTION:      Block size option.
+ * - TFTP_PORT_OPTION:           Port option.
+ */
+typedef enum {
+    TFTP_BLOCKSIZE_OPTION,
+    TFTP_PORT_OPTION
+} TftpOption;
+
 /*
 *******************************************************************************
                                    CALLBACKS
@@ -57,8 +68,28 @@ typedef TftpOperationResult (*tftp_error_callback) (
  * @return TFTP_OK if success.
  * @return TFTP_ERROR otherwise.
  */
+
 typedef TftpOperationResult (*tftp_fetch_data_received_callback) (
         int data_size,
+        void *context
+);
+
+/**
+ * @brief Option accepted callback. This callback is called when
+ * the server accepts an option from the client. Some options may allow 
+ * alternate values to be proposed, so make sure to check the value of the
+ * option.
+ *
+ * @param[in] option the option received.
+ * @param[in] value the value of the option.
+ * @param[in] context the user context.
+ *
+ * @return TFTP_OK if success.
+ * @return TFTP_ERROR otherwise.
+ */
+typedef TftpOperationResult (*tftp_option_accepted_callback) (
+        char *option,
+        char *value,
         void *context
 );
 
@@ -127,6 +158,22 @@ TftpOperationResult register_tftp_fetch_data_received_callback(
 );
 
 /**
+ * @brief Register option accepted callback.
+ *
+ * @param[in] handler the pointer to the tftpd handler.
+ * @param[in] callback the callback to register.
+ * @param[in] context the user context.
+ *
+ * @return TFTP_OK if success.
+ * @return TFTP_ERROR otherwise.
+ */
+TftpOperationResult register_tftp_option_accepted_callback(
+        const TftpHandlerPtr handler,
+        tftp_option_accepted_callback callback,
+        void *context
+);
+
+/**
  * @brief Set host and port for TFTP connection
  *
  * @param[in] handler the pointer to the tftp handler.
@@ -140,6 +187,22 @@ TftpOperationResult set_connection(
         TftpHandlerPtr handler,
         const char* host,
         const int port
+        );
+
+/**
+ * @brief Set options for TFTP connection
+ *
+ * @param[in] handler the pointer to the tftp handler.
+ * @param[in] option the option to set.
+ * @param[in] value the option value.
+ *
+ * @return TFTP_OK if success.
+ * @return TFTP_ERROR otherwise.
+ */
+TftpOperationResult set_tftp_option(
+        TftpHandlerPtr handler,
+        TftpOption option,
+        const char* value
         );
 
 /**

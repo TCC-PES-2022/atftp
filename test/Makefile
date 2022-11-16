@@ -96,7 +96,7 @@ all: makedir $(TARGET_CLIENT) $(TARGET_SERVER) $(TARGET_OPTIONS)
 debug: makedir $(TARGET_CLIENT) $(TARGET_SERVER) $(TARGET_OPTIONS)
 
 .PHONY: runtests
-runtests: runclient runserver
+runtests: runclient runserver runoptions
 
 .PHONY: runclient
 runclient:

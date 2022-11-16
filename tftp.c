@@ -358,11 +358,14 @@ TftpOperationResult config_tftp(
      int config_ret = OK;
 
      // Set connection parameters
-     char *set_peer_argv[] = {
-         "set_peer",
-         handler->host,
-         handler->port};
-     config_ret |= set_peer(3, set_peer_argv, handler);
+     if (handler->host[0] != '\0' && handler->port[0] != '\0')
+     {
+          char *set_peer_argv[] = {
+               "set_peer",
+               handler->host,
+               handler->port};
+          config_ret |= set_peer(3, set_peer_argv, handler);
+     }
 
      // Set mode
      char *set_mode_argv[] = {

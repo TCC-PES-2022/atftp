@@ -35,27 +35,12 @@
 #include <pwd.h>
 #include <grp.h>
 #include <fcntl.h>
-#ifdef HAVE_WRAP
-#include <tcpd.h>
-#endif
+
 #include "tftpd.h"
 #include "tftp_io.h"
 #include "tftp_def.h"
 #include "atftp_logger.h"
 #include "options.h"
-#include "stats.h"
-#ifdef HAVE_PCRE
-#include "tftpd_pcre.h"
-#endif
-
-#undef HAVE_MTFTP
-#ifdef HAVE_MTFTP
-#include "tftpd_mtftp.h"
-#endif
-
-#undef RATE_CONTROL
-
-#undef HAVE_PCRE
 
 #include <stdlib.h>
 #include "tftpd_api.h"
@@ -64,22 +49,16 @@
 /*
  * Global variables set by main when starting. Read-only for threads
  */
-int tftpd_max_thread = 100;     /* number of concurent thread allowed */
+int tftpd_max_thread = 100; /* number of concurent thread allowed */
 
-//char directory[MAXLEN] = "/srv/tftp/";
+// char directory[MAXLEN] = "/srv/tftp/";
 char directory[MAXLEN] = "./";
 int retry_timeout = S_TIMEOUT;
 
 int on = 1;
-int listen_local = 0;
 
-int tftpd_daemon = 1;           /* By default we are started by inetd */
-int tftpd_daemon_no_fork = 1;   /* For who want a false daemon mode */
-int tftpd_prevent_sas = 0;      /* For who don't want the sorcerer's apprentice syndrome */
-int drop_privs = 0;             /* whether it was explicitly requested to switch to another user. */
-char tftpd_addr[MAXLEN] = "";   /* IP address atftpd binds to */
-
-char *pidfile = NULL;           /* File to write own's pid */
+int drop_privs = 0;           /* whether it was explicitly requested to switch to another user. */
+char tftpd_addr[MAXLEN] = ""; /* IP address atftpd binds to */
 
 /*
  * Multicast related. These reflect option from command line
@@ -106,31 +85,13 @@ int source_port_checking = 1;
    the current client timeout in multicast mode */
 int mcast_switch_client = 0;
 
-int trace = 0;
-
-#ifdef HAVE_PCRE
-/* Use for PCRE file name substitution */
-tftpd_pcre_self_t *pcre_top = NULL;
-char *pcre_file;
-#endif
-
-#ifdef HAVE_MTFTP
-/* mtftp options */
-struct mtftp_data *mtftp_data = NULL;
-char mtftp_file[MAXLEN] = "";
-int mtftp_sport = 75;
-#endif
-
-#ifdef RATE_CONTROL
-int rate = 0;
-#endif
+int trace = 1;
 
 /*
  * Function defined in this file
  */
 void *tftpd_receive_request(void *);
 void tftpd_log_options(struct TftpdHandler *handler);
-int tftpd_pid_file(char *file, int action);
 void tftpd_usage(void);
 
 TftpdOperationResult create_tftpd_handler(TftpdHandlerPtr *handler)
@@ -163,7 +124,8 @@ TftpdOperationResult create_tftpd_handler(TftpdHandlerPtr *handler)
 
 TftpdOperationResult destroy_tftpd_handler(TftpdHandlerPtr *handler)
 {
-    if ((*handler) == NULL) {
+     if ((*handler) == NULL)
+     {
           return TFTPD_ERROR;
      }
      (*handler)->open_file_cb = NULL;
@@ -173,7 +135,8 @@ TftpdOperationResult destroy_tftpd_handler(TftpdHandlerPtr *handler)
      (*handler)->close_file_context = NULL;
      (*handler)->section_started_context = NULL;
      (*handler)->section_finished_context = NULL;
-    if ((*handler)->log_file != NULL) {
+     if ((*handler)->log_file != NULL)
+     {
           free((*handler)->log_file);
           (*handler)->log_file = NULL;
      }
@@ -188,10 +151,12 @@ TftpdOperationResult set_port(
     const TftpdHandlerPtr handler,
     const int port)
 {
-    if (handler == NULL) {
+     if (handler == NULL)
+     {
           return TFTPD_ERROR;
      }
-    if (port < 0) {
+     if (port < 0)
+     {
           return TFTPD_ERROR;
      }
      handler->tftpd_port = port;
@@ -202,10 +167,12 @@ TftpdOperationResult set_server_timeout(
     const TftpdHandlerPtr handler,
     const int timeout)
 {
-    if (handler == NULL) {
+     if (handler == NULL)
+     {
           return TFTPD_ERROR;
      }
-    if (timeout < 0) {
+     if (timeout < 0)
+     {
           return TFTPD_ERROR;
      }
      handler->tftpd_timeout = timeout;
@@ -217,7 +184,8 @@ TftpdOperationResult register_open_file_callback(
     open_file_callback callback,
     void *context)
 {
-    if (handler == NULL) {
+     if (handler == NULL)
+     {
           return TFTPD_ERROR;
      }
      handler->open_file_cb = callback;
@@ -230,7 +198,8 @@ TftpdOperationResult register_close_file_callback(
     close_file_callback callback,
     void *context)
 {
-    if (handler == NULL) {
+     if (handler == NULL)
+     {
           return TFTPD_ERROR;
      }
      handler->close_file_cb = callback;
@@ -243,7 +212,8 @@ TftpdOperationResult register_section_started_callback(
     section_started callback,
     void *context)
 {
-    if (handler == NULL) {
+     if (handler == NULL)
+     {
           return TFTPD_ERROR;
      }
      handler->section_started_cb = callback;
@@ -256,7 +226,8 @@ TftpdOperationResult register_section_finished_callback(
     section_finished callback,
     void *context)
 {
-    if (handler == NULL) {
+     if (handler == NULL)
+     {
           return TFTPD_ERROR;
      }
      handler->section_finished_cb = callback;
@@ -268,7 +239,8 @@ TftpdOperationResult get_section_id(
     const TftpdSectionHandlerPtr section_handler,
     SectionId *id)
 {
-    if (section_handler == NULL) {
+     if (section_handler == NULL)
+     {
           return TFTPD_ERROR;
      }
      *id = section_handler->section_id;
@@ -279,7 +251,8 @@ TftpdOperationResult get_client_ip(
     const TftpdSectionHandlerPtr section_handler,
     char *ip)
 {
-    if (section_handler == NULL) {
+     if (section_handler == NULL)
+     {
           return TFTPD_ERROR;
      }
      memcpy(ip, section_handler->client_ip, sizeof(section_handler->client_ip));
@@ -290,7 +263,8 @@ TftpdOperationResult get_section_status(
     const TftpdSectionHandlerPtr section_handler,
     TftpdSectionStatus *status)
 {
-    if (section_handler == NULL) {
+     if (section_handler == NULL)
+     {
           return TFTPD_ERROR;
      }
      *status = section_handler->status;
@@ -301,10 +275,12 @@ TftpdOperationResult set_error_msg(
     const TftpdSectionHandlerPtr section_handler,
     const char *error_msg)
 {
-    if (section_handler == NULL) {
+     if (section_handler == NULL)
+     {
           return TFTPD_ERROR;
      }
-     if (error_msg == NULL) {
+     if (error_msg == NULL)
+     {
           return TFTPD_ERROR;
      }
      section_handler->error_msg = strdup(error_msg);
@@ -315,10 +291,12 @@ TftpdOperationResult get_error_msg(
     const TftpdSectionHandlerPtr section_handler,
     char **error_msg)
 {
-    if (section_handler == NULL) {
+     if (section_handler == NULL)
+     {
           return TFTPD_ERROR;
      }
-     if (section_handler->error_msg == NULL) {
+     if (section_handler->error_msg == NULL)
+     {
           return TFTPD_ERROR;
      }
 
@@ -329,12 +307,13 @@ TftpdOperationResult get_error_msg(
 TftpdOperationResult stop_listening(
     const TftpdHandlerPtr handler)
 {
-    if (handler == NULL) {
+     if (handler == NULL)
+     {
           return TFTPD_ERROR;
      }
      handler->tftpd_cancel = 1;
 
-    //Send signal to thread to force return from select.
+     // Send signal to thread to force return from select.
      write(handler->stop_pipe[1], "\0", 1);
      return TFTPD_OK;
 }
@@ -348,11 +327,11 @@ TftpdOperationResult stop_listening(
  */
 TftpdOperationResult start_listening(const TftpdHandlerPtr handler)
 {
-     fd_set rfds;               /* for select */
-     struct timeval tv;         /* for select */
-     int run = 1;               /* while (run) loop */
-     struct thread_data *new;   /* for allocation of new thread_data */
-     int sockfd;                /* used in daemon mode */
+     fd_set rfds;                /* for select */
+     struct timeval tv;          /* for select */
+     int run = 1;                /* while (run) loop */
+     struct thread_data *new;    /* for allocation of new thread_data */
+     int sockfd;                 /* used in daemon mode */
      struct sockaddr_storage sa; /* used in daemon mode */
      struct passwd *user;
      struct group *group;
@@ -360,19 +339,7 @@ TftpdOperationResult start_listening(const TftpdHandlerPtr handler)
 
      // Set default options
      tftp_default_options[OPT_MULTICAST].enabled = 0;
-
-#ifdef HAVE_MTFTP
-     pthread_t mtftp_thread;
-#endif
-
-#ifdef RATE_CONTROL
-     struct timeval current_time = {0, 0}; /* For rate control */
-     long long current = 0L;
-     struct timeval previous_time = {0, 0};
-     long long previous = 0L;
-     int rcvbuf;                /* size of input socket buffer */
-#endif
-     int one = 1;               /* for setsockopt() */
+     int one = 1; /* for setsockopt() */
 
      /* Using syslog facilties through a wrapper. This call divert logs
       * to a file as specified or to syslog if no file specified. Specifying
@@ -383,160 +350,110 @@ TftpdOperationResult start_listening(const TftpdHandlerPtr handler)
      open_atftp_logger("atftpd", handler->log_file, handler->logging_level);
      atftp_logger(LOG_NOTICE, "Advanced Trivial FTP server started (%s)", VERSION);
 
-#ifdef HAVE_PCRE
-     /*  */
-     if (pcre_file)
+     /* find the port; initialise sockaddr_storage structure */
+     if (strlen(tftpd_addr) > 0 || handler->tftpd_port == 0)
      {
-          if ((pcre_top = tftpd_pcre_open(pcre_file)) == NULL)
-               atftp_logger(LOG_WARNING, "Failed to initialise PCRE, continuing anyway.");
-     }
-#endif
+          struct addrinfo hints, *result;
+          int err;
 
-#ifdef RATE_CONTROL
-     /* Some tuning */
-     rcvbuf = 128;
-     if (setsockopt(sockfd, SOL_SOCKET, SO_RCVBUF, &rcvbuf, sizeof(rcvbuf)) == 0)
-     {
-          atftp_logger(LOG_WARNING, "Failed to set socket option: %s", strerror(errno));
-     }
-     atftp_logger(LOG_DEBUG, "Receive socket buffer set to %d bytes", rcvbuf);
-#endif
-
-     /*
-      * If tftpd is run in daemon mode ...
-      */
-     if (tftpd_daemon)
-     {
-          /* daemonize here */
-          if (!tftpd_daemon_no_fork)
+          /* look up the service and host */
+          memset(&hints, 0, sizeof(hints));
+          hints.ai_socktype = SOCK_DGRAM;
+          hints.ai_flags = AI_NUMERICHOST;
+          err = getaddrinfo(strlen(tftpd_addr) ? tftpd_addr : NULL, handler->tftpd_port ? NULL : "tftp",
+                            &hints, &result);
+          if (err == EAI_SERVICE)
           {
-               if (daemon(0, 0) == -1)
-                    return TFTPD_ERROR;
-          }
-
-          /* find the port; initialise sockaddr_storage structure */
-          if (strlen(tftpd_addr) > 0 || handler->tftpd_port == 0)
-          {
-               struct addrinfo hints, *result;
-               int err;
-
-               /* look up the service and host */
-               memset(&hints, 0, sizeof(hints));
-               hints.ai_socktype = SOCK_DGRAM;
-               hints.ai_flags = AI_NUMERICHOST;
-               err = getaddrinfo(strlen(tftpd_addr) ? tftpd_addr : NULL, handler->tftpd_port ? NULL : "tftp",
-                                 &hints, &result);
-               if (err == EAI_SERVICE)
-               {
-                    atftp_logger(LOG_ERR, "atftpd: udp/tftp, unknown service");
-                    return TFTPD_ERROR;
-               }
-               if (err || sockaddr_set_addrinfo(&sa, result))
-               {
-                    atftp_logger(LOG_ERR, "atftpd: invalid IP address %s", tftpd_addr);
-                    return TFTPD_ERROR;
-               }
-
-               if (!handler->tftpd_port)
-                    handler->tftpd_port = sockaddr_get_port(&sa);
-               else {
-                    sa.ss_family = AF_INET;
-                    sockaddr_set_port(&sa, handler->tftpd_port);
-               }
-
-               freeaddrinfo(result);
-          }
-
-          if (strlen(tftpd_addr) == 0)
-          {
-               memset(&sa, 0, sizeof(sa));
-               sa.ss_family = AF_INET;
-          }
-
-          sockaddr_set_port(&sa, handler->tftpd_port);
-
-          /* open the socket */
-          if ((sockfd = socket(sa.ss_family, SOCK_DGRAM, 0)) == 0)
-          {
-               atftp_logger(LOG_ERR, "atftpd: can't open socket");
+               atftp_logger(LOG_ERR, "atftpd: udp/tftp, unknown service");
                return TFTPD_ERROR;
           }
-          /* bind the socket to the desired address and port  */
-          if (bind(sockfd, (struct sockaddr*)&sa, sizeof(sa)) < 0)
+          if (err || sockaddr_set_addrinfo(&sa, result))
           {
-               atftp_logger(LOG_ERR, "atftpd: can't bind port %s:%d/udp",
-                      tftpd_addr, handler->tftpd_port);
+               atftp_logger(LOG_ERR, "atftpd: invalid IP address %s", tftpd_addr);
                return TFTPD_ERROR;
           }
 
-          /* release priviliedge */
-
-          /* first see if we are or can somehow become root, if so prepare
-           * for drop even if not requested on command line */
-          if (geteuid() == 0)
-          {
-               drop_privs = 1;
-          }
-          else if (getuid() == 0)
-          {
-               if (seteuid(0) == 0)
-                    drop_privs = 1;
-          }
-
-          if (drop_privs)
-          {
-               user = getpwnam(user_name);
-               group = getgrnam(group_name);
-               if (!user || !group)
-               {
-                    atftp_logger(LOG_ERR,
-                           "atftpd: can't change identity to %s.%s: no such user/group. exiting.",
-                           user_name, group_name);
-                    return TFTPD_ERROR;
-               }
-          }
+          if (!handler->tftpd_port)
+               handler->tftpd_port = sockaddr_get_port(&sa);
           else
-          { /* make null pointers to prevent goofing up in case we accidenally access them */
-               user = NULL;
-               group = NULL;
-          }
-
-          /* write our pid in the specified file before changing user*/
-          if (pidfile)
           {
-               if (tftpd_pid_file(pidfile, 1) != OK)
-               {
-                    atftp_logger(LOG_ERR,
-                           "atftpd: can't write our pid file: %s.",
-                           pidfile);
-                    return TFTPD_ERROR;
-               }
-               /* to be able to remove it later */
-               if (drop_privs && chown(pidfile, user->pw_uid, group->gr_gid) != OK) {
-                    atftp_logger(LOG_ERR,
-                           "atftpd: failed to chown our pid file %s to owner %s.%s.",
-                           pidfile, user_name, group_name);
-                    return TFTPD_ERROR;
-               }
+               sa.ss_family = AF_INET;
+               sockaddr_set_port(&sa, handler->tftpd_port);
           }
 
-          if (drop_privs)
-          {
-               if (setregid(group->gr_gid, group->gr_gid) == -1)
-               {
-                    atftp_logger(LOG_ERR, "atftpd: failed to setregid to %s.", group_name);
-                    return TFTPD_ERROR;
-               }
-               if (setreuid(user->pw_uid, user->pw_uid) == -1)
-               {
-                    atftp_logger(LOG_ERR, "atftpd: failed to setreuid to %s.", user_name);
-                    return TFTPD_ERROR;
-               }
-          }
-
-          /* Reopen log file now that we changed user */
-          open_atftp_logger("atftpd", handler->log_file, handler->logging_level);
+          freeaddrinfo(result);
      }
+
+     if (strlen(tftpd_addr) == 0)
+     {
+          memset(&sa, 0, sizeof(sa));
+          sa.ss_family = AF_INET;
+     }
+
+     sockaddr_set_port(&sa, handler->tftpd_port);
+
+     /* open the socket */
+     if ((sockfd = socket(sa.ss_family, SOCK_DGRAM, 0)) == 0)
+     {
+          atftp_logger(LOG_ERR, "atftpd: can't open socket");
+          return TFTPD_ERROR;
+     }
+     /* bind the socket to the desired address and port  */
+     if (bind(sockfd, (struct sockaddr *)&sa, sizeof(sa)) < 0)
+     {
+          atftp_logger(LOG_ERR, "atftpd: can't bind port %s:%d/udp",
+                       tftpd_addr, handler->tftpd_port);
+          return TFTPD_ERROR;
+     }
+
+     /* release priviliedge */
+
+     /* first see if we are or can somehow become root, if so prepare
+      * for drop even if not requested on command line */
+     if (geteuid() == 0)
+     {
+          drop_privs = 1;
+     }
+     else if (getuid() == 0)
+     {
+          if (seteuid(0) == 0)
+               drop_privs = 1;
+     }
+
+     if (drop_privs)
+     {
+          user = getpwnam(user_name);
+          group = getgrnam(group_name);
+          if (!user || !group)
+          {
+               atftp_logger(LOG_ERR,
+                            "atftpd: can't change identity to %s.%s: no such user/group. exiting.",
+                            user_name, group_name);
+               return TFTPD_ERROR;
+          }
+     }
+     else
+     { /* make null pointers to prevent goofing up in case we accidenally access them */
+          user = NULL;
+          group = NULL;
+     }
+
+     if (drop_privs)
+     {
+          if (setregid(group->gr_gid, group->gr_gid) == -1)
+          {
+               atftp_logger(LOG_ERR, "atftpd: failed to setregid to %s.", group_name);
+               return TFTPD_ERROR;
+          }
+          if (setreuid(user->pw_uid, user->pw_uid) == -1)
+          {
+               atftp_logger(LOG_ERR, "atftpd: failed to setreuid to %s.", user_name);
+               return TFTPD_ERROR;
+          }
+     }
+
+     /* Reopen log file now that we changed user */
+     open_atftp_logger("atftpd", handler->log_file, handler->logging_level);
 
 #if defined(SOL_IP) && defined(IP_PKTINFO)
      /* We need to retieve some information from incoming packets */
@@ -552,39 +469,6 @@ TftpdOperationResult start_listening(const TftpdHandlerPtr handler)
      /* print summary of options */
      tftpd_log_options(handler);
 
-     /* start collecting stats */
-     stats_start();
-
-#ifdef HAVE_MTFTP
-     /* start mtftp server thread */
-     if (strlen(mtftp_file) > 0)
-     {
-          if (!tftpd_daemon)
-               atftp_logger(LOG_ERR, "Can't start mtftp server, use --deamon");
-          else
-          {
-               if ((mtftp_data = tftpd_mtftp_init(mtftp_file)) == NULL)
-                    atftp_logger(LOG_ERR, "Failled initialise mtftp");
-               else
-               {
-                    mtftp_data->server_port = mtftp_sport;
-                    mtftp_data->mcast_ttl = mcast_ttl;
-                    mtftp_data->timeout = retry_timeout;
-                    mtftp_data->checkport = source_port_checking;
-                    mtftp_data->trace = trace;
-                    /* Start server thread. */
-                    if (pthread_create(&mtftp_thread, NULL, tftpd_mtftp_server,
-                                       (void *)mtftp_data) != 0)
-                    {
-                         atftp_logger(LOG_ERR, "Failed to start mtftp server thread");
-                         tftpd_mtftp_clean(mtftp_data);
-                         mtftp_data = NULL;
-                    }
-               }
-          }
-     }
-#endif
-
      /* Wait for read or write request and exit if timeout. */
      while (run)
      {
@@ -598,23 +482,6 @@ TftpdOperationResult start_listening(const TftpdHandlerPtr handler)
              is done reading the request. */
           pthread_mutex_lock(&handler->stdin_mutex);
 
-#ifdef RATE_CONTROL
-          /* if we want to implement rate control, we sleep some time here
-             so we cannot exceed the allowed thread/sec. */
-          if (rate > 0)
-          {
-               gettimeofday(&current_time, NULL);
-               current = (long long)current_time.tv_sec*1000000L + current_time.tv_usec;
-               atftp_logger(LOG_DEBUG, "time from previous request: %Ld", current - previous);
-               if ((current - previous) < (60L*1000000L / (long long)rate))
-               {
-                    atftp_logger(LOG_DEBUG, "will sleep for rate control (%Ld)",
-                           (60L*1000000L / (long long)rate) - (current - previous));
-                    usleep((60L*1000000L / (long long)rate) - (current - previous));
-               }
-          }
-#endif
-
           /* A timeout of 0 is interpreted as infinity. Wait for incoming
              packets */
           if (!handler->tftpd_cancel)
@@ -626,23 +493,14 @@ TftpdOperationResult start_listening(const TftpdHandlerPtr handler)
                     rv = select(FD_SETSIZE, &rfds, NULL, NULL, NULL);
                else
                     rv = select(FD_SETSIZE, &rfds, NULL, NULL, &tv);
-               if (rv < 0) {
+               if (rv < 0)
+               {
                     atftp_logger(LOG_ERR, "%s: %d: select: %s",
-                           __FILE__, __LINE__, strerror(errno));
+                                 __FILE__, __LINE__, strerror(errno));
                     /* Clear the bits, they are undefined! */
                     FD_ZERO(&rfds);
                }
           }
-
-#ifdef RATE_CONTROL
-          /* get the time we receive this packet */
-          if (rate > 0)
-          {
-               gettimeofday(&previous_time, NULL);
-               previous = (long long)previous_time.tv_sec*1000000L +
-                          previous_time.tv_usec;
-          }
-#endif
 
           if (FD_ISSET(sockfd, &rfds) && (!handler->tftpd_cancel))
           {
@@ -650,7 +508,7 @@ TftpdOperationResult start_listening(const TftpdHandlerPtr handler)
                if ((new = calloc(1, sizeof(struct thread_data))) == NULL)
                {
                     atftp_logger(LOG_ERR, "%s: %d: Memory allocation failed",
-                           __FILE__, __LINE__);
+                                 __FILE__, __LINE__);
                     return TFTPD_ERROR;
                }
 
@@ -660,9 +518,9 @@ TftpdOperationResult start_listening(const TftpdHandlerPtr handler)
                pthread_mutex_init(&new->client_mutex, NULL);
                new->sockfd = sockfd;
                new->handler = handler;
-               new->open_file_ctx =  handler->open_file_context;
+               new->open_file_ctx = handler->open_file_context;
                new->open_file_cb = handler->open_file_cb;
-               new->close_file_ctx =  handler->close_file_context;
+               new->close_file_ctx = handler->close_file_context;
                new->close_file_cb = handler->close_file_cb;
                new->section_started_ctx = handler->section_started_context;
                new->section_started_cb = handler->section_started_cb;
@@ -675,7 +533,7 @@ TftpdOperationResult start_listening(const TftpdHandlerPtr handler)
                if ((new->data_buffer = malloc((size_t)SEGSIZE + 4)) == NULL)
                {
                     atftp_logger(LOG_ERR, "%s: %d: Memory allocation failed",
-                           __FILE__, __LINE__);
+                                 __FILE__, __LINE__);
                     return TFTPD_ERROR;
                }
                new->data_buffer_size = SEGSIZE + 4;
@@ -685,7 +543,7 @@ TftpdOperationResult start_listening(const TftpdHandlerPtr handler)
                         malloc(sizeof(tftp_default_options))) == NULL)
                {
                     atftp_logger(LOG_ERR, "%s: %d: Memory allocation failed",
-                           __FILE__, __LINE__);
+                                 __FILE__, __LINE__);
                     return TFTPD_ERROR;
                }
 
@@ -711,7 +569,7 @@ TftpdOperationResult start_listening(const TftpdHandlerPtr handler)
                         calloc(1, sizeof(struct client_info))) == NULL)
                {
                     atftp_logger(LOG_ERR, "%s: %d: Memory allocation failed",
-                           __FILE__, __LINE__);
+                                 __FILE__, __LINE__);
                     return TFTPD_ERROR;
                }
                new->client_info->done = 0;
@@ -750,48 +608,12 @@ TftpdOperationResult start_listening(const TftpdHandlerPtr handler)
                }
 
                run = 0;
-               if (tftpd_daemon || (handler->tftpd_timeout == 0))
-                    atftp_logger(LOG_NOTICE, "atftpd terminating");
-               else
-                    atftp_logger(LOG_NOTICE,
-                           "atftpd terminating after %d seconds",
-                           handler->tftpd_timeout);
+               atftp_logger(LOG_NOTICE, "atftpd terminating");
           }
      }
 
      /* close all open file descriptors */
      close(sockfd);
-
-#ifdef HAVE_MTFTP
-     /*  stop the mtftp threads */
-     if (mtftp_data)
-     {
-          /* kill mtftp serving thread */
-          tftpd_mtftp_kill_threads(mtftp_data);
-          /* kill mtftp main thread */
-          pthread_kill(mtftp_thread, SIGTERM);
-          pthread_join(mtftp_thread, NULL);
-     }
-#endif
-
-     /* stop collecting stats and print them*/
-     stats_end();
-     stats_print();
-
-#ifdef HAVE_PCRE
-     /* remove allocated memory for tftpd_pcre */
-     if (pcre_top)
-          tftpd_pcre_close(pcre_top);
-#endif
-
-#ifdef HAVE_PCRE
-     if (pcre_file)
-          free(pcre_file);
-#endif
-
-     /* remove PID file */
-     if (pidfile)
-          tftpd_pid_file(pidfile, 0);
 
      atftp_logger(LOG_NOTICE, "Main thread exiting");
      close_atftp_logger();
@@ -801,9 +623,6 @@ TftpdOperationResult start_listening(const TftpdHandlerPtr handler)
 static void tftpd_receive_request_cleanup(void *arg)
 {
      struct thread_data *data = (struct thread_data *)arg;
-
-     /* update stats */
-     stats_thread_usage_locked();
 
      /* Remove the thread_data structure from the list, if it as been
         added. */
@@ -818,10 +637,6 @@ static void tftpd_receive_request_cleanup(void *arg)
           free(data->section_handler_ptr->error_msg);
 
      free(data->tftp_options);
-
-     /* if the thread had reserverd a multicast IP/Port, deallocate it */
-     if (data->mc_port != 0)
-          tftpd_mcast_free_tid(data->mc_addr, data->mc_port);
 
      /* this function take care of freeing allocated memory by other threads */
      tftpd_clientlist_free(data->handler, data);
@@ -852,9 +667,9 @@ void *tftpd_receive_request(void *arg)
      struct thread_data *data = (struct thread_data *)arg;
      pthread_cleanup_push(tftpd_receive_request_cleanup, data);
 
-     int retval;                /* hold return value for testing */
-     int data_size;             /* returned size by recvfrom */
-     char string[MAXLEN];       /* hold the string we pass to the atftp_logger */
+     int retval;          /* hold return value for testing */
+     int data_size;       /* returned size by recvfrom */
+     char string[MAXLEN]; /* hold the string we pass to the atftp_logger */
      int num_of_threads;
 
      struct sockaddr_storage to; /* destination of client's packet */
@@ -883,12 +698,13 @@ void *tftpd_receive_request(void *arg)
                          sizeof(section_handler.client_ip));
      data->section_handler_ptr = &section_handler;
 
-    if (retval == ERR) {
+     if (retval == ERR)
+     {
           atftp_logger(LOG_NOTICE, "Invalid request in 1st packet");
           section_handler.abort = 1;
      }
 
-    if(data->section_started_cb != NULL)
+     if (data->section_started_cb != NULL)
           data->section_started_cb(&section_handler, data->section_started_ctx);
 
      /* now unlock stdin */
@@ -898,41 +714,18 @@ void *tftpd_receive_request(void *arg)
      if ((num_of_threads = tftpd_list_num_of_thread(data->handler)) >= tftpd_max_thread)
      {
           atftp_logger(LOG_INFO, "Maximum number of threads reached: %d",
-                 num_of_threads);
+                       num_of_threads);
           section_handler.abort = 1;
      }
-
-#ifdef HAVE_WRAP
-     if (!section_handler.abort && !sockaddr_family_supported(&data->client_info->client))
-     {
-          atftp_logger(LOG_ERR, "Connection from unsupported network address family refused");
-          section_handler.abort = 1;
-     }
-     if (!section_handler.abort)
-     {
-          /* Verify the client has access. We don't look for the name but
-             rely only on the IP address for that. */
-          sockaddr_print_addr(&data->client_info->client,
-                              addr_str, sizeof(addr_str));
-          if (hosts_ctl("in.tftpd", STRING_UNKNOWN, addr_str,
-                        STRING_UNKNOWN) == 0)
-          {
-               atftp_logger(LOG_ERR, "Connection refused from %s", addr_str);
-               section_handler.abort = 1;
-          }
-     }
-#endif
 
      /* Add this new thread structure to the list. */
      if (!section_handler.abort)
      {
-          stats_new_thread(tftpd_list_add(data->handler, data));
+          tftpd_list_add(data->handler, data);
      }
 
      /* if the maximum number of thread is reached, too bad we section_handler.abort. */
-     if (section_handler.abort)
-          stats_abort_locked();
-     else
+     if (!section_handler.abort)
      {
           /* open a socket for client communication */
           data->sockfd = socket(data->client_info->client.ss_family,
@@ -945,22 +738,8 @@ void *tftpd_receive_request(void *arg)
            */
           to.ss_family = data->client_info->client.ss_family;
           sockaddr_set_port(&to, 0);
-          /* Force socket to listen on local address. Do not listen on broadcast address 255.255.255.255.
-             If the socket listens on the broadcast address, Linux tells the remote client the port
-             is unreachable. This happens even if SO_BROADCAST is set in setsockopt for this socket.
-             I was unable to find a kernel option or /proc/sys flag to make the kernel pay attention to
-             these requests, so the workaround is to force listening on the local address. */
-          if (listen_local == 1)
-          {
-               atftp_logger(LOG_INFO, "forcing socket to listen on local address");
-               if (setsockopt(data->sockfd, SOL_SOCKET, SO_BROADCAST, &on, sizeof(on)) != 0) {
-                    atftp_logger(LOG_ERR, "setsockopt: %s", strerror(errno));
-               }
-          }
-          else
-          {
-               atftp_logger(LOG_INFO, "socket may listen on any address, including broadcast");
-          }
+
+          atftp_logger(LOG_INFO, "socket may listen on any address, including broadcast");
 
           if (data->sockfd > 0)
           {
@@ -990,8 +769,8 @@ void *tftpd_receive_request(void *arg)
                }
 #endif
                atftp_logger(LOG_DEBUG, "Creating new socket: %s:%d",
-                      sockaddr_print_addr(&to, addr_str, sizeof(addr_str)),
-                      sockaddr_get_port(&to));
+                            sockaddr_print_addr(&to, addr_str, sizeof(addr_str)),
+                            sockaddr_get_port(&to));
 
                /* read options from request */
                opt_parse_request(data->data_buffer, data_size,
@@ -1008,34 +787,34 @@ void *tftpd_receive_request(void *arg)
           {
           case GET_RRQ:
                atftp_logger(LOG_NOTICE, "Serving %s to %s:%d",
-                      data->tftp_options[OPT_FILENAME].value,
-                      sockaddr_print_addr(&data->client_info->client,
-                                          addr_str, sizeof(addr_str)),
-                      sockaddr_get_port(&data->client_info->client));
+                            data->tftp_options[OPT_FILENAME].value,
+                            sockaddr_print_addr(&data->client_info->client,
+                                                addr_str, sizeof(addr_str)),
+                            sockaddr_get_port(&data->client_info->client));
                if (data->trace)
                     atftp_logger(LOG_DEBUG, "received RRQ <%s>", string);
-               if (tftpd_send_file(data) == OK) {
-                    stats_send_locked();
+               if (tftpd_send_file(data) == OK)
+               {
                     section_handler.status = TFTPD_SECTION_OK;
                }
-               else {
-                    stats_err_locked();
+               else
+               {
                     section_handler.status = TFTPD_SECTION_ERROR;
                }
                break;
           case GET_WRQ:
                atftp_logger(LOG_NOTICE, "Fetching from %s to %s",
-                      sockaddr_print_addr(&data->client_info->client,
-                                          addr_str, sizeof(addr_str)),
-                      data->tftp_options[OPT_FILENAME].value);
+                            sockaddr_print_addr(&data->client_info->client,
+                                                addr_str, sizeof(addr_str)),
+                            data->tftp_options[OPT_FILENAME].value);
                if (data->trace)
                     atftp_logger(LOG_DEBUG, "received WRQ <%s>", string);
-               if (tftpd_receive_file(data) == OK) {
-                    stats_recv_locked();
+               if (tftpd_receive_file(data) == OK)
+               {
                     section_handler.status = TFTPD_SECTION_OK;
                }
-               else {
-                    stats_err_locked();
+               else
+               {
                     section_handler.status = TFTPD_SECTION_ERROR;
                }
                break;
@@ -1047,28 +826,25 @@ void *tftpd_receive_request(void *arg)
                section_handler.status = TFTPD_SECTION_ERROR;
                if (data->trace)
                     atftp_logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", EUNDEF,
-                           tftp_errmsg[EUNDEF]);
-               stats_err_locked();
+                                 tftp_errmsg[EUNDEF]);
                break;
           case ABORT:
                section_handler.status = TFTPD_SECTION_ERROR;
                if (data->trace)
                     atftp_logger(LOG_ERR, "thread aborting");
-               stats_err_locked();
                break;
           default:
                section_handler.status = TFTPD_SECTION_ERROR;
                atftp_logger(LOG_NOTICE, "Invalid request <%d> from %s",
-                      retval,
-                      sockaddr_print_addr(&data->client_info->client,
-                                          addr_str, sizeof(addr_str)));
+                            retval,
+                            sockaddr_print_addr(&data->client_info->client,
+                                                addr_str, sizeof(addr_str)));
                tftp_send_error(data->sockfd, &data->client_info->client,
                                EBADOP, data->data_buffer, data->data_buffer_size,
                                NULL);
                if (data->trace)
                     atftp_logger(LOG_DEBUG, "sent ERROR <code: %d, msg: %s>", EBADOP,
-                           tftp_errmsg[EBADOP]);
-               stats_err_locked();
+                                 tftp_errmsg[EBADOP]);
           }
      }
 
@@ -1083,343 +859,36 @@ void *tftpd_receive_request(void *arg)
      pthread_exit(NULL);
 }
 
-#if 0
-#define OPT_RATE       'R'
-#define OPT_MCAST_TTL  '0'
-#define OPT_MCAST_ADDR '1'
-#define OPT_MCAST_PORT '2'
-#define OPT_PCRE       '3'
-#define OPT_PCRE_TEST  '4'
-#define OPT_PORT_CHECK '5'
-#define OPT_MCAST_SWITCH '6'
-#define OPT_MTFTP      '7'
-#define OPT_MTFTP_PORT '8'
-#define OPT_TRACE      '9'
-
-
-/*
- * Parse the command line using the standard getopt function.
- */
-int tftpd_cmd_line_options(int argc, char **argv)
-{
-     int c;
-     char *tmp;
-#ifdef HAVE_PCRE
-     char string[MAXLEN], out[MAXLEN];
-#endif
-     static struct option options[] = {
-          { "tftpd-timeout", 1, NULL, 't' },
-          { "retry-timeout", 1, NULL, 'r' },
-          { "maxthread", 1, NULL, 'm' },
-#ifdef RATE_CONTROL
-          { "rate", 1, NULL, OPT_RATE },
-#endif
-          { "verbose", 2, NULL, 'v' },
-          { "trace", 0, NULL, OPT_TRACE },
-          { "no-timeout", 0, NULL, 'T' },
-          { "no-tsize", 0, NULL, 'S' },
-          { "no-blksize", 0, NULL, 'B' },
-          { "no-multicast", 0, NULL, 'M' },
-          { "logfile", 1, NULL, 'L' },
-          { "pidfile", 1, NULL, 'I'},
-          { "listen-local", 0, NULL, 'F'},
-          { "daemon", 0, NULL, 'D' },
-          { "no-fork", 0, NULL, 'N'},
-          { "user", 1, NULL, 'U'},
-          { "group", 1, NULL, 'G'},
-          { "port", 1, NULL, 'P' },
-          { "bind-address", 1, NULL, 'A'},
-          { "mcast-ttl", 1, NULL, OPT_MCAST_TTL },
-          { "mcast_ttl", 1, NULL, OPT_MCAST_TTL },
-          { "mcast-addr", 1, NULL, OPT_MCAST_ADDR },
-          { "mcast_addr", 1, NULL, OPT_MCAST_ADDR },
-          { "mcast-port", 1, NULL, OPT_MCAST_PORT },
-          { "mcast_port", 1, NULL, OPT_MCAST_PORT },
-#ifdef HAVE_PCRE
-          { "pcre", 1, NULL, OPT_PCRE },
-          { "pcre-test", 1, NULL, OPT_PCRE_TEST },
-#endif
-#ifdef HAVE_MTFTP
-          { "mtftp", 1, NULL, OPT_MTFTP },
-          { "mtftp-port", 1, NULL, OPT_MTFTP_PORT },
-#endif
-          { "prevent-sas", 0, NULL, 'X' },
-          { "no-source-port-checking", 0, NULL, OPT_PORT_CHECK },
-          { "mcast-switch-client", 0, NULL, OPT_MCAST_SWITCH },
-          { "version", 0, NULL, 'V' },
-          { "help", 0, NULL, 'h' },
-          { 0, 0, 0, 0 }
-     };
-
-     while ((c = getopt_long(argc, argv, "t:r:m:v::Vh",
-                             options, NULL)) != EOF)
-     {
-          switch (c)
-          {
-          case 't':
-               tftpd_timeout = atoi(optarg);
-               break;
-          case 'r':
-               retry_timeout = atoi(optarg);
-               break;
-          case 'm':
-               tftpd_max_thread = atoi(optarg);
-               break;
-#ifdef RATE_CONTROL
-          case OPT_RATE:
-               rate = atoi(optarg);
-               break;
-#endif
-          case 'v':
-               if (optarg)
-                    logging_level = atoi(optarg);
-               else
-                    logging_level++;
-
-	       if (logging_level > LOG_DEBUG)
-		   logging_level = LOG_DEBUG;
-#ifdef HAVE_WRAP
-               allow_severity = logging_level;
-               deny_severity = logging_level;
-#endif
-               break;
-          case OPT_TRACE:
-               trace = 1;
-               break;
-          case 'T':
-               tftp_default_options[OPT_TIMEOUT].enabled = 0;
-               break;
-          case 'S':
-               tftp_default_options[OPT_TSIZE].enabled = 0;
-               break;
-          case 'B':
-               tftp_default_options[OPT_BLKSIZE].enabled = 0;
-               break;
-          case 'M':
-               tftp_default_options[OPT_MULTICAST].enabled = 0;
-               break;
-          case 'L':
-               log_file = strdup(optarg);
-               break;
-          case 'I':
-               pidfile = strdup(optarg);
-               break;
-          case 'F':
-               listen_local = 1;
-               break;
-          case 'D':
-               tftpd_daemon = 1;
-               break;
-          case 'N':
-               tftpd_daemon_no_fork = 1;
-               break;
-          case 'X':
-               tftpd_prevent_sas = 1;
-               break;
-          case 'U':
-               tmp = strtok(optarg, ".");
-               if (tmp != NULL)
-                    Strncpy(user_name, tmp, MAXLEN);
-               tmp = strtok(NULL, "");
-               if (tmp != NULL)
-                    Strncpy(group_name, tmp, MAXLEN);
-               drop_privs = 1;
-               break;
-          case 'G':
-               Strncpy(group_name, optarg, MAXLEN);
-               drop_privs = 1;
-               break;
-          case 'P':
-               tftpd_port = (short)atoi(optarg);
-               break;
-          case 'A':
-               Strncpy(tftpd_addr, optarg, MAXLEN);
-               break;
-          case OPT_MCAST_TTL:
-               mcast_ttl = atoi(optarg);
-               break;
-          case OPT_MCAST_ADDR:
-               Strncpy(mcast_addr, optarg, MAXLEN);
-               break;
-          case '2':
-               Strncpy(mcast_port, optarg, MAXLEN);
-               break;
-#ifdef HAVE_PCRE
-          case OPT_PCRE:
-               pcre_file = strdup(optarg);
-               break;
-          case OPT_PCRE_TEST:
-               /* test the pattern file */
-               if ((pcre_top = tftpd_pcre_open(optarg)) == NULL)
-               {
-                    fprintf(stderr, "Failed to initialise PCRE with file %s", optarg);
-                    exit(1);
-               }
-               /* run test */
-               while (1)
-               {
-                    if (isatty(0))
-                         printf("> ");
-                    if (fgets(string, MAXLEN, stdin) == NULL)
-                    {
-                         tftpd_pcre_close(pcre_top);
-                         exit(0);
-                    }
-                    /* exit on empty line */
-                    if (string[0] == '\n')
-                    {
-                         tftpd_pcre_close(pcre_top);
-                         exit(0);
-                    }
-                    /* remove \n from input */
-                    string[strlen(string) - 1] = '\0';
-                    /* do the substitution */
-                    if (tftpd_pcre_sub(pcre_top, out, MAXLEN, string) < 0)
-                         printf("Substitution: \"%s\" -> \"\"\n", string);
-                    else
-                         printf("Substitution: \"%s\" -> \"%s\"\n", string, out);
-               }
-#endif
-          case OPT_PORT_CHECK:
-               source_port_checking = 0;
-               break;
-          case OPT_MCAST_SWITCH:
-               mcast_switch_client = 1;
-               break;
-#ifdef HAVE_MTFTP
-          case OPT_MTFTP:
-               Strncpy(mtftp_file, optarg, MAXLEN);
-               break;
-          case OPT_MTFTP_PORT:
-               mtftp_sport = atoi(optarg);
-               break;
-#endif
-          case 'V':
-               printf("atftp-%s (server)\n", VERSION);
-               exit(0);
-          case 'h':
-               tftpd_usage();
-               exit(0);
-          case '?':
-               exit(1);
-               break;
-          }
-     }
-
-     /* verify that only one arguement is left */
-     if (optind < argc)
-          Strncpy(directory, argv[optind], MAXLEN);
-     /* make sure the last caracter is a / */
-     if (directory[strlen(directory)] != '/')
-          strcat(directory, "/");
-     /* build multicast address/port range */
-     if (tftpd_mcast_parse_opt(mcast_addr, mcast_port) != OK)
-     {
-          printf("Failed to parse multicast options\n");
-          exit(1);
-     }
-     return OK;
-}
-#endif
-
 /*
  * Output option to the syslog.
  */
 void tftpd_log_options(struct TftpdHandler *handler)
 {
-     if (tftpd_daemon == 1)
-     {
-          atftp_logger(LOG_INFO, "  running in daemon mode on port %d", handler->tftpd_port);
-          if (strlen(tftpd_addr) > 0)
-               atftp_logger(LOG_INFO, "  bound to IP address %s only", tftpd_addr);
-     }
-     else
-          atftp_logger(LOG_INFO, "  started by inetd");
+     atftp_logger(LOG_INFO, "  running in daemon mode on port %d", handler->tftpd_port);
+     if (strlen(tftpd_addr) > 0)
+          atftp_logger(LOG_INFO, "  bound to IP address %s only", tftpd_addr);
+
      atftp_logger(LOG_INFO, "  logging level: %d", handler->logging_level);
      if (trace)
           atftp_logger(LOG_INFO, "     trace enabled");
      atftp_logger(LOG_INFO, "  directory: %s", directory);
      atftp_logger(LOG_INFO, "  user: %s.%s", user_name, group_name);
-     atftp_logger(LOG_INFO, "  log file: %s", (handler->log_file==NULL) ?
-                                            "syslog":handler->log_file);
-     if (pidfile)
-          atftp_logger(LOG_INFO, "  pid file: %s", pidfile);
-     if (listen_local == 1)
-          atftp_logger(LOG_INFO, "  forcing to listen on local interfaces: on.");
-     else
-          atftp_logger(LOG_INFO, "  not forcing to listen on local interfaces.");
-     if (tftpd_daemon == 1)
-          atftp_logger(LOG_INFO, "  server timeout: Not used");
-     else
-          atftp_logger(LOG_INFO, "  server timeout: %d", handler->tftpd_timeout);
+     atftp_logger(LOG_INFO, "  log file: %s", (handler->log_file == NULL) ? "syslog" : handler->log_file);
+     atftp_logger(LOG_INFO, "  forcing to listen on local interfaces: on.");
+     atftp_logger(LOG_INFO, "  server timeout: Not used");
      atftp_logger(LOG_INFO, "  tftp retry timeout: %d", retry_timeout);
      atftp_logger(LOG_INFO, "  maximum number of thread: %d", tftpd_max_thread);
-#ifdef RATE_CONTROL
-     if (rate > 0)
-          atftp_logger(LOG_INFO, "  request per minute limit: %d", rate);
-     else
-          atftp_logger(LOG_INFO, "  request per minute limit: ---");
-#endif
      atftp_logger(LOG_INFO, "  option timeout:   %s",
-            tftp_default_options[OPT_TIMEOUT].enabled ? "enabled":"disabled");
+                  tftp_default_options[OPT_TIMEOUT].enabled ? "enabled" : "disabled");
      atftp_logger(LOG_INFO, "  option tzise:     %s",
-            tftp_default_options[OPT_TSIZE].enabled ? "enabled":"disabled");
+                  tftp_default_options[OPT_TSIZE].enabled ? "enabled" : "disabled");
      atftp_logger(LOG_INFO, "  option blksize:   %s",
-            tftp_default_options[OPT_BLKSIZE].enabled ? "enabled":"disabled");
+                  tftp_default_options[OPT_BLKSIZE].enabled ? "enabled" : "disabled");
      atftp_logger(LOG_INFO, "  option multicast: %s",
-            tftp_default_options[OPT_MULTICAST].enabled ? "enabled":"disabled");
+                  tftp_default_options[OPT_MULTICAST].enabled ? "enabled" : "disabled");
      atftp_logger(LOG_INFO, "     address range: %s", mcast_addr);
      atftp_logger(LOG_INFO, "     port range:    %s", mcast_port);
-#ifdef HAVE_PCRE
-     if (pcre_top)
-          atftp_logger(LOG_INFO, "  PCRE: using file: %s", pcre_file);
-#endif
-#ifdef HAVE_MTFTP
-     if (strcmp(mtftp_file, "") != 0)
-     {
-          atftp_logger(LOG_INFO, "  mtftp: using file: %s", mtftp_file);
-          atftp_logger(LOG_INFO, "  mtftp: listenning on port %d", mtftp_sport);
-     }
-#endif
-     if (mcast_switch_client)
-          atftp_logger(LOG_INFO, "  --mcast-switch-client turned on");
+
      if (!source_port_checking)
           atftp_logger(LOG_INFO, "  --no-source-port-checking turned on");
-}
-
-/*
- *
- */
-int tftpd_pid_file(char *file, int action)
-{
-     FILE *fp;
-     pid_t pid;
-
-     if (action)
-     {
-          /* check if file exist */
-          if ((fp = fopen(file, "r")) != NULL)
-          {
-               atftp_logger(LOG_NOTICE, "pid file already exist, overwriting");
-               fclose(fp);
-          }
-          /* open file for writing */
-          if ((fp = fopen(file, "w")) == NULL)
-          {
-               atftp_logger(LOG_ERR, "error writing PID to file %s\n", file);
-               return ERR;
-          }
-          /* write it */
-          pid = getpid();
-          fprintf(fp, "%d\n", pid);
-          fclose(fp);
-          return OK;
-     }
-     else
-     {
-          /* unlink the pid file */
-          if (unlink(file) == -1)
-               atftp_logger(LOG_ERR, "unlink: %s", strerror(errno));
-          return OK;
-     }
 }

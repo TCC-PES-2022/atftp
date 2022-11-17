@@ -64,7 +64,7 @@ int tftp_send_request(int socket, struct sockaddr_storage *sa, short type,
      Strncpy(data_buffer + buf_index, mode, data_buffer_size - buf_index);
      buf_index += strlen(mode);
      buf_index++;
-     
+
      for (i = 2; i < OPT_NUMBER; i++)
      {
           if (strlen(tftp_options[i].option) == 0)
@@ -73,15 +73,15 @@ int tftp_send_request(int socket, struct sockaddr_storage *sa, short type,
           {
                if (i != OPT_PASSWORD)
                {
-                   Strncpy(data_buffer + buf_index, tftp_options[i].option,
-                           data_buffer_size - buf_index);
-                   buf_index += strlen(tftp_options[i].option);
-                   buf_index++;    
+                    Strncpy(data_buffer + buf_index, tftp_options[i].option,
+                            data_buffer_size - buf_index);
+                    buf_index += strlen(tftp_options[i].option);
+                    buf_index++;
                }
                Strncpy(data_buffer + buf_index, tftp_options[i].value,
                        data_buffer_size - buf_index);
                buf_index += strlen(tftp_options[i].value);
-               buf_index++;    
+               buf_index++;
           }
      }
      /* send the buffer */
@@ -122,7 +122,7 @@ int tftp_send_ack(int socket, struct sockaddr_storage *sa, long block_number)
 int tftp_send_oack(int socket, struct sockaddr_storage *sa, struct tftp_opt *tftp_options,
                    char *buffer, int buffer_size)
 {
-     
+
      int i;
      int result;
      int index = 0;
@@ -131,7 +131,7 @@ int tftp_send_oack(int socket, struct sockaddr_storage *sa, struct tftp_opt *tft
      /* write the opcode */
      tftphdr->th_opcode = htons(OACK);
      index += 2;
-     
+
      for (i = 2; i < OPT_NUMBER; i++)
      {
           if (tftp_options[i].enabled && tftp_options[i].specified)
@@ -141,7 +141,7 @@ int tftp_send_oack(int socket, struct sockaddr_storage *sa, struct tftp_opt *tft
                index++;
                Strncpy(buffer + index, tftp_options[i].value, buffer_size - index);
                index += strlen(tftp_options[i].value);
-               index++;    
+               index++;
           }
      }
      /* send the buffer */
@@ -172,8 +172,7 @@ int tftp_send_error(int socket, struct sockaddr_storage *sa, short err_code,
      // For custom message, make sure the error code is zero.
      tftphdr->th_code = htons((custom_err_msg == NULL) ? err_code : EUNDEF);
 
-     char *err_msg = (custom_err_msg == NULL) ? tftp_errmsg[err_code] :
-                                                custom_err_msg;
+     char *err_msg = (custom_err_msg == NULL) ? tftp_errmsg[err_code] : custom_err_msg;
 
      Strncpy(tftphdr->th_msg, err_msg, buffer_size - 4);
 
@@ -222,7 +221,7 @@ int tftp_get_packet(int sock1, int sock2, int *sock, struct sockaddr_storage *sa
      struct sockaddr_storage from;
      struct tftphdr *tftphdr = (struct tftphdr *)data;
 
-     struct msghdr msg;         /* used to get client's packet info */
+     struct msghdr msg; /* used to get client's packet info */
      struct cmsghdr *cmsg;
      struct in_pktinfo *pktinfo4;
      struct in6_pktinfo *pktinfo6;
@@ -267,7 +266,7 @@ int tftp_get_packet(int sock1, int sock2, int *sock, struct sockaddr_storage *sa
 
           if (FD_ISSET(sock1, &rfds))
           {
-               result = recvmsg(sock1, &msg, 0);               
+               result = recvmsg(sock1, &msg, 0);
                if (sock)
                     *sock = sock1;
           }
@@ -296,23 +295,21 @@ int tftp_get_packet(int sock1, int sock2, int *sock, struct sockaddr_storage *sa
                     cmsg = CMSG_NXTHDR(&msg, cmsg))
                {
 #if defined(SOL_IP) && defined(IP_PKTINFO)
-                    if (cmsg->cmsg_level == SOL_IP
-                        && cmsg->cmsg_type == IP_PKTINFO)
+                    if (cmsg->cmsg_level == SOL_IP && cmsg->cmsg_type == IP_PKTINFO)
                     {
                          pktinfo4 = (struct in_pktinfo *)CMSG_DATA(cmsg);
                          sa_to->ss_family = AF_INET;
                          ((struct sockaddr_in *)sa_to)->sin_addr =
-                              pktinfo4->ipi_addr;
+                             pktinfo4->ipi_addr;
                     }
-#endif                    
+#endif
 #if defined(SOL_IPV6) && defined(IPV6_PKTINFO)
-                    if (cmsg->cmsg_level == SOL_IPV6
-                        && cmsg->cmsg_type == IPV6_PKTINFO)
+                    if (cmsg->cmsg_level == SOL_IPV6 && cmsg->cmsg_type == IPV6_PKTINFO)
                     {
                          pktinfo6 = (struct in6_pktinfo *)CMSG_DATA(cmsg);
                          sa_to->ss_family = AF_INET6;
                          ((struct sockaddr_in6 *)sa_to)->sin6_addr =
-                              pktinfo6->ipi6_addr;
+                             pktinfo6->ipi6_addr;
                     }
 #endif
                     break;
@@ -329,7 +326,6 @@ int tftp_get_packet(int sock1, int sock2, int *sock, struct sockaddr_storage *sa
           /* if sa as never been initialised, port is still 0 */
           if (sockaddr_get_port(sa) == 0)
                memcpy(sa, &from, sizeof(from));
-
 
           switch (ntohs(tftphdr->th_opcode))
           {
@@ -367,72 +363,72 @@ int tftp_file_read(FILE *fp, char *data_buffer, int data_buffer_size, long block
 
      if (!convert)
      {
-	  /* In this case, just read the requested data block.
-	     Anyway, in the multicast case it can be in random
-	     order. */
-	  if (fseek(fp, block_number * data_buffer_size, SEEK_SET) != 0)
-	        return ERR;
-	  data_size = fread(data_buffer, 1, data_buffer_size, fp);
+          /* In this case, just read the requested data block.
+             Anyway, in the multicast case it can be in random
+             order. */
+          if (fseek(fp, block_number * data_buffer_size, SEEK_SET) != 0)
+               return ERR;
+          data_size = fread(data_buffer, 1, data_buffer_size, fp);
      }
      else
      {
-	  /* 
-	   * When converting data, it become impossible to seek in
-	   * the file based on the block number. So we must always
-	   * remeber the position in the file from were to read the
-	   * data requested by the client. Client can only request data
-	   * for the same block or the next, but we cannot assume this
-	   * block number will increase at every ACK since it can be
-	   * lost in transmission.
-	   *
-	   * The stategy is to remeber the file position as well as
-	   * the block number from the current call to this function.
-	   * If the client request a block number different from that
+          /*
+           * When converting data, it become impossible to seek in
+           * the file based on the block number. So we must always
+           * remeber the position in the file from were to read the
+           * data requested by the client. Client can only request data
+           * for the same block or the next, but we cannot assume this
+           * block number will increase at every ACK since it can be
+           * lost in transmission.
+           *
+           * The stategy is to remeber the file position as well as
+           * the block number from the current call to this function.
+           * If the client request a block number different from that
            * we return ERR.
-	   * 
-	   * If the client request many time the same block, the
-	   * netascii conversion is done each time. Since this is not
-	   * a normal condition it should not be a problem for system
-	   * performance.
-	   *
-	   */
-	  if ((block_number != *prev_block_number) && (block_number != *prev_block_number + 1))
-	       return ERR;
-	  if (block_number == *prev_block_number && fseek(fp, *prev_file_pos, SEEK_SET) != 0)
-          return ERR;
+           *
+           * If the client request many time the same block, the
+           * netascii conversion is done each time. Since this is not
+           * a normal condition it should not be a problem for system
+           * performance.
+           *
+           */
+          if ((block_number != *prev_block_number) && (block_number != *prev_block_number + 1))
+               return ERR;
+          if (block_number == *prev_block_number && fseek(fp, *prev_file_pos, SEEK_SET) != 0)
+               return ERR;
 
-	  *prev_file_pos = ftell(fp);
+          *prev_file_pos = ftell(fp);
 
-	  /*
-	   * convert to netascii, based on netkit-tftp-0.17 routine in tftpsubs.c
-	   * i index output buffer
-	   */
-	  for (data_size = 0; data_size < data_buffer_size; data_size++)
-	  {
-	       if (newline)
-	       {
-		    if (prevchar == '\n')
-			 c = '\n';       /* lf to cr,lf */
-		    else
-			 c = '\0';       /* cr to cr,nul */
-		    newline = 0;
-	       }
-	       else
-	       {
-		    c = fgetc(fp);
-		    if (c == EOF)
-			 break;
-		    if (c == '\n' || c == '\r')
-		    {
-			 prevchar = c;
-			 c = '\r';
-			 newline = 1;
-		    }
-	       }
+          /*
+           * convert to netascii, based on netkit-tftp-0.17 routine in tftpsubs.c
+           * i index output buffer
+           */
+          for (data_size = 0; data_size < data_buffer_size; data_size++)
+          {
+               if (newline)
+               {
+                    if (prevchar == '\n')
+                         c = '\n'; /* lf to cr,lf */
+                    else
+                         c = '\0'; /* cr to cr,nul */
+                    newline = 0;
+               }
+               else
+               {
+                    c = fgetc(fp);
+                    if (c == EOF)
+                         break;
+                    if (c == '\n' || c == '\r')
+                    {
+                         prevchar = c;
+                         c = '\r';
+                         newline = 1;
+                    }
+               }
                data_buffer[data_size] = c;
-	  }
-	  /* save state */
-	  *temp = (newline << 8) | prevchar;
+          }
+          /* save state */
+          *temp = (newline << 8) | prevchar;
      }
 
      /*
@@ -455,8 +451,8 @@ int tftp_file_write(FILE *fp, char *data_buffer, int data_buffer_size, long bloc
 
      if (!convert)
      {
-	  /* Simple case, just seek and write */
-          long position = (block_number - 1)*data_buffer_size;
+          /* Simple case, just seek and write */
+          long position = (block_number - 1) * data_buffer_size;
           if (position != filepos)
           {
                if (fseek(fp, position, SEEK_SET) != 0)
@@ -469,20 +465,20 @@ int tftp_file_write(FILE *fp, char *data_buffer, int data_buffer_size, long bloc
      }
      else if (block_number != *prev_block_number)
      {
-	  /* 
-	   * Same principle than for reading, but simpler since when client
+          /*
+           * Same principle than for reading, but simpler since when client
            * send same block twice there is no need to rewrite it to the
            * file
-	   */
-	  if (block_number != *prev_block_number + 1)
-	       return ERR;
+           */
+          if (block_number != *prev_block_number + 1)
+               return ERR;
 
-	  /*
-	   * convert to netascii, based on netkit-tftp-0.17 routine in tftpsubs.c
-	   * i index input buffer
-	   */
-	  for (bytes_written = 0; bytes_written < data_size; bytes_written++)
-	  {
+          /*
+           * convert to netascii, based on netkit-tftp-0.17 routine in tftpsubs.c
+           * i index input buffer
+           */
+          for (bytes_written = 0; bytes_written < data_size; bytes_written++)
+          {
                c = data_buffer[bytes_written];
                if (prevchar == '\r')
                {
@@ -493,7 +489,7 @@ int tftp_file_write(FILE *fp, char *data_buffer, int data_buffer_size, long bloc
                          if (fputc(c, fp) == EOF)
                               return ERR;
                     }
-                    else if (c != '\0')           /* cr,nul to cr */
+                    else if (c != '\0') /* cr,nul to cr */
                     {
                          if (fputc(c, fp) == EOF)
                               return ERR;
@@ -507,8 +503,8 @@ int tftp_file_write(FILE *fp, char *data_buffer, int data_buffer_size, long bloc
                prevchar = c;
           }
 
-	  /* save state */
-	  *temp = prevchar;
+          /* save state */
+          *temp = prevchar;
      }
 
      /*
@@ -525,12 +521,12 @@ int tftp_file_write(FILE *fp, char *data_buffer, int data_buffer_size, long bloc
  */
 long tftp_rollover_blocknumber(short block_number, long prev_block_number, unsigned short wrap_to)
 {
-      unsigned short b = (unsigned short)block_number;
-      unsigned short pb = (unsigned short)prev_block_number;
-      long result = b | (prev_block_number & ~0xFFFF);
-      if (b < 0x4000 && pb > 0xC000)
-	  result += 0x10000 + wrap_to;
-      else if (b > 0xC000 && pb < 0x4000 && (prev_block_number & ~0xFFFF))
-	  result -= 0x10000 - wrap_to;
-      return result;
+     unsigned short b = (unsigned short)block_number;
+     unsigned short pb = (unsigned short)prev_block_number;
+     long result = b | (prev_block_number & ~0xFFFF);
+     if (b < 0x4000 && pb > 0xC000)
+          result += 0x10000 + wrap_to;
+     else if (b > 0xC000 && pb < 0x4000 && (prev_block_number & ~0xFFFF))
+          result -= 0x10000 - wrap_to;
+     return result;
 }

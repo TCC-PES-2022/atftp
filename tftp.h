@@ -25,34 +25,35 @@
 #include "config.h"
 #include "tftp_api.h"
 
-struct client_data {
-     char *data_buffer;         /* used for sending and receiving of data */
-     int data_buffer_size;      /* size of the buffer, may be reallocated */
+struct client_data
+{
+     char *data_buffer;    /* used for sending and receiving of data */
+     int data_buffer_size; /* size of the buffer, may be reallocated */
 
      tftp_error_callback tftp_error_cb;
      void *tftp_error_ctx;
      tftp_fetch_data_received_callback tftp_fetch_data_received_cbk;
      void *tftp_fetch_data_received_ctx;
 
-     char local_file[VAL_SIZE]; /* the file we are reading or writing is not
-                                   necessary the same on the server */
-     FILE *fp;                   /* file pointer to send/receive data */
-     struct tftp_opt *tftp_options; /* hold requested options */
+     char local_file[VAL_SIZE];           /* the file we are reading or writing is not
+                                             necessary the same on the server */
+     FILE *fp;                            /* file pointer to send/receive data */
+     struct tftp_opt *tftp_options;       /* hold requested options */
      struct tftp_opt *tftp_options_reply; /* hold server reply */
 
-     int timeout;               /* client side timeout for select() */
-     int checkport;             /* Disable TID check. Violate RFC */
-     int trace;                 /* debugging information */
-     int verbose;               /* to print message at each step */
+     int timeout;   /* client side timeout for select() */
+     int checkport; /* Disable TID check. Violate RFC */
+     int trace;     /* debugging information */
+     int verbose;   /* to print message at each step */
 
-     char hostname[MAXLEN];     /* peer's hostname */
-     short port;                /* tftp port for the server, 69 by default */
+     char hostname[MAXLEN]; /* peer's hostname */
+     short port;            /* tftp port for the server, 69 by default */
 
-     struct sockaddr_storage sa_peer; /* peer address and port */
+     struct sockaddr_storage sa_peer;  /* peer address and port */
      struct sockaddr_storage sa_local; /* local address and port */
      int sockfd;
 
-     int connected;             /* we are 'connected' */
+     int connected; /* we are 'connected' */
 
 #ifdef HAVE_MTFTP
      /* for MTFTP */
@@ -70,7 +71,6 @@ struct client_data {
 #if DEBUG
      int delay;
 #endif
-
 };
 
 /* Defined in tftp_file.c */

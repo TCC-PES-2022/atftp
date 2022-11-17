@@ -1,4 +1,4 @@
-﻿A simplified library version based on atftp project. Check tftp_api.h and tftpd_api.h for details.
+A simplified library version based on atftp project. Check tftp_api.h and tftpd_api.h for details.
 
 This project was modified to be used in project [ARIEL](https://github.com/TCC-PES-2022)
 
@@ -97,4 +97,3 @@ Ryan Barnett            <ryan.barnett@rockwellcollins.com>
 Peter Seiderer          <ps.report@gmx.net>
 Simon Rettberg          <simon.rettberg@rz.uni-freiburg.de>
 Andreas B. Mundt        <andi@debian.org>
-

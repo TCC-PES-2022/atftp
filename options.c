@@ -47,7 +47,7 @@ int opt_parse_request(char *data, int data_size, struct tftp_opt *options)
      /* sanity check - requests always end in a null byte,
       * check to prevent argz_next from reading past the end of
       * data, as it doesn't do bounds checks */
-     if (data_size == 0 || data[data_size-1] != '\0')
+     if (data_size == 0 || data[data_size - 1] != '\0')
           return ERR;
 
      /* read filename */
@@ -89,7 +89,7 @@ int opt_parse_options(char *data, int data_size, struct tftp_opt *options)
      /* sanity check - options always end in a null byte,
       * check to prevent argz_next from reading past the end of
       * data, as it doesn't do bounds checks */
-     if (data_size == 0 || data[data_size-1] != '\0')
+     if (data_size == 0 || data[data_size - 1] != '\0')
           return ERR;
 
      while ((entry = argz_next(tftp_data->th_stuff, size, entry)))
@@ -109,7 +109,7 @@ int opt_parse_options(char *data, int data_size, struct tftp_opt *options)
  * name is the name of the option as in tftp_def.c.
  * name is it's new value, that must comply with the rfc's.
  * When setting an option, it is marked as specified.
- * 
+ *
  */
 int opt_set_options(struct tftp_opt *options, char *name, char *value)
 {
@@ -178,7 +178,6 @@ int opt_disable_options(struct tftp_opt *options, char *name)
      return ERR;
 }
 
-
 /*
  * Return 1 if one or more options are specified in the options structure.
  */
@@ -199,29 +198,6 @@ int opt_support_options(struct tftp_opt *options)
  * The next few functions deal with TFTP options. Function's name are self
  * explicative.
  */
-
-int opt_get_tsize(struct tftp_opt *options)
-{
-     int tsize;
-     if (options[OPT_TSIZE].enabled && options[OPT_TSIZE].specified)
-     {
-          tsize = atoi(options[OPT_TSIZE].value);
-          return tsize;
-     }
-     return ERR;
-}
-
-int opt_get_timeout(struct tftp_opt *options)
-{
-     int timeout;
-     if (options[OPT_TIMEOUT].enabled && options[OPT_TIMEOUT].specified)
-     {
-          timeout = atoi(options[OPT_TIMEOUT].value);
-          return timeout;
-     }
-     return ERR;
-}
-
 int opt_get_blksize(struct tftp_opt *options)
 {
      int blksize;
@@ -233,78 +209,9 @@ int opt_get_blksize(struct tftp_opt *options)
      return ERR;
 }
 
-int opt_get_multicast(struct tftp_opt *options, char *addr, int *port, int *mc)
-{
-     char *token = NULL;
-     char *string = NULL;
-     char *temp = NULL;
-
-     if (options[OPT_MULTICAST].enabled && options[OPT_MULTICAST].specified)
-     {
-          string = strdup(options[OPT_MULTICAST].value);
-          /* get first argument */
-          if ((token = strtok_r(string, ",", &temp)) == NULL)
-          {
-               free(string);
-               return ERR;
-          }
-          else
-               Strncpy(addr, token, IPADDRLEN);
-          /* get second argument */
-          if ((token = strtok_r(NULL, ",", &temp)) == NULL)
-          {
-               free(string);
-               return ERR;
-          }
-          else
-          {
-               *port = atoi(token);
-               if ((*port < 0) || (*port > 65536))
-               {
-                    free(string);
-                    return ERR;
-               }
-          }
-          /* get third (last) argument */
-          if ((token = strtok_r(NULL, ",", &temp)) == NULL)
-          {
-               free(string);
-               return ERR;
-          }
-          else
-          {
-               *mc = atoi(token);
-               if ((*mc != 0) && (*mc != 1))
-               {
-                    free(string);
-                    return ERR;
-               }
-          }
-          free(string);
-          return *mc;
-     }
-     return ERR;
-}
-
-void opt_set_tsize(int tsize, struct tftp_opt *options)
-{
-     snprintf(options[OPT_TSIZE].value, VAL_SIZE, "%d", tsize);
-}
-
-void opt_set_timeout(int timeout, struct tftp_opt *options)
-{
-     snprintf(options[OPT_TIMEOUT].value, VAL_SIZE, "%d", timeout);
-}
-
 void opt_set_blksize(int blksize, struct tftp_opt *options)
 {
      snprintf(options[OPT_BLKSIZE].value, VAL_SIZE, "%d", blksize);
-}
-
-void opt_set_multicast(struct tftp_opt *options, char *addr, int port, int mc)
-{
-     snprintf(options[OPT_MULTICAST].value, VAL_SIZE, "%s,%d,%d", addr, port,
-              mc);
 }
 
 /*

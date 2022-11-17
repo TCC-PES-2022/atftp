@@ -34,68 +34,23 @@
 #include "tftp_def.h"
 #include "options.h"
 
-#define S_BEGIN         0
-#define S_SEND_REQ      1
-#define S_SEND_ACK      2
-#define S_SEND_OACK     3
-#define S_SEND_DATA     4
-#define S_WAIT_PACKET   5
-#define S_REQ_RECEIVED  6
-#define S_ACK_RECEIVED  7
+#define S_BEGIN 0
+#define S_SEND_REQ 1
+#define S_SEND_ACK 2
+#define S_SEND_OACK 3
+#define S_SEND_DATA 4
+#define S_WAIT_PACKET 5
+#define S_REQ_RECEIVED 6
+#define S_ACK_RECEIVED 7
 #define S_OACK_RECEIVED 8
 #define S_DATA_RECEIVED 9
-#define S_ABORT         10
-#define S_END           11
+#define S_ABORT 10
+#define S_END 11
 
-#define NB_BLOCK        2048
+#define NB_BLOCK 2048
 
 extern int tftp_cancel;
 extern int tftp_prevent_sas;
-
-/*
- * Find a hole in the file bitmap.
- */
-int tftp_find_bitmap_hole(int prev_hole, unsigned int *bitmap)
-{
-     int next_hole, next_word_no, next_bit_no;
-     unsigned int next_word;
-
-     /* initial stuff */
-     next_hole = 0; /*prev_hole + 1;*/
-     next_word_no = next_hole / 32;
-     next_bit_no  = next_hole % 32;
-     next_word = bitmap[next_word_no];
-
-     /* Check if there is a remainder of the current word to traverse */
-     if (next_bit_no != 0)
-     {
-          /* traverse remainder of word. We know that all previous
-             bits are set */
-          if (next_word == 0xffffffff)
-          {
-               next_bit_no = 0;
-               next_word_no++;
-               next_word = bitmap[next_word_no];
-          }
-     }
-
-     /* travserse whole words */
-     while ((next_word == 0xffffffff) && (next_word_no < NB_BLOCK))
-     {
-          next_word_no++;
-          next_word = bitmap[next_word_no];
-     }
-
-     /* find the bit */
-     next_word >>= next_bit_no;
-     while (next_word & 1)
-     {
-         next_bit_no++;
-         next_word >>= 1;
-     }
-     return (next_word_no * 32) + next_bit_no;
-}
-
 
 /*
  * Receive a file. This is implemented as a state machine using a while loop
@@ -116,35 +71,28 @@ int tftp_receive_file(struct client_data *data)
      int timeout_state = state; /* what state should we go on when timeout */
      int result;
      long block_number = 0;
-     long last_block_number = -1;/* block number of last block for multicast */
-     int data_size;             /* size of data received */
-     int sockfd = data->sockfd; /* just to simplify calls */
-     struct sockaddr_storage sa; /* a copy of data.sa_peer */
+     long last_block_number = -1; /* block number of last block for multicast */
+     int data_size;               /* size of data received */
+     int sockfd = data->sockfd;   /* just to simplify calls */
+     struct sockaddr_storage sa;  /* a copy of data.sa_peer */
      struct sockaddr_storage from;
      char from_str[SOCKADDR_PRINT_ADDR_LEN];
-     int connected;             /* 1 when sockfd is connected */
+     int connected; /* 1 when sockfd is connected */
      struct tftphdr *tftphdr = (struct tftphdr *)data->data_buffer;
-     FILE *fp = NULL;           /* the local file pointer */
+     FILE *fp = NULL; /* the local file pointer */
      int number_of_timeout = 0;
-     int convert = 0;           /* if true, do netascii conversion */
+     int convert = 0; /* if true, do netascii conversion */
 
-     int oacks = 0;             /* count OACK for improved error checking */
-     int multicast = 0;         /* set to 1 if multicast */
-     int mc_port;               /* multicast port */
-     char mc_addr[IPADDRLEN];   /* multicast address */
+     int oacks = 0;     /* count OACK for improved error checking */
+     int multicast = 0; /* set to 1 if multicast */
      int mcast_sockfd = 0;
-     struct addrinfo hints, *addrinfo;
      struct sockaddr_storage sa_mcast_group;
-     struct sockaddr_storage sa_mcast;
-     union ip_mreq_storage mreq;
      int master_client = 0;
      unsigned int file_bitmap[NB_BLOCK];
-     int prev_bitmap_hole = -1; /* the previous hole found in the bitmap */
      char string[MAXLEN];
 
      long prev_block_number = 0; /* needed to support netascii conversion */
      int temp = 0;
-     int err;
 
      data->file_size = 0;
      tftp_cancel = 0;
@@ -179,9 +127,11 @@ int tftp_receive_file(struct client_data *data)
      }
 
      /* open the file for writing */
-     if (data->fp != NULL) {
-         fp = data->fp;
-     } else if ((fp = fopen(data->local_file, "w")) == NULL)
+     if (data->fp != NULL)
+     {
+          fp = data->fp;
+     }
+     else if ((fp = fopen(data->local_file, "w")) == NULL)
      {
           fprintf(stderr, "tftp: can't open %s for writing.\n",
                   data->local_file);
@@ -192,7 +142,7 @@ int tftp_receive_file(struct client_data *data)
      {
 #ifdef DEBUG
           if (data->delay)
-               usleep(data->delay*1000);
+               usleep(data->delay * 1000);
 #endif
           if (tftp_cancel)
           {
@@ -203,7 +153,7 @@ int tftp_receive_file(struct client_data *data)
                     tftp_send_error(sockfd, &sa, EUNDEF, data->data_buffer,
                                     data->data_buffer_size, NULL);
                     if (data->trace)
-                         fprintf(stderr,  "sent ERROR <code: %d, msg: %s>\n",
+                         fprintf(stderr, "sent ERROR <code: %d, msg: %s>\n",
                                  EUNDEF, tftp_errmsg[EUNDEF]);
                     state = S_ABORT;
                }
@@ -237,13 +187,6 @@ int tftp_receive_file(struct client_data *data)
                break;
           case S_SEND_ACK:
                timeout_state = S_SEND_ACK;
-               if (multicast)
-               {
-                    /* walk the bitmap to find the next missing block */
-                    prev_bitmap_hole =
-                         tftp_find_bitmap_hole(prev_bitmap_hole, file_bitmap);
-                    block_number = prev_bitmap_hole;
-               }
                if (data->trace)
                     fprintf(stderr, "sent ACK <block: %ld>\n", block_number);
                tftp_send_ack(sockfd, &sa, block_number);
@@ -255,37 +198,21 @@ int tftp_receive_file(struct client_data *data)
                break;
           case S_WAIT_PACKET:
                data_size = data->data_buffer_size;
-               if (multicast)
+               result = tftp_get_packet(sockfd, -1, NULL, &sa, &from, NULL,
+                                        data->timeout, &data_size,
+                                        data->data_buffer);
+               /* Check that source port match */
+               if ((sockaddr_get_port(&sa) != sockaddr_get_port(&from)) &&
+                   ((result == GET_OACK) || (result == GET_ERROR) ||
+                    (result == GET_DATA)))
                {
-                    result = tftp_get_packet(sockfd, mcast_sockfd, NULL, &sa, &from,
-                                             NULL, data->timeout, &data_size,
-                                             data->data_buffer);
-                    /* RFC2090 state we should verify source address as well
-                       as source port */
-                    if (!sockaddr_equal(&sa, &from))
+                    if (data->checkport)
                     {
                          result = GET_DISCARD;
-                         fprintf(stderr, "source address or port mismatch\n");
+                         fprintf(stderr, "source port mismatch\n");
                     }
-               }
-               else
-               {
-                    result = tftp_get_packet(sockfd, -1, NULL, &sa, &from, NULL,
-                                             data->timeout, &data_size,
-                                             data->data_buffer);
-                    /* Check that source port match */
-                    if ((sockaddr_get_port(&sa) != sockaddr_get_port(&from)) &&
-                        ((result == GET_OACK) || (result == GET_ERROR) ||
-                         (result == GET_DATA)))
-                    {
-                         if (data->checkport)
-                         {
-                              result = GET_DISCARD;
-                              fprintf(stderr, "source port mismatch\n");
-                         }
-                         else
-                              fprintf(stderr, "source port mismatch, check bypassed");
-                    }
+                    else
+                         fprintf(stderr, "source port mismatch, check bypassed");
                }
 
                switch (result)
@@ -313,11 +240,12 @@ int tftp_receive_file(struct client_data *data)
                     fwrite(tftphdr->th_msg, 1, data_size - 4 - 1, stderr);
                     fprintf(stderr, ">\n");
 
-                   if (data->tftp_error_cb) {
-                       data->tftp_error_cb(ntohs(tftphdr->th_code),
-                                           tftphdr->th_msg,
-                                           data->tftp_error_ctx);
-                   }
+                    if (data->tftp_error_cb)
+                    {
+                         data->tftp_error_cb(ntohs(tftphdr->th_code),
+                                             tftphdr->th_msg,
+                                             data->tftp_error_ctx);
+                    }
 
                     state = S_ABORT;
                     break;
@@ -352,182 +280,48 @@ int tftp_receive_file(struct client_data *data)
                break;
           case S_OACK_RECEIVED:
                oacks++;
-               if (multicast)
-               {
-                    /* This is not the first oack. From the RFC, I don't think
-                       it is illegal to receive many OACK. Need to check more
-                       into that, but server may send us an OACK with mc=0 anytime */
 
-#if 0
-                    /* If we are a master, it is abnormal to receive again
-                     * an OACK. We should terminate the file transfer of we'll
-                     * timeout and exit.
-                     */
-                    if (master_client == 1)
-                    {
-                         tftp_send_error(sockfd, &sa, EUNDEF, data->data_buffer,
-                                         data->data_buffer_size, NULL);
-                         fprintf(stderr, "tftp: unexpected OACK\n");
-                         state = S_ABORT;
-                         break;
-                    }
-#endif
-                    /* parse OACK options */
-                    opt_parse_options(data->data_buffer, data_size,
-                                      data->tftp_options_reply);
-                    if ((result = opt_get_multicast(data->tftp_options_reply,
-                                                    mc_addr, &mc_port,
-                                                    &master_client)) > -1)
-                         if (master_client == 1)
-                         {
-                              if (data->trace)
-                                   fprintf(stderr, "received OACK <mc = 1>\n");
-                              state = S_SEND_ACK;
-                         }
-                         else
-                         {
-                              if (data->trace)
-                                   fprintf(stderr, "received OACK <mc = 0>\n");
-                              state = S_WAIT_PACKET;
-                         }
-                    else
-                    {
-                         tftp_send_error(sockfd, &sa, EUNDEF, data->data_buffer,
-                                         data->data_buffer_size, NULL);
-                         fprintf(stderr, "tftp: error parsing OACK\n");
-                         state = S_ABORT;
-                    }
+               /* Normally we shouldn't receive more than one OACK
+                  in non-multicast mode. */
+               if (oacks > 1)
+               {
+                    tftp_send_error(sockfd, &sa, EUNDEF, data->data_buffer,
+                                    data->data_buffer_size, NULL);
+                    fprintf(stderr, "tftp: unexpected OACK\n");
+                    state = S_ABORT;
                     break;
                }
-               else
+
+               /* clean the tftp_options structure */
+               memcpy(data->tftp_options_reply, tftp_default_options,
+                      sizeof(tftp_default_options));
+               /*
+                * look in the returned string for tsize, timeout, blksize
+                * or multicast
+                */
+               opt_disable_options(data->tftp_options_reply, NULL);
+               opt_parse_options(data->data_buffer, data_size,
+                                 data->tftp_options_reply);
+               if (data->trace)
+                    fprintf(stderr, "received OACK <");
+               /* blksize: resize the buffer please */
+               if ((result = opt_get_blksize(data->tftp_options_reply)) > -1)
                {
-                    /* Normally we shouldn't receive more than one OACK
-                       in non-multicast mode. */
-                    if (oacks > 1)
-                    {
-                         tftp_send_error(sockfd, &sa, EUNDEF, data->data_buffer,
-                                         data->data_buffer_size, NULL);
-                         fprintf(stderr, "tftp: unexpected OACK\n");
-                         state = S_ABORT;
-                         break;
-                    }
-
-                    /* clean the tftp_options structure */
-                    memcpy(data->tftp_options_reply, tftp_default_options,
-                           sizeof(tftp_default_options));
-                    /*
-                     * look in the returned string for tsize, timeout, blksize
-                     * or multicast
-                     */
-                    opt_disable_options(data->tftp_options_reply, NULL);
-                    opt_parse_options(data->data_buffer, data_size,
-                                      data->tftp_options_reply);
                     if (data->trace)
-                         fprintf(stderr, "received OACK <");
-                    /* tsize: funny, now we know the file size */
-                    if ((result = opt_get_tsize(data->tftp_options_reply)) >
-                        -1)
-                    {
-                         if (data->trace)
-                              fprintf(stderr, "tsize: %d, ", result);
-                    }
-                    /* timeout */
-                    if ((result = opt_get_timeout(data->tftp_options_reply))
-                        > -1)
-                    {
-                         if (data->trace)
-                              fprintf(stderr, "timeout: %d, ", result);
-                    }
-                    /* blksize: resize the buffer please */
-                    if ((result = opt_get_blksize(data->tftp_options_reply))
-                        > -1)
-                    {
-                         if (data->trace)
-                              fprintf(stderr, "blksize: %d, ", result);
+                         fprintf(stderr, "blksize: %d, ", result);
 
-                         data->data_buffer = realloc(data->data_buffer,
-                                                     result + 4);
-                         tftphdr = (struct tftphdr *)data->data_buffer;
-                         if (data->data_buffer == NULL)
-                         {
-                              fprintf(stderr,
-                                      "tftp: memory allocation failure.\n");
-                              exit(1);
-                         }
-                         data->data_buffer_size = result + 4;
-                    }
-                    /* multicast: yish, it's more complex. If we are a master,
-                       we are responsible to ask packet with an ACK. If we are
-                       not master, then just receive packets. Missing packets
-                       will be asked when we become a master client. Also we
-                       can receive data in any order, with hole. The option
-                       reply contain the new address and port to listen to.*/
-                    if ((result = opt_get_multicast(data->tftp_options_reply,
-                                                    mc_addr, &mc_port,
-                                                    &master_client)) > -1)
+                    data->data_buffer = realloc(data->data_buffer,
+                                                result + 4);
+                    tftphdr = (struct tftphdr *)data->data_buffer;
+                    if (data->data_buffer == NULL)
                     {
-                         if (data->trace)
-                              fprintf(stderr, "multicast: %s,%d,%d, ", mc_addr,
-                                      mc_port, master_client);
-                         /* look up the host */
-                         /* if valid, update s_inn structure */
-                         memset(&hints, 0, sizeof(hints));
-                         hints.ai_socktype = SOCK_DGRAM;
-                         if (!getaddrinfo(mc_addr, NULL, &hints, &addrinfo) &&
-                             !sockaddr_set_addrinfo(&sa_mcast_group, addrinfo))
-                         {
-                              if (!sockaddr_is_multicast(&sa_mcast_group))
-                              {
-                                   fprintf(stderr,
-                                           "atftp: bad multicast address %s\n",
-                                           mc_addr);
-                                   exit(1);
-                              }
-                              freeaddrinfo(addrinfo);
-                         }
-                         else
-                         {
-                              fprintf(stderr, "tftp: bad multicast address %s",
-                                      mc_addr);
-                              exit(1);
-                         }
-                         /* we need to open a new socket for multicast */
-                         if ((mcast_sockfd = socket(sa_mcast_group.ss_family,
-                                                    SOCK_DGRAM, 0))<0)
-			 {
-			      fprintf(stderr,
-				      "atftp: unable to open socket\n");
-                              exit(1);
-			 }
-
-                         memset(&sa_mcast, 0, sizeof(sa_mcast));
-                         sa_mcast.ss_family = sa_mcast_group.ss_family;
-                         sockaddr_set_port(&sa_mcast, mc_port);
-
-                         if (bind(mcast_sockfd, (struct sockaddr *)&sa_mcast,
-                                  sizeof(sa_mcast)) < 0)
-                         {
-                              perror("bind"); /* FIXME */
-                              exit(1);
-                         }
-
-                         sockaddr_get_mreq(&sa_mcast_group, &mreq);
-                         if (sa_mcast_group.ss_family == AF_INET)
-                              err = setsockopt(mcast_sockfd, IPPROTO_IP,
-                                               IP_ADD_MEMBERSHIP,
-                                               &mreq.v4, sizeof(mreq.v4));
-                         else
-                              err = setsockopt(mcast_sockfd, IPPROTO_IPV6,
-                                               IPV6_ADD_MEMBERSHIP,
-                                               &mreq.v6, sizeof(mreq.v6));
-                         if (err < 0)
-                         {
-                              perror("setsockopt");
-                              exit(1);
-                         }
-                         multicast = 1;
+                         fprintf(stderr,
+                                 "tftp: memory allocation failure.\n");
+                         exit(1);
                     }
+                    data->data_buffer_size = result + 4;
                }
+
                if (data->trace)
                     fprintf(stderr, "\b\b>\n");
                if ((multicast && master_client) || (!multicast))
@@ -541,13 +335,8 @@ int tftp_receive_file(struct client_data *data)
                else
                     timeout_state = S_WAIT_PACKET;
 
-	       if (multicast)
-		    block_number = ntohs(tftphdr->th_block);
-	       else
-	       {
-		    block_number = tftp_rollover_blocknumber(
-			ntohs(tftphdr->th_block), prev_block_number, 0);
-	       }
+               block_number = tftp_rollover_blocknumber(
+                   ntohs(tftphdr->th_block), prev_block_number, 0);
                if (data->trace)
                     fprintf(stderr, "received DATA <block: %ld, size: %d>\n",
                             block_number, data_size - 4);
@@ -559,8 +348,7 @@ int tftp_receive_file(struct client_data *data)
                }
 
                if (tftp_file_write(fp, tftphdr->th_data, data->data_buffer_size - 4, block_number,
-                                   data_size - 4, convert, &prev_block_number, &temp)
-                   != data_size - 4)
+                                   data_size - 4, convert, &prev_block_number, &temp) != data_size - 4)
                {
 
                     fprintf(stderr, "tftp: error writing to file %s\n",
@@ -575,43 +363,14 @@ int tftp_receive_file(struct client_data *data)
                   is the one with less data than the transfer block size */
                if (data_size < data->data_buffer_size)
                     last_block_number = block_number;
-               if (multicast)
-               {
-                    /* Mark the received block in the bitmap */
-                    file_bitmap[(block_number - 1)/32]
-                         |= (1 << ((block_number - 1) % 32));
-                    /* if we are the master client we ack, else
-                       we just wait for data */
-                    if (master_client || !multicast)
-                         state = S_SEND_ACK;
-                    else
-                         state = S_WAIT_PACKET;
-               }
-               else
-                    state = S_SEND_ACK;
+
+               state = S_SEND_ACK;
                break;
           case S_END:
           case S_ABORT:
                /* close file */
                if (fp && data->fp == NULL)
                     fclose(fp);
-               /* drop multicast membership */
-               if (multicast)
-               {
-                    if (sa_mcast_group.ss_family == AF_INET)
-                         err = setsockopt(mcast_sockfd, IPPROTO_IP,
-                                          IP_DROP_MEMBERSHIP,
-                                          &mreq.v4, sizeof(mreq.v4));
-                    else
-                         err = setsockopt(mcast_sockfd, IPPROTO_IPV6,
-                                          IPV6_DROP_MEMBERSHIP,
-                                          &mreq.v6, sizeof(mreq.v6));
-                    if (err < 0)
-                    {
-                         perror("setsockopt");
-                         exit(1);
-                    }
-               }
                /* close multicast socket */
                if (mcast_sockfd)
                     close(mcast_sockfd);
@@ -648,17 +407,17 @@ int tftp_send_file(struct client_data *data)
      long block_number = 0;
      long last_requested_block = -1;
      long last_block = -1;
-     int data_size;             /* size of data received */
-     int sockfd = data->sockfd; /* just to simplify calls */
+     int data_size;              /* size of data received */
+     int sockfd = data->sockfd;  /* just to simplify calls */
      struct sockaddr_storage sa; /* a copy of data.sa_peer */
      struct sockaddr_storage from;
      char from_str[SOCKADDR_PRINT_ADDR_LEN];
-     int connected;             /* 1 when sockfd is connected */
+     int connected; /* 1 when sockfd is connected */
      struct tftphdr *tftphdr = (struct tftphdr *)data->data_buffer;
-     FILE *fp;                  /* the local file pointer */
+     FILE *fp; /* the local file pointer */
      int number_of_timeout = 0;
      struct stat file_stat;
-     int convert = 0;           /* if true, do netascii conversion */
+     int convert = 0; /* if true, do netascii conversion */
      char string[MAXLEN];
 
      long prev_block_number = 0; /* needed to support netascii conversion */
@@ -695,9 +454,12 @@ int tftp_send_file(struct client_data *data)
      }
 
      /* open the file for reading */
-     if (data->fp != NULL) {
+     if (data->fp != NULL)
+     {
           fp = data->fp;
-     } else if ((fp = fopen(data->local_file, "r")) == NULL) {
+     }
+     else if ((fp = fopen(data->local_file, "r")) == NULL)
+     {
           fprintf(stderr, "tftp: can't open %s for reading.\n",
                   data->local_file);
           return ERR;
@@ -706,14 +468,12 @@ int tftp_send_file(struct client_data *data)
      /* When sending a file with the tsize argument, we shall
         put the file size as argument */
      fstat(fileno(fp), &file_stat);
-     if (opt_get_tsize(data->tftp_options) > -1)
-          opt_set_tsize(file_stat.st_size, data->tftp_options);
 
      while (1)
      {
 #ifdef DEBUG
           if (data->delay)
-               usleep(data->delay*1000);
+               usleep(data->delay * 1000);
 #endif
           if (tftp_cancel)
           {
@@ -726,7 +486,7 @@ int tftp_send_file(struct client_data *data)
                                     data->data_buffer_size, NULL);
 
                     if (data->trace)
-                         fprintf(stderr,  "sent ERROR <code: %d, msg: %s>\n",
+                         fprintf(stderr, "sent ERROR <code: %d, msg: %s>\n",
                                  EUNDEF, tftp_errmsg[EUNDEF]);
                     state = S_ABORT;
                }
@@ -763,7 +523,7 @@ int tftp_send_file(struct client_data *data)
 
                data_size = tftp_file_read(fp, tftphdr->th_data, data->data_buffer_size - 4, block_number,
                                           convert, &prev_block_number, &prev_file_pos, &temp);
-               data_size += 4;  /* need to consider tftp header */
+               data_size += 4; /* need to consider tftp header */
 
                if (feof(fp))
                     last_block = block_number;
@@ -806,20 +566,23 @@ int tftp_send_file(struct client_data *data)
                     /* if the socket if not connected, connect it */
                     if (!connected)
                     {
-                         //connect(sockfd, (struct sockaddr *)&sa, sizeof(sa));
+                         // connect(sockfd, (struct sockaddr *)&sa, sizeof(sa));
                          connected = 1;
                     }
-		    block_number = tftp_rollover_blocknumber(
-			ntohs(tftphdr->th_block), prev_block_number, 0);
+                    block_number = tftp_rollover_blocknumber(
+                        ntohs(tftphdr->th_block), prev_block_number, 0);
 
                     /* if turned on, check whether the block request isn't already fulfilled */
-                    if (tftp_prevent_sas) {
-                         if (last_requested_block >= block_number) {
+                    if (tftp_prevent_sas)
+                    {
+                         if (last_requested_block >= block_number)
+                         {
                               if (data->trace)
                                    fprintf(stderr, "received duplicated ACK <block: %ld >= %ld>\n",
                                            last_requested_block, block_number);
                               break;
-                         } else
+                         }
+                         else
                               last_requested_block = block_number;
                     }
 
@@ -838,7 +601,7 @@ int tftp_send_file(struct client_data *data)
                     /* if the socket if not connected, connect it */
                     if (!connected)
                     {
-                         //connect(sockfd, (struct sockaddr *)&sa, sizeof(sa));
+                         // connect(sockfd, (struct sockaddr *)&sa, sizeof(sa));
                          connected = 1;
                     }
                     state = S_OACK_RECEIVED;
@@ -848,10 +611,11 @@ int tftp_send_file(struct client_data *data)
                     fwrite(tftphdr->th_msg, 1, data_size - 4 - 1, stderr);
                     fprintf(stderr, ">\n");
 
-                    if (data->tftp_error_cb) {
-                        data->tftp_error_cb(ntohs(tftphdr->th_code),
-                                            tftphdr->th_msg,
-                                            data->tftp_error_ctx);
+                    if (data->tftp_error_cb)
+                    {
+                         data->tftp_error_cb(ntohs(tftphdr->th_code),
+                                             tftphdr->th_msg,
+                                             data->tftp_error_ctx);
                     }
 
                     state = S_ABORT;
@@ -888,18 +652,6 @@ int tftp_send_file(struct client_data *data)
                                  data->tftp_options_reply);
                if (data->trace)
                     fprintf(stderr, "received OACK <");
-               /* tsize: funny, now we know the file size */
-               if ((result = opt_get_tsize(data->tftp_options_reply)) > -1)
-               {
-                    if (data->trace)
-                         fprintf(stderr, "tsize: %d, ", result);
-               }
-               /* timeout */
-               if ((result = opt_get_timeout(data->tftp_options_reply)) > -1)
-               {
-                    if (data->trace)
-                         fprintf(stderr, "timeout: %d, ", result);
-               }
                /* blksize: resize the buffer please */
                if ((result = opt_get_blksize(data->tftp_options_reply)) > -1)
                {
@@ -910,16 +662,12 @@ int tftp_send_file(struct client_data *data)
                     tftphdr = (struct tftphdr *)data->data_buffer;
                     if (data->data_buffer == NULL)
                     {
-                        fprintf(stderr,
-                                "tftp: memory allocation failure.\n");
-                        exit(1);
+                         fprintf(stderr,
+                                 "tftp: memory allocation failure.\n");
+                         exit(1);
                     }
                     data->data_buffer_size = result + 4;
                }
-               /* multicast: yish, it's more complex. If we are a master,
-                  we are responsible to ask packet with an ACK. If we are
-                  not master, then just receive packets. Missing packets
-                  will be asked when we become a master client */
 
                if (data->trace)
                     fprintf(stderr, "\b\b>\n");

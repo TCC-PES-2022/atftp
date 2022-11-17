@@ -1,5 +1,0 @@
-version=4
-# For SourceForge based projects, qa.debian.org runs a redirector which
-# allows a simpler form of URL. The format below will automatically be
-# rewritten to use the redirector with the watch file:
-https://sf.net/atftp/ atftp-([.\d]+)\.tar\.gz debian uupdate

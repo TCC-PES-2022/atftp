@@ -25,19 +25,19 @@
 
 /* missing from <arpa/tftp.h> */
 /* new opcode */
-#define OACK   06
+#define OACK 06
 /* new error code */
-#define EOPTNEG 8               /* error in option negociation */
+#define EOPTNEG 8 /* error in option negociation */
 
 /* return value of tftp_get_packet */
 #define GET_DISCARD 0
 #define GET_TIMEOUT 1
-#define GET_RRQ     2
-#define GET_WRQ     3
-#define GET_ACK     4
-#define GET_OACK    5
-#define GET_ERROR   6
-#define GET_DATA    7
+#define GET_RRQ 2
+#define GET_WRQ 3
+#define GET_ACK 4
+#define GET_OACK 5
+#define GET_ERROR 6
+#define GET_DATA 7
 
 /* functions prototype */
 int tftp_send_request(int socket, struct sockaddr_storage *s_inn, short type,

@@ -15,13 +15,12 @@ TARGET_NAME_SERVER := libtftpd.a
 TARGET_SERVER := $(addprefix $(OUT_PATH)/, $(TARGET_NAME_SERVER))
 
 # src files & obj files
-SRC_CLIENT := tftp.c tftp_io.c atftp_logger.c options.c tftp_def.c tftp_file.c tftp_mtftp.c
+SRC_CLIENT := tftp.c tftp_io.c atftp_logger.c options.c tftp_def.c tftp_file.c
 OBJ_CLIENT := $(addprefix $(OBJ_PATH)/, $(addsuffix .o, $(notdir $(basename $(SRC_CLIENT)))))
 OBJ_CLIENT_DEBUG := $(addprefix $(OBJ_PATH)/, $(addsuffix .o, $(notdir $(basename $(SRC_CLIENT)))))
 OBJ_CLIENT_TEST := $(addprefix $(OBJ_PATH)/, $(addsuffix .o, $(notdir $(basename $(SRC_CLIENT)))))
 
-SRC_SERVER := tftpd.c atftp_logger.c options.c stats.c tftp_io.c tftp_def.c tftpd_file.c tftpd_list.c \
-			  tftpd_mcast.c tftpd_pcre.c tftpd_mtftp.c
+SRC_SERVER := tftpd.c atftp_logger.c options.c tftp_io.c tftp_def.c tftpd_file.c tftpd_list.c
 OBJ_SERVER := $(addprefix $(OBJ_PATH)/, $(addsuffix .o, $(notdir $(basename $(SRC_SERVER)))))
 OBJ_SERVER_DEBUG := $(addprefix $(OBJ_PATH)/, $(addsuffix .o, $(notdir $(basename $(SRC_SERVER)))))
 OBJ_SERVER_TEST := $(addprefix $(OBJ_PATH)/, $(addsuffix .o, $(notdir $(basename $(SRC_SERVER)))))

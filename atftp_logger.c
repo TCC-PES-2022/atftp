@@ -32,17 +32,10 @@
 #include "atftp_logger.h"
 
 #define MAXLEN 128
-#define SIMPLE_LOG  //Enable a simplified log version
 
 static int log_priority = 0;
-static int log_syslog_is_open = 0;
 static char *log_ident;
 static FILE *log_fp = NULL;
-
-#ifndef SIMPLE_LOG
-static char *log_filename = NULL;
-static int log_fd;
-#endif
 
 /*
  * Open a file for logging. If filename is NULL, then use
@@ -55,42 +48,6 @@ void open_atftp_logger(char *ident, char *filename, int priority)
                         previously opened log. */
 
      log_priority = priority;
-
-#ifndef SIMPLE_LOG
-     if (ident)
-          log_ident = strdup(ident);
-     else
-          log_ident = "unset";
-
-     if (filename)
-     {
-          log_filename = strdup(filename);
-          if (!strcmp(filename, "-"))
-          {
-               log_fd = STDOUT_FILENO;
-               log_fp = fdopen(log_fd, "a");
-               return;
-          }
-     }
-     else
-     {
-          openlog(log_ident, LOG_PID, LOG_DAEMON);
-          log_syslog_is_open = 1;
-     }
-
-     if (log_filename)
-     {
-          if ((log_fd = open(log_filename, O_WRONLY | O_APPEND)) < 0)
-          {
-               openlog(log_ident, LOG_PID, LOG_DAEMON);
-               log_syslog_is_open = 1;
-               atftp_logger(LOG_CRIT, "Unable to open %s for logging, "
-                           "reverting to syslog", log_filename);
-          }
-          else
-               log_fp = fdopen(log_fd, "a");
-     }
-#endif
 }
 
 /*
@@ -106,7 +63,6 @@ void atftp_logger(int severity, const char *fmt, ...)
      time_t t;
      struct tm *tm;
 
-
      va_list args;
      va_start(args, fmt);
 
@@ -118,15 +74,13 @@ void atftp_logger(int severity, const char *fmt, ...)
      if (severity <= log_priority)
      {
           vsnprintf(message, sizeof(message), fmt, args);
-          
+
           if (log_fp)
           {
                fprintf(log_fp, "%s %s %s[%d.%li]: %s\n", time_buf, hostname,
                        log_ident, getpid(), pthread_self(), message);
                fflush(log_fp);
           }
-          else if (log_syslog_is_open)
-               syslog(severity, "%s", message);
           else
                fprintf(stderr, "%s %s %s[%d.%li]: %s\n", time_buf, hostname,
                        log_ident, getpid(), pthread_self(), message);
@@ -140,18 +94,4 @@ void atftp_logger(int severity, const char *fmt, ...)
 void close_atftp_logger(void)
 {
      log_priority = 0;
-
-#ifndef SIMPLE_LOG
-     if (log_syslog_is_open)
-          closelog();
-     log_syslog_is_open = 0;
-     if (log_fp)
-          fclose(log_fp);
-     log_fp = NULL;
-     if (log_filename)
-          free(log_filename);
-     log_filename = NULL;
-     if (log_ident)
-          free(log_ident);
-#endif
 }

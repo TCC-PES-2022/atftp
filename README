@@ -32,6 +32,8 @@ To install, run:
 
 To test and generate coverage report, run:
     cd test && make report
+    
+Check the API documentation at https://tcc-pes-2022.github.io/atftp/
 
     Kollins G. Lima <kgl2@cin.ufpe.br>
     September 03rd, 2022
